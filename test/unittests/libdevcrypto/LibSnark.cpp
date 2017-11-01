@@ -21,9 +21,12 @@
 #include <libdevcore/CommonIO.h>
 #include <boost/test/unit_test.hpp>
 
+#include <libdevcrypto/BLS12_381.h>
+
 using namespace std;
 using namespace dev;
 using namespace dev::crypto;
+using namespace dev::BLS12_381;
 
 BOOST_AUTO_TEST_SUITE(LibSnark)
 
@@ -68,6 +71,21 @@ bytes addG1(bytes const& _x, bytes const& _y)
 	return ret.second;
 }
 
+}
+
+BOOST_AUTO_TEST_CASE(blsTest)
+{
+    Scalar secret("0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+    BonehLynnShacham bls;
+    G2 publicKey = bls.generatePublicKey(secret);
+
+    bytesConstRef x;
+    bytes seed(fromHex("0x0123456789abcdef0123456789abcdef00112233445566778899aabbccddeeff"));
+    bytes data(fromHex("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"));
+    G1 element = G1::mapToElement(ref(seed), ref(data));
+    G1 signedElement = bls.sign(element, secret);
+    bool valid = bls.verify(publicKey, element, signedElement);
+    BOOST_CHECK(valid);
 }
 
 BOOST_AUTO_TEST_CASE(ecadd)
