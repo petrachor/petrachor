@@ -54,42 +54,51 @@ secp256k1_context const* getCtx()
 
 }
 
-bool dev::SignatureStruct::isValid() const noexcept
+bool ECDSA::SignatureStruct::isValid() const noexcept
 {
-	static const h256 s_max{"0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"};
-	static const h256 s_zero;
+    static const h256 s_max{"0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"};
+    static const h256 s_zero;
 
-	return (v <= 1 && r > s_zero && s > s_zero && r < s_max && s < s_max);
+    return (v <= 1 && r > s_zero && s > s_zero && r < s_max && s < s_max);
 }
 
-Public dev::toPublic(Secret const& _secret)
+bool BLS::SignatureStruct::isValid() const noexcept
 {
-	auto* ctx = getCtx();
-	secp256k1_pubkey rawPubkey;
-	// Creation will fail if the secret key is invalid.
-	if (!secp256k1_ec_pubkey_create(ctx, &rawPubkey, _secret.data()))
-		return {};
-	std::array<byte, 65> serializedPubkey;
-	size_t serializedPubkeySize = serializedPubkey.size();
-	secp256k1_ec_pubkey_serialize(
-			ctx, serializedPubkey.data(), &serializedPubkeySize,
-			&rawPubkey, SECP256K1_EC_UNCOMPRESSED
-	);
-	assert(serializedPubkeySize == serializedPubkey.size());
-	// Expect single byte header of value 0x04 -- uncompressed public key.
-	assert(serializedPubkey[0] == 0x04);
-	// Create the Public skipping the header.
-	return Public{&serializedPubkey[1], Public::ConstructFromPointer};
+    return true;
 }
 
-Address dev::toAddress(Public const& _public)
-{
-	return right160(sha3(_public.ref()));
+bool ECDSA::SignatureStruct::isZero() const {
+    return !s && !r;
 }
 
-Address dev::toAddress(Secret const& _secret)
+bool BLS::SignatureStruct::isZero() const {
+    return (bool) (*this);
+}
+
+template <> ECDSA::Public dev::toPublic<ECDSA>(ECDSA::Secret const& _secret)
 {
-	return toAddress(toPublic(_secret));
+    auto* ctx = getCtx();
+    secp256k1_pubkey rawPubkey;
+    // Creation will fail if the secret key is invalid.
+    if (!secp256k1_ec_pubkey_create(ctx, &rawPubkey, _secret.data()))
+        return {};
+    std::array<byte, 65> serializedPubkey;
+    size_t serializedPubkeySize = serializedPubkey.size();
+    secp256k1_ec_pubkey_serialize(
+            ctx, serializedPubkey.data(), &serializedPubkeySize,
+            &rawPubkey, SECP256K1_EC_UNCOMPRESSED
+    );
+    assert(serializedPubkeySize == serializedPubkey.size());
+    // Expect single byte header of value 0x04 -- uncompressed public key.
+    assert(serializedPubkey[0] == 0x04);
+    // Create the Public skipping the header.
+    return ECDSA::Public{&serializedPubkey[1], ECDSA::Public::ConstructFromPointer};
+}
+
+template <>
+BLS::Public dev::toPublic<BLS>(BLS::Secret const& secret)
+{
+    return BLS12_381::BonehLynnShacham::generatePublicKey(secret);
 }
 
 Address dev::toAddress(Address const& _from, u256 const& _nonce)
@@ -97,14 +106,14 @@ Address dev::toAddress(Address const& _from, u256 const& _nonce)
 	return right160(sha3(rlpList(_from, _nonce)));
 }
 
-void dev::encrypt(Public const& _k, bytesConstRef _plain, bytes& o_cipher)
+void dev::encrypt(ECDSA::Public const& _k, bytesConstRef _plain, bytes& o_cipher)
 {
 	bytes io = _plain.toBytes();
 	Secp256k1PP::get()->encrypt(_k, io);
 	o_cipher = std::move(io);
 }
 
-bool dev::decrypt(Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext)
+bool dev::decrypt(ECDSA::Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext)
 {
 	bytes io = _cipher.toBytes();
 	Secp256k1PP::get()->decrypt(_k, io);
@@ -114,24 +123,24 @@ bool dev::decrypt(Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext)
 	return true;
 }
 
-void dev::encryptECIES(Public const& _k, bytesConstRef _plain, bytes& o_cipher)
+void dev::encryptECIES(ECDSA::Public const& _k, bytesConstRef _plain, bytes& o_cipher)
 {
 	encryptECIES(_k, bytesConstRef(), _plain, o_cipher);
 }
 
-void dev::encryptECIES(Public const& _k, bytesConstRef _sharedMacData, bytesConstRef _plain, bytes& o_cipher)
+void dev::encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMacData, bytesConstRef _plain, bytes& o_cipher)
 {
 	bytes io = _plain.toBytes();
 	Secp256k1PP::get()->encryptECIES(_k, _sharedMacData, io);
 	o_cipher = std::move(io);
 }
 
-bool dev::decryptECIES(Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext)
+bool dev::decryptECIES(ECDSA::Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext)
 {
 	return decryptECIES(_k, bytesConstRef(),  _cipher, o_plaintext);
 }
 
-bool dev::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, bytesConstRef _cipher, bytes& o_plaintext)
+bool dev::decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytesConstRef _cipher, bytes& o_plaintext)
 {
 	bytes io = _cipher.toBytes();
 	if (!Secp256k1PP::get()->decryptECIES(_k, _sharedMacData, io))
@@ -140,13 +149,13 @@ bool dev::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, bytesCons
 	return true;
 }
 
-void dev::encryptSym(Secret const& _k, bytesConstRef _plain, bytes& o_cipher)
+void dev::encryptSym(ECDSA::Secret const& _k, bytesConstRef _plain, bytes& o_cipher)
 {
 	// TODO: @alex @subtly do this properly.
-	encrypt(KeyPair(_k).pub(), _plain, o_cipher);
+    encrypt(KeyPair<ECDSA>(_k).pub(), _plain, o_cipher);
 }
 
-bool dev::decryptSym(Secret const& _k, bytesConstRef _cipher, bytes& o_plain)
+bool dev::decryptSym(ECDSA::Secret const& _k, bytesConstRef _cipher, bytes& o_plain)
 {
 	// TODO: @alex @subtly do this properly.
 	return decrypt(_k, _cipher, o_plain);
@@ -198,7 +207,7 @@ bytesSec dev::decryptAES128CTR(bytesConstRef _k, h128 const& _iv, bytesConstRef 
 	}
 }
 
-Public dev::recover(Signature const& _sig, h256 const& _message)
+dev::ECDSA::Public dev::recover(dev::ECDSA::Signature const& _sig, h256 const& _message)
 {
 	int v = _sig[64];
 	if (v > 3)
@@ -223,23 +232,24 @@ Public dev::recover(Signature const& _sig, h256 const& _message)
 	// Expect single byte header of value 0x04 -- uncompressed public key.
 	assert(serializedPubkey[0] == 0x04);
 	// Create the Public skipping the header.
-	return Public{&serializedPubkey[1], Public::ConstructFromPointer};
+    return dev::ECDSA::Public{&serializedPubkey[1], dev::ECDSA::Public::ConstructFromPointer};
 }
 
 static const u256 c_secp256k1n("115792089237316195423570985008687907852837564279074904382605163141518161494337");
 
-Signature dev::sign(Secret const& _k, h256 const& _hash)
+template <>
+dev::ECDSA::Signature dev::sign<ECDSA>(ECDSA::Secret const& _k, h256 const& _hash)
 {
 	auto* ctx = getCtx();
 	secp256k1_ecdsa_recoverable_signature rawSig;
 	if (!secp256k1_ecdsa_sign_recoverable(ctx, &rawSig, _hash.data(), _k.data(), nullptr, nullptr))
 		return {};
 
-	Signature s;
+    dev::ECDSA::Signature s;
 	int v = 0;
 	secp256k1_ecdsa_recoverable_signature_serialize_compact(ctx, s.data(), &v, &rawSig);
 
-	SignatureStruct& ss = *reinterpret_cast<SignatureStruct*>(&s);
+    dev::ECDSA::SignatureStruct& ss = *reinterpret_cast<dev::ECDSA::SignatureStruct*>(&s);
 	ss.v = static_cast<byte>(v);
 	if (ss.s > c_secp256k1n / 2)
 	{
@@ -250,13 +260,31 @@ Signature dev::sign(Secret const& _k, h256 const& _hash)
 	return s;
 }
 
-bool dev::verify(Public const& _p, Signature const& _s, h256 const& _hash)
+bool dev::verify(ECDSA::Public const& _p, ECDSA::Signature const& _s, h256 const& _hash)
 {
 	// TODO: Verify w/o recovery (if faster).
 	if (!_p)
 		return false;
 	return _p == recover(_s, _hash);
 }
+
+    BLS12_381::G1 hashToElement(BLS::Public const& publicKey, h256 const& hash) {
+        bytes pk = publicKey.asBytes();
+        bytes h = hash.asBytes();
+        return BLS12_381::G1::mapToElement(ref(pk), ref(h));
+    }
+
+    template <>
+    dev::BLS::Signature dev::sign<BLS>(BLS::Secret const& secret, h256 const& hash)
+    {
+        return BLS12_381::BonehLynnShacham::sign(hashToElement(toPublic<BLS>(secret), hash), secret);
+    }
+
+    template <>
+    bool dev::verify<BLS>(BLS::Public const& publicKey, BLS::Signature const& signedElement, h256 const& hash)
+    {
+        return BLS12_381::BonehLynnShacham::verify(publicKey, hashToElement(publicKey, hash), signedElement);
+    }
 
 bytesSec dev::pbkdf2(string const& _pass, bytes const& _salt, unsigned _iterations, unsigned _dkLen)
 {
@@ -293,30 +321,6 @@ bytesSec dev::scrypt(std::string const& _pass, bytes const& _salt, uint64_t _n, 
 	return ret;
 }
 
-KeyPair::KeyPair(Secret const& _sec):
-	m_secret(_sec),
-	m_public(toPublic(_sec))
-{
-	// Assign address only if the secret key is valid.
-	if (m_public)
-		m_address = toAddress(m_public);
-}
-
-KeyPair KeyPair::create()
-{
-	while (true)
-	{
-		KeyPair keyPair(Secret::random());
-		if (keyPair.address())
-			return keyPair;
-	}
-}
-
-KeyPair KeyPair::fromEncryptedSeed(bytesConstRef _seed, std::string const& _password)
-{
-	return KeyPair(Secret(sha3(aesDecrypt(_seed, _password))));
-}
-
 h256 crypto::kdf(Secret const& _priv, h256 const& _hash)
 {
 	// H(H(r||k)^h)
@@ -343,7 +347,7 @@ Secret Nonce::next()
 	return sha3(~m_value);
 }
 
-bool ecdh::agree(Secret const& _s, Public const& _r, Secret& o_s) noexcept
+bool ecdh::agree(ECDSA::Secret const& _s, ECDSA::Public const& _r, ECDSA::Secret& o_s) noexcept
 {
 	auto* ctx = getCtx();
 	static_assert(sizeof(Secret) == 32, "Invalid Secret type size");
@@ -390,3 +394,6 @@ bytes ecies::kdf(Secret const& _z, bytes const& _s1, unsigned kdByteLen)
 	k.resize(kdByteLen);
 	return k;
 }
+
+template class KeyPair<ECDSA>;
+template class KeyPair<BLS>;

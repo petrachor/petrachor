@@ -76,16 +76,32 @@ bytes addG1(bytes const& _x, bytes const& _y)
 BOOST_AUTO_TEST_CASE(blsTest)
 {
     Scalar secret("0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
-    BonehLynnShacham bls;
-    G2 publicKey = bls.generatePublicKey(secret);
+    G2 publicKey = BonehLynnShacham::generatePublicKey(secret);
 
     bytesConstRef x;
     bytes seed(fromHex("0x0123456789abcdef0123456789abcdef00112233445566778899aabbccddeeff"));
     bytes data(fromHex("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"));
     G1 element = G1::mapToElement(ref(seed), ref(data));
-    G1 signedElement = bls.sign(element, secret);
-    bool valid = bls.verify(publicKey, element, signedElement);
+    G1 signedElement = BonehLynnShacham::sign(element, secret);
+    bool valid = BonehLynnShacham::verify(publicKey, element, signedElement);
     BOOST_CHECK(valid);
+
+    Scalar incorrectSecret("0x23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01");
+    bool incorrectPKValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(incorrectSecret), element, signedElement);
+    BOOST_CHECK(!incorrectPKValid);
+
+    bytes incorrectSeed(fromHex("0x23456789abcdef0123456789abcdef00112233445566778899aabbccddeeff01"));
+    bytes incorrectData(fromHex("0x112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"));
+    G1 incorrectDataElement = G1::mapToElement(ref(seed), ref(incorrectData));
+    bool incorrectDEValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(secret), incorrectDataElement, signedElement);
+    BOOST_CHECK(!incorrectDEValid);
+    G1 incorrectSeedElement = G1::mapToElement(ref(incorrectSeed), ref(data));
+    bool incorrectSValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(secret), incorrectSeedElement, signedElement);
+    BOOST_CHECK(!incorrectSValid);
+
+    G1 incorrectSignedElement = element.add(element);
+    bool incorrectSEValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(secret), element, incorrectSignedElement);
+    BOOST_CHECK(!incorrectSEValid);
 }
 
 BOOST_AUTO_TEST_CASE(ecadd)

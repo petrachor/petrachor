@@ -2,16 +2,16 @@
  This file is part of cpp-ethereum.
  
  cpp-ethereum is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
+ it under the terms of the GNU General ECDSA::Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
  
  cpp-ethereum is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+ GNU General ECDSA::Public License for more details.
  
- You should have received a copy of the GNU General Public License
+ You should have received a copy of the GNU General ECDSA::Public License
  along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
  */
 /** @file CryptoPP.cpp
@@ -33,8 +33,8 @@ using namespace dev;
 using namespace dev::crypto;
 
 static_assert(dev::Secret::size == 32, "Secret key must be 32 bytes.");
-static_assert(dev::Public::size == 64, "Public key must be 64 bytes.");
-static_assert(dev::Signature::size == 65, "Signature must be 65 bytes.");
+static_assert(dev::ECDSA::Public::size == 64, "ECDSA::Public key must be 64 bytes.");
+static_assert(dev::ECDSA::Signature::size == 65, "ECDSA::Signature must be 65 bytes.");
 
 namespace
 {
@@ -67,7 +67,7 @@ private:
 	{}
 };
 
-inline CryptoPP::ECP::Point publicToPoint(Public const& _p) { CryptoPP::Integer x(_p.data(), 32); CryptoPP::Integer y(_p.data() + 32, 32); return CryptoPP::ECP::Point(x,y); }
+inline CryptoPP::ECP::Point publicToPoint(ECDSA::Public const& _p) { CryptoPP::Integer x(_p.data(), 32); CryptoPP::Integer y(_p.data() + 32, 32); return CryptoPP::ECP::Point(x,y); }
 
 inline CryptoPP::Integer secretToExponent(Secret const& _s) { return CryptoPP::Integer(_s.data(), Secret::size); }
 
@@ -79,16 +79,16 @@ Secp256k1PP* Secp256k1PP::get()
 	return &s_this;
 }
 
-void Secp256k1PP::encryptECIES(Public const& _k, bytes& io_cipher)
+void Secp256k1PP::encryptECIES(ECDSA::Public const& _k, bytes& io_cipher)
 {
 	encryptECIES(_k, bytesConstRef(), io_cipher);
 }
 
-void Secp256k1PP::encryptECIES(Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher)
+void Secp256k1PP::encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher)
 {
 	// interop w/go ecies implementation
-	auto r = KeyPair::create();
-	Secret z;
+    auto r = KeyPair<ECDSA>::create();
+    ECDSA::Secret z;
 	ecdh::agree(r.secret(), _k, z);
 	auto key = ecies::kdf(z, bytes(), 32);
 	bytesConstRef eKey = bytesConstRef(&key).cropped(0, 16);
@@ -103,19 +103,19 @@ void Secp256k1PP::encryptECIES(Public const& _k, bytesConstRef _sharedMacData, b
 	if (cipherText.empty())
 		return;
 
-	bytes msg(1 + Public::size + h128::size + cipherText.size() + 32);
+    bytes msg(1 + ECDSA::Public::size + h128::size + cipherText.size() + 32);
 	msg[0] = 0x04;
-	r.pub().ref().copyTo(bytesRef(&msg).cropped(1, Public::size));
-	iv.ref().copyTo(bytesRef(&msg).cropped(1 + Public::size, h128::size));
-	bytesRef msgCipherRef = bytesRef(&msg).cropped(1 + Public::size + h128::size, cipherText.size());
+    r.pub().ref().copyTo(bytesRef(&msg).cropped(1, ECDSA::Public::size));
+    iv.ref().copyTo(bytesRef(&msg).cropped(1 + ECDSA::Public::size, h128::size));
+    bytesRef msgCipherRef = bytesRef(&msg).cropped(1 + ECDSA::Public::size + h128::size, cipherText.size());
 	bytesConstRef(&cipherText).copyTo(msgCipherRef);
 	
 	// tag message
 	CryptoPP::HMAC<CryptoPP::SHA256> hmacctx(mKey.data(), mKey.size());
-	bytesConstRef cipherWithIV = bytesRef(&msg).cropped(1 + Public::size, h128::size + cipherText.size());
+    bytesConstRef cipherWithIV = bytesRef(&msg).cropped(1 + ECDSA::Public::size, h128::size + cipherText.size());
 	hmacctx.Update(cipherWithIV.data(), cipherWithIV.size());
 	hmacctx.Update(_sharedMacData.data(), _sharedMacData.size());
-	hmacctx.Final(msg.data() + 1 + Public::size + cipherWithIV.size());
+    hmacctx.Final(msg.data() + 1 + ECDSA::Public::size + cipherWithIV.size());
 	
 	io_cipher.resize(msg.size());
 	io_cipher.swap(msg);
@@ -131,17 +131,17 @@ bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, b
 
 	// interop w/go ecies implementation
 	
-	// io_cipher[0] must be 2, 3, or 4, else invalidpublickey
+    // io_cipher[0] must be 2, 3, or 4, else invalidECDSA::Publickey
 	if (io_text.empty() || io_text[0] < 2 || io_text[0] > 4)
-		// invalid message: publickey
+        // invalid message: ECDSA::Publickey
 		return false;
 	
-	if (io_text.size() < (1 + Public::size + h128::size + 1 + h256::size))
+    if (io_text.size() < (1 + ECDSA::Public::size + h128::size + 1 + h256::size))
 		// invalid message: length
 		return false;
 
 	Secret z;
-	if (!ecdh::agree(_k, *(Public*)(io_text.data() + 1), z))
+    if (!ecdh::agree(_k, *(ECDSA::Public*)(io_text.data() + 1), z))
 		return false;  // Invalid pubkey or seckey.
 	auto key = ecies::kdf(z, bytes(), 64);
 	bytesConstRef eKey = bytesConstRef(&key).cropped(0, 16);
@@ -152,8 +152,8 @@ bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, b
 	ctx.Final(mKey.data());
 	
 	bytes plain;
-	size_t cipherLen = io_text.size() - 1 - Public::size - h128::size - h256::size;
-	bytesConstRef cipherWithIV(io_text.data() + 1 + Public::size, h128::size + cipherLen);
+    size_t cipherLen = io_text.size() - 1 - ECDSA::Public::size - h128::size - h256::size;
+    bytesConstRef cipherWithIV(io_text.data() + 1 + ECDSA::Public::size, h128::size + cipherLen);
 	bytesConstRef cipherIV = cipherWithIV.cropped(0, h128::size);
 	bytesConstRef cipherNoIV = cipherWithIV.cropped(h128::size, cipherLen);
 	bytesConstRef msgMac(cipherNoIV.data() + cipherLen, h256::size);
@@ -176,13 +176,13 @@ bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, b
 	return true;
 }
 
-void Secp256k1PP::encrypt(Public const& _k, bytes& io_cipher)
+void Secp256k1PP::encrypt(ECDSA::Public const& _k, bytes& io_cipher)
 {
 	auto& ctx = Secp256k1PPCtx::get();
 	CryptoPP::ECIES<CryptoPP::ECP>::Encryptor e;
 	{
 		Guard l(ctx.x_params);
-		e.AccessKey().Initialize(ctx.m_params, publicToPoint(_k));
+        e.AccessKey().Initialize(ctx.m_params, publicToPoint(_k));
 	}
 
 	size_t plen = io_cipher.size();

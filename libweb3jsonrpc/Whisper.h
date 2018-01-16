@@ -42,13 +42,13 @@ class Whisper: public WhisperFace
 {
 public:
 	// TODO: init with whisper interface instead of webthreedirect
-	Whisper(WebThreeDirect& _web3, std::vector<dev::KeyPair> const& _accounts);
+    Whisper(WebThreeDirect& _web3, std::vector<dev::KeyPair<dev::BLS>> const& _accounts);
 	virtual RPCModules implementedModules() const override
 	{
 		return RPCModules{RPCModule{"shh", "1.0"}};
 	}
 
-	virtual void setIdentities(std::vector<dev::KeyPair> const& _ids);
+    virtual void setIdentities(std::vector<dev::KeyPair<dev::BLS>> const& _ids);
 	std::map<dev::Public, dev::Secret> const& ids() const { return m_ids; }
 
 	virtual bool shh_post(Json::Value const& _json) override;

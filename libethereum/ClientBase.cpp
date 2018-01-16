@@ -20,6 +20,7 @@
  * @date 2015
  */
 
+#include <libdevcrypto/Common.h>
 #include "ClientBase.h"
 #include <algorithm>
 #include "BlockChain.h"
@@ -42,7 +43,7 @@ pair<h256, Address> ClientBase::submitTransaction(TransactionSkeleton const& _t,
 	prepareForTransaction();
 	
 	TransactionSkeleton ts(_t);
-	ts.from = toAddress(_secret);
+    ts.from = dev::toAddress<dev::BLS>(_secret);
 	if (_t.nonce == Invalid256)
 		ts.nonce = max<u256>(postSeal().transactionsFrom(ts.from), m_tq.maxNonce(ts.from));
 	if (ts.gasPrice == Invalid256)

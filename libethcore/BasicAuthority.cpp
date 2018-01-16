@@ -50,7 +50,7 @@ void BasicAuthority::generateSeal(BlockHeader const& _bi)
 {
 	BlockHeader bi = _bi;
 	h256 h = bi.hash(WithoutSeal);
-	Signature s = sign(m_secret, h);
+    ECDSA::Signature s = sign<ECDSA>(m_secret, h);
 	setSig(bi, s);
 	SealEngineBase::generateSeal(bi);
 }
@@ -61,7 +61,7 @@ bool BasicAuthority::onOptionChanging(std::string const& _name, bytes const& _va
 	if (_name == "authorities")
 		m_authorities = rlp.toUnorderedSet<Address>();
 	else if (_name == "authority")
-		m_secret = Secret(rlp.toHash<h256>());
+        m_secret = ECDSA::Secret(rlp.toHash<h256>());
 	else
 		return false;
 	return true;
@@ -78,16 +78,16 @@ void BasicAuthority::verify(Strictness _s, BlockHeader const& _bi, BlockHeader c
 {
 	SealEngineFace::verify(_s, _bi, _parent, _block);
 	// check it hashes according to proof of work or that it's the genesis block.
-	Signature s = sig(_bi);
+    ECDSA::Signature s = sig(_bi);
 	h256 h = _bi.hash(WithoutSeal);
-	Address a = toAddress(recover(s, h));
+    Address a = dev::toAddress<dev::ECDSA>(recover(s, h));
 	if (_s == CheckEverything && _bi.parentHash() && !m_authorities.count(a))
 	{
 		InvalidBlockNonce ex;
 		ex << errinfo_hash256(_bi.hash(WithoutSeal));
 		BOOST_THROW_EXCEPTION(ex);
 	}
-	else if (_s == QuickNonce && _bi.parentHash() && !SignatureStruct(sig(_bi)).isValid())
+    else if (_s == QuickNonce && _bi.parentHash() && !dev::ECDSA::SignatureStruct(sig(_bi)).isValid())
 	{
 		InvalidBlockNonce ex;
 		ex << errinfo_hash256(_bi.hash(WithoutSeal));

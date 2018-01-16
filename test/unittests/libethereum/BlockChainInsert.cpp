@@ -50,7 +50,7 @@ public:
 		m_bc(eth::ChainParams(c_genesisInfoTestBasicAuthority), m_path)
 	{
 		sealer()->setOption("authority", rlp(_authority.makeInsecure()));
-		sealer()->setOption("authorities", rlpList(toAddress(_authority)));
+        sealer()->setOption("authorities", rlpList(toAddress<BLS>(_authority)));
 		sealer()->onSealGenerated([&](bytes const& sealedHeader){
 			sealed = sealedHeader;
 		});
@@ -157,8 +157,8 @@ BOOST_AUTO_TEST_CASE(bcBasicInsert)
 	if (g_logVerbosity != -1)
 		g_logVerbosity = 4;
 
-	KeyPair me = Secret(sha3("Gav Wood"));
-	KeyPair myMiner = Secret(sha3("Gav's Miner"));
+    KeyPair<BLS> me = Secret(sha3("Gav Wood"));
+    KeyPair<BLS> myMiner = Secret(sha3("Gav's Miner"));
 
 	TestClient tcFull(me.secret());
 	TestClient tcLight(me.secret());

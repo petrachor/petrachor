@@ -22,7 +22,7 @@ Personal::Personal(KeyManager& _keyManager, AccountHolder& _accountHolder, eth::
 
 std::string Personal::personal_newAccount(std::string const& _password)
 {
-	KeyPair p = KeyManager::newKeyPair(KeyManager::NewKeyType::NoVanity);
+    KeyPair<BLS> p = KeyManager::newKeyPair(KeyManager::NewKeyType::NoVanity);
 	m_keyManager.import(p.secret(), std::string(), _password, std::string());
 	return toJS(p.address());
 }

@@ -78,14 +78,6 @@ public:
 	/// Checks inequality of transactions.
 	bool operator!=(TransactionBase const& _c) const { return !operator==(_c); }
 
-	/// @returns sender of the transaction from the signature (and hash).
-	/// @throws TransactionIsUnsigned if signature was not initialized
-	Address const& sender() const;
-	/// Like sender() but will never throw. @returns a null Address if the signature is invalid.
-	Address const& safeSender() const noexcept;
-	/// Force the sender to a particular value. This will result in an invalid transaction RLP.
-	void forceSender(Address const& _a) { m_sender = _a; }
-
 	/// @throws TransactionIsUnsigned if signature was not initialized
 	/// @throws InvalidSValue if the signature has an invalid S value.
 	void checkLowS() const;
@@ -126,8 +118,9 @@ public:
 	/// Synonym for receiveAddress().
 	Address to() const { return m_receiveAddress; }
 
-	/// Synonym for safeSender().
-	Address from() const { return safeSender(); }
+    Public senderPublic() const { return m_vrs ? m_vrs->publicKey : Public(); }
+    Address from() const { return m_forcedSender ? m_forcedSender : dev::toAddress<dev::BLS>(senderPublic()); }
+    void forceSender(Address sender) { m_forcedSender = sender; }
 
 	/// @returns the data associated with this (message-call) transaction. Synonym for initCode().
 	bytes const& data() const { return m_data; }
@@ -142,7 +135,7 @@ public:
 	bool hasSignature() const { return m_vrs.is_initialized(); }
 
 	/// @returns true if the transaction was signed with zero signature
-	bool hasZeroSignature() const { return m_vrs && !m_vrs->s && !m_vrs->r; }
+    bool hasZeroSignature() const { return m_vrs && m_vrs->isZero(); }
 
 	/// @returns true if the transaction uses EIP155 replay protection
 	bool isReplayProtected() const { return m_chainId != -4; }
@@ -152,6 +145,8 @@ public:
 	SignatureStruct const& signature() const;
 
 	void sign(Secret const& _priv);			///< Sign the transaction.
+
+    Address sender() const { return from(); }
 
 	/// @returns amount of gas required for the basic payment.
 	int64_t baseGasRequired(EVMSchedule const& _es) const { return baseGasRequired(isCreation(), &m_data, _es); }
@@ -178,11 +173,11 @@ protected:
 	u256 m_gasPrice;					///< The base fee and thus the implied exchange rate of ETH to GAS.
 	u256 m_gas;							///< The total gas to convert, paid for from sender's account. Any unused gas gets refunded once the contract is ended.
 	bytes m_data;						///< The data associated with the transaction, or the initialiser if it's a creation transaction.
-	boost::optional<SignatureStruct> m_vrs;	///< The signature of the transaction. Encodes the sender.
+    boost::optional<SignatureStruct> m_vrs;	///< The signature of the transaction.  Encodes the sender.
 	int m_chainId = -4;					///< EIP155 value for calculating transaction hash https://github.com/ethereum/EIPs/issues/155
 
 	mutable h256 m_hashWith;			///< Cached hash of transaction with signature.
-	mutable Address m_sender;			///< Cached sender, determined from signature.
+    mutable Address m_forcedSender;
 };
 
 /// Nice name for vector of Transaction.
@@ -198,7 +193,7 @@ inline std::ostream& operator<<(std::ostream& _out, TransactionBase const& _t)
 		_out << "[CREATE]";
 
 	_out << "/" << _t.data().size() << "$" << _t.value() << "+" << _t.gas() << "@" << _t.gasPrice();
-	_out << "<-" << _t.safeSender().abridged() << " #" << _t.nonce() << "}";
+    _out << "<-" << _t.from().abridged() << " #" << _t.nonce() << "}";
 	return _out;
 }
 

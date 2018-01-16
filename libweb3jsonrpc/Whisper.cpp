@@ -32,12 +32,12 @@ namespace dev
 namespace rpc
 {
 
-Whisper::Whisper(WebThreeDirect& _web3, std::vector<dev::KeyPair> const& _accounts): m_web3(_web3)
+Whisper::Whisper(WebThreeDirect& _web3, std::vector<dev::KeyPair<dev::BLS>> const& _accounts): m_web3(_web3)
 {
 	setIdentities(_accounts);
 }
 
-void Whisper::setIdentities(std::vector<dev::KeyPair> const& _ids)
+void Whisper::setIdentities(std::vector<dev::KeyPair<dev::BLS>> const& _ids)
 {
 	m_ids.clear();
 	for (auto i: _ids)
@@ -73,7 +73,7 @@ bool Whisper::shh_post(Json::Value const& _json)
 
 std::string Whisper::shh_newIdentity()
 {
-	KeyPair kp = KeyPair::create();
+    KeyPair<dev::BLS> kp = KeyPair<dev::BLS>::create();
 	m_ids[kp.pub()] = kp.secret();
 	return toJS(kp.pub());
 }

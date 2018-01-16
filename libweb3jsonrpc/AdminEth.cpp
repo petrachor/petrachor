@@ -128,7 +128,7 @@ Json::Value AdminEth::admin_eth_newAccount(Json::Value const& _info, string cons
 	if (!_info.isMember("name"))
 		throw jsonrpc::JsonRpcException("No member found: name");
 	string name = _info["name"].asString();
-	KeyPair kp = KeyPair::create();
+    KeyPair<BLS> kp = KeyPair<BLS>::create();
 	h128 uuid;
 	if (_info.isMember("password"))
 	{

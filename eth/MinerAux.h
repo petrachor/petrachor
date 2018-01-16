@@ -212,10 +212,6 @@ public:
 	{
 		if (m_minerType == "cpu")
 			EthashCPUMiner::setNumInstances(m_miningThreads);
-		if (mode == OperationMode::DAGInit)
-			doInitDAG(m_initDAG);
-		else if (mode == OperationMode::Benchmark)
-			doBenchmark(m_minerType, m_benchmarkWarmup, m_benchmarkTrial, m_benchmarkTrials);
 	}
 
 	static void streamHelp(ostream& _out)
@@ -244,67 +240,6 @@ public:
 	bool shouldPrecompute() const { return m_precompute; }
 
 private:
-	void doInitDAG(unsigned _n)
-	{
-		h256 seedHash = EthashAux::seedHash(_n);
-		cout << "Initializing DAG for epoch beginning #" << (_n / 30000 * 30000) << " (seedhash " << seedHash.abridged() << "). This will take a while." << endl;
-		EthashAux::full(seedHash, true);
-		exit(0);
-	}
-
-	void doBenchmark(std::string _m, unsigned _warmupDuration = 15, unsigned _trialDuration = 3, unsigned _trials = 5)
-	{
-		BlockHeader genesis;
-		genesis.setDifficulty(1 << 18);
-		cdebug << Ethash::boundary(genesis);
-
-		GenericFarm<EthashProofOfWork> f;
-		map<string, GenericFarm<EthashProofOfWork>::SealerDescriptor> sealers;
-		sealers["cpu"] = GenericFarm<EthashProofOfWork>::SealerDescriptor{&EthashCPUMiner::instances, [](GenericMiner<EthashProofOfWork>::ConstructionInfo ci){ return new EthashCPUMiner(ci); }};
-		f.setSealers(sealers);
-		f.onSolutionFound([&](EthashProofOfWork::Solution) { return false; });
-
-		string platformInfo = EthashCPUMiner::platformInfo();
-		cout << "Benchmarking on platform: " << platformInfo << endl;
-
-		cout << "Preparing DAG..." << endl;
-		Ethash::ensurePrecomputed(0);
-
-		genesis.setDifficulty(u256(1) << 63);
-		f.setWork(genesis);
-		f.start(_m);
-
-		map<u256, WorkingProgress> results;
-		u256 mean = 0;
-		u256 innerMean = 0;
-		for (unsigned i = 0; i <= _trials; ++i)
-		{
-			if (!i)
-				cout << "Warming up..." << endl;
-			else
-				cout << "Trial " << i << "... " << flush;
-			this_thread::sleep_for(chrono::seconds(i ? _trialDuration : _warmupDuration));
-
-			auto mp = f.miningProgress();
-			f.resetMiningProgress();
-			if (!i)
-				continue;
-			auto rate = mp.rate();
-
-			cout << rate << endl;
-			results[rate] = mp;
-			mean += rate;
-		}
-		f.stop();
-		int j = -1;
-		for (auto const& r: results)
-			if (++j > 0 && j < (int)_trials - 1)
-				innerMean += r.second.rate();
-		innerMean /= (_trials - 2);
-		cout << "min/mean/max: " << results.begin()->second.rate() << "/" << (mean / _trials) << "/" << results.rbegin()->second.rate() << " H/s" << endl;
-		cout << "inner mean: " << innerMean << " H/s" << endl;
-		exit(0);
-	}
 
 	/// Operating mode.
 	OperationMode mode;

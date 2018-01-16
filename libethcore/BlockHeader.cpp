@@ -107,6 +107,7 @@ void BlockHeader::clear()
 	m_receiptsRoot = EmptyTrie;
 	m_logBloom = LogBloom();
 	m_difficulty = 0;
+    m_stakeModifier = StakeModifier();
 	m_number = 0;
 	m_gasLimit = 0;
 	m_gasUsed = 0;
@@ -133,7 +134,7 @@ h256 BlockHeader::hash(IncludeSeal _i) const
 void BlockHeader::streamRLPFields(RLPStream& _s) const
 {
 	_s	<< m_parentHash << m_sha3Uncles << m_author << m_stateRoot << m_transactionsRoot << m_receiptsRoot << m_logBloom
-		<< m_difficulty << m_number << m_gasLimit << m_gasUsed << m_timestamp << m_extraData;
+        << m_difficulty << m_stakeModifier << m_number << m_gasLimit << m_gasUsed << m_timestamp << m_extraData;
 }
 
 void BlockHeader::streamRLP(RLPStream& _s, IncludeSeal _i) const
@@ -181,13 +182,14 @@ void BlockHeader::populate(RLP const& _header)
 		m_receiptsRoot = _header[field = 5].toHash<h256>(RLP::VeryStrict);
 		m_logBloom = _header[field = 6].toHash<LogBloom>(RLP::VeryStrict);
 		m_difficulty = _header[field = 7].toInt<u256>();
-		m_number = _header[field = 8].toInt<u256>();
-		m_gasLimit = _header[field = 9].toInt<u256>();
-		m_gasUsed = _header[field = 10].toInt<u256>();
-		m_timestamp = _header[field = 11].toInt<u256>();
-		m_extraData = _header[field = 12].toBytes();
+        m_stakeModifier = _header[field = 8].toHash<StakeModifier>(RLP::VeryStrict);
+        m_number = _header[field = 9].toInt<u256>();
+        m_gasLimit = _header[field = 10].toInt<u256>();
+        m_gasUsed = _header[field = 11].toInt<u256>();
+        m_timestamp = _header[field = 12].toInt<u256>();
+        m_extraData = _header[field = 13].toBytes();
 		m_seal.clear();
-		for (unsigned i = 13; i < _header.itemCount(); ++i)
+        for (unsigned i = 14; i < _header.itemCount(); ++i)
 			m_seal.push_back(_header[i].data().toBytes());
 	}
 	catch (Exception const& _e)

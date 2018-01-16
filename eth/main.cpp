@@ -204,12 +204,6 @@ void setDefaultOrCLocale()
 #endif
 }
 
-void importPresale(KeyManager& _km, string const& _file, function<string()> _pass)
-{
-	KeyPair k = _km.presaleSecret(contentsString(_file), [&](bool){ return _pass(); });
-	_km.import(k.secret(), "Presale wallet" + _file + " (insecure)");
-}
-
 Address c_config = Address("ccdeac59d35627b7de09332e819d5159e7bb7250");
 string pretty(h160 _a, dev::eth::State const& _st)
 {
@@ -293,7 +287,7 @@ int main(int argc, char** argv)
 	setDefaultOrCLocale();
 
 	// Init secp256k1 context by calling one of the functions.
-	toPublic({});
+    toPublic<dev::ECDSA>({});
 
 	// Init defaults
 	Defaults::get();
@@ -340,10 +334,10 @@ int main(int argc, char** argv)
 	/// Networking params.
 	string clientName;
 	string listenIP;
-	unsigned short listenPort = 30303;
+    unsigned short listenPort = dev::p2p::c_defaultIPPort;
 	string publicIP;
 	string remoteHost;
-	unsigned short remotePort = 30303;
+    unsigned short remotePort = dev::p2p::c_defaultIPPort;
 
 	unsigned peers = 11;
 	unsigned peerStretch = 7;
@@ -354,7 +348,7 @@ int main(int argc, char** argv)
 	bool enableDiscovery = false;
 	bool noPinning = false;
 	static const unsigned NoNetworkID = (unsigned)-1;
-	unsigned networkID = NoNetworkID;
+    unsigned networkID = (unsigned) eth::Network::EthereumYNetwork;
 
 	/// Mining params
 	unsigned mining = 0;
@@ -735,7 +729,7 @@ int main(int argc, char** argv)
 				if (!required && type != "default")
 					continue;
 
-				Public publicKey(fromHex(pubk));
+                ECDSA::Public publicKey(fromHex(pubk));
 				try
 				{
 					preferredNodes[publicKey] = make_pair(NodeIPEndpoint(bi::address::from_string(hostIP), port, port), required);
@@ -1059,9 +1053,6 @@ int main(int argc, char** argv)
 		cerr << "Error initializing key manager: " << boost::current_exception_diagnostic_information() << "\n";
 		return -1;
 	}
-
-	for (auto const& presale: presaleImports)
-		importPresale(keyManager, presale, [&](){ return getPassword("Enter your wallet password for " + presale + ": "); });
 
 	for (auto const& s: toImport)
 	{

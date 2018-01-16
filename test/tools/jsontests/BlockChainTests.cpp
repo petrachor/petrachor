@@ -935,10 +935,8 @@ void checkBlocks(TestBlock const& _blockFromFields, TestBlock const& _blockFromR
 		BOOST_CHECK_MESSAGE(trField.gas() == trRlp.gas(), _testname + "transaction gasLimit in rlp and in field do not match");
 		BOOST_CHECK_MESSAGE(trField.gasPrice() == trRlp.gasPrice(), _testname + "transaction gasPrice in rlp and in field do not match");
 		BOOST_CHECK_MESSAGE(trField.nonce() == trRlp.nonce(), _testname + "transaction nonce in rlp and in field do not match");
-		BOOST_CHECK_MESSAGE(trField.signature().r == trRlp.signature().r, _testname + "transaction r in rlp and in field do not match");
-		BOOST_CHECK_MESSAGE(trField.signature().s == trRlp.signature().s, _testname + "transaction s in rlp and in field do not match");
-		BOOST_CHECK_MESSAGE(trField.signature().v == trRlp.signature().v, _testname + "transaction v in rlp and in field do not match");
-		BOOST_CHECK_MESSAGE(trField.receiveAddress() == trRlp.receiveAddress(), _testname + "transaction receiveAddress in rlp and in field do not match");
+        BOOST_CHECK_MESSAGE(trField.signature().publicKey == trRlp.signature().publicKey, _testname + "transaction publicKey in rlp and in field do not match");
+        BOOST_CHECK_MESSAGE(trField.receiveAddress() == trRlp.receiveAddress(), _testname + "transaction receiveAddress in rlp and in field do not match");
 		BOOST_CHECK_MESSAGE(trField.value() == trRlp.value(), _testname + "transaction receiveAddress in rlp and in field do not match");
 
 		BOOST_CHECK_MESSAGE(trField == trRlp, _testname + "transactions from  rlp and transaction from field do not match");
@@ -1009,7 +1007,7 @@ class bcGeneralTestsFixture
 		suite.runAllTestsInFolder(casename);
 	}
 };
-
+/*
 BOOST_FIXTURE_TEST_SUITE(BlockchainTests, bcTestFixture)
 
 BOOST_AUTO_TEST_CASE(bcStateTests){}
@@ -1028,7 +1026,7 @@ BOOST_AUTO_TEST_CASE(bcRandomBlockhashTest){}
 BOOST_AUTO_TEST_CASE(bcExploitTest){}
 
 BOOST_AUTO_TEST_SUITE_END()
-
+*/
 //Transition from fork to fork tests
 BOOST_FIXTURE_TEST_SUITE(TransitionTests, bcTransitionFixture)
 

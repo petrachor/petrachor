@@ -43,7 +43,7 @@ private:
 	/// ask end user to create a password.
 	std::string createPassword(std::string const& _prompt) const;
 	/// creates a ramdom secret/address pair. It uses ICAP.
-	dev::KeyPair makeKey() const;
+    dev::KeyPair<dev::BLS> makeKey() const;
 	/// instanciate KeyManager and open the wallet.
 	bool openWallet();
 

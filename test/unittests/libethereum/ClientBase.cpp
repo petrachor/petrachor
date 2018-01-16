@@ -159,8 +159,7 @@ BOOST_AUTO_TEST_CASE(blocks)
 				u256 expectedTransactionGasLimit = u256(_t["gasLimit"].asString());
 				u256 expectedTransactionGasPrice = u256(_t["gasPrice"].asString());
 				u256 expectedTransactionNonce = u256(_t["nonce"].asString());
-				u256 expectedTransactionSignatureR = h256(fromHex(_t["r"].asString()));
-				u256 expectedTransactionSignatureS = h256(fromHex(_t["s"].asString()));
+                Public expectedTransactionSignatureR = Public(fromHex(_t["publicKey"].asString()));
 //				unsigned expectedTransactionSignatureV = jsToInt(t["v"].asString());
 				
 				ETH_CHECK_EQUAL_COLLECTIONS(
@@ -172,8 +171,7 @@ BOOST_AUTO_TEST_CASE(blocks)
 				ETH_CHECK_EQUAL(expectedTransactionGasLimit, _transaction.gas());
 				ETH_CHECK_EQUAL(expectedTransactionGasPrice, _transaction.gasPrice());
 				ETH_CHECK_EQUAL(expectedTransactionNonce, _transaction.nonce());
-				ETH_CHECK_EQUAL(expectedTransactionSignatureR, _transaction.signature().r);
-				ETH_CHECK_EQUAL(expectedTransactionSignatureS, _transaction.signature().s);
+                ETH_CHECK_EQUAL(expectedTransactionSignatureR, _transaction.signature().publicKey);
 //				ETH_CHECK_EQUAL(expectedTransactionSignatureV, _transaction.signature().v); // 27 === 0x0, 28 === 0x1, not sure why
 			};
 

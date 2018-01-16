@@ -51,36 +51,167 @@ namespace
 
 ETH_REGISTER_PRECOMPILED(ecrecover)(bytesConstRef _in)
 {
-	struct
-	{
-		h256 hash;
-		h256 v;
-		h256 r;
-		h256 s;
-	} in;
+    struct
+    {
+        h256 hash;
+        h256 v;
+        h256 r;
+        h256 s;
+    } in;
 
-	memcpy(&in, _in.data(), min(_in.size(), sizeof(in)));
+    memcpy(&in, _in.data(), min(_in.size(), sizeof(in)));
 
-	h256 ret;
-	u256 v = (u256)in.v;
-	if (v >= 27 && v <= 28)
-	{
-		SignatureStruct sig(in.r, in.s, (byte)((int)v - 27));
-		if (sig.isValid())
-		{
-			try
-			{
-				if (Public rec = recover(sig, in.hash))
-				{
-					ret = dev::sha3(rec);
-					memset(ret.data(), 0, 12);
-					return {true, ret.asBytes()};
-				}
-			}
-			catch (...) {}
-		}
-	}
-	return {true, {}};
+    h256 ret;
+    u256 v = (u256)in.v;
+    if (v >= 27 && v <= 28)
+    {
+        ECDSA::SignatureStruct sig(in.r, in.s, (byte)((int)v - 27));
+        if (sig.isValid())
+        {
+            try
+            {
+                if (ECDSA::Public rec = recover(sig, in.hash))
+                {
+                    ret = dev::sha3(rec);
+                    memset(ret.data(), 0, 12);
+                    return {true, ret.asBytes()};
+                }
+            }
+            catch (...) {}
+        }
+    }
+    return {true, {}};
+}
+
+unsigned long int functionID(const std::string& signature) {
+    return *(unsigned long int*) sha3(signature).asBytes().data();
+}
+
+bytesConstRef getCroppedBytesConstRef(size_t& updatedOffset, size_t dataSize, bytesConstRef data) {
+    size_t orgOffset = updatedOffset;
+    updatedOffset += dataSize;
+    return data.cropped(orgOffset, updatedOffset);
+}
+
+const unsigned char* getCroppedData(size_t& updatedOffset, size_t dataSize, bytesConstRef data) {
+    return getCroppedBytesConstRef(updatedOffset, dataSize, data).data();
+}
+
+class TupleDecoder {
+private:
+    size_t offset = 0;
+    bytesConstRef data;
+public:
+   // TupleDecoder() {}
+    TupleDecoder(bytesConstRef iData) : data(iData) { }
+
+    Address getAddress() { return *(Address*) getCroppedData(offset, sizeof(h256), data); } // XXX: Possibly not endian-safe
+    h256 getH256() { return *(h256*) getCroppedData(offset, sizeof(h256), data); }
+    u256 getU256() { return *(u256*) getCroppedData(offset, sizeof(u256), data); }
+
+    bytesConstRef getNextData() {
+
+    }
+
+    bytes getBytes() {
+        size_t o = offset; offset += sizeof(h256);
+        bytesConstRef bytesOffset = data.cropped(o, offset);
+        u256 bytesOffsetI = *(u256*) bytesOffset.data();
+        bytesConstRef bytesData = data.cropped((size_t) bytesOffsetI);
+        size_t bytesLengthI = *(size_t*) bytesData.data();
+        return bytesData.cropped(sizeof(u256), (size_t) bytesLengthI).toBytes();
+    }
+};
+
+class DynamicArrayDecoder {
+private:
+    TupleDecoder tupleDecoder;
+    u256 k;
+public:
+    DynamicArrayDecoder(bytesConstRef iData) : tupleDecoder(iData), k(tupleDecoder.getU256()) {}
+
+    bytesConstRef getNextData() { return tupleDecoder.getNextData(); }
+};
+
+unsigned long int getFunctionID(bytesConstRef b) {
+    return b.size() < 4 ? 0 : (*(unsigned long int*) b.data());
+}
+
+template <class G>
+class BasicGroup {
+public:
+    static size_t getSize() { return G::size; }
+
+    static bytes getZero() { return G::getZero().asBytes(); }
+    static bytes getOne() { return G::getOne().asBytes(); }
+
+    static std::pair<bool, bytes> executeCommand(bytesConstRef _in) {
+        TupleDecoder d(_in.cropped(4));
+        const unsigned long int funcID = getFunctionID(_in);
+        if (funcID == functionID("getOne()")) { return {true, getOne()}; }
+        if (funcID == functionID("getZero()")) { return {true, getZero()}; }
+        return {false, bytes()};
+    }
+};
+
+template <class G, class S>
+class AdditiveGroup : public BasicGroup<G> {
+public:
+    static bytes hashTo(bytes seed, bytes data) { return G::mapToElement(ref(seed), ref(data)).asBytes(); }
+
+    static bytes add(bytes a, bytes b) { return G(ref(a)).add(G(ref(b))).asBytes(); }
+    static bytes negate(bytes a) { return G(ref(a)).neg().asBytes(); }
+
+    static bytes scalarMul(bytes g, bytes scalar) { return G(ref(g)).mul(S(scalar)).asBytes(); }
+
+    static std::pair<bool, bytes> executeCommand(bytesConstRef _in) {
+        TupleDecoder d(_in.cropped(4));
+        const unsigned long int funcID = getFunctionID(_in);
+        if (funcID == functionID("hashTo(bytes,bytes)")) { return {true, hashTo(d.getBytes(), d.getBytes())}; }
+        if (funcID == functionID("add(bytes,bytes)")) { return {true, add(d.getBytes(), d.getBytes())}; }
+        if (funcID == functionID("negate(bytes)")) { return {true, negate(d.getBytes())}; }
+        if (funcID == functionID("scalarMul(bytes,bytes)")) { return {true, scalarMul(d.getBytes(), d.getBytes())}; }
+        return BasicGroup<G>::executeCommand(_in);
+    }
+};
+
+template <class G>
+class MultiplicativeGroup : public BasicGroup<G> {
+public:
+    static bytes mul(bytes a, bytes b) { return G(ref(a)).mul(G(ref(b))).asBytes(); }
+    static bytes inverse(bytes a) { return G(ref(a)).inv().asBytes(); }
+
+    static std::pair<bool, bytes> executeCommand(bytesConstRef _in) {
+        TupleDecoder d(_in.cropped(4));
+        const unsigned long int funcID = getFunctionID(_in);
+        if (funcID == functionID("mul(bytes,bytes)")) return {true, mul(d.getBytes(), d.getBytes())};
+        if (funcID == functionID("inverse(bytes)")) return {true, inverse(d.getBytes())};
+        return BasicGroup<G>::executeCommand(_in);
+    }
+};
+
+ETH_REGISTER_PRECOMPILED(BLS12_381_G1)(bytesConstRef _in) {
+    return AdditiveGroup<dev::BLS12_381::G1, dev::BLS12_381::Scalar>::executeCommand(_in);
+}
+
+ETH_REGISTER_PRECOMPILED(BLS12_381_G2)(bytesConstRef _in) {
+    return AdditiveGroup<dev::BLS12_381::G2, dev::BLS12_381::Scalar>::executeCommand(_in);
+}
+
+ETH_REGISTER_PRECOMPILED(BLS12_381_GT)(bytesConstRef _in) {
+    return MultiplicativeGroup<dev::BLS12_381::GT>::executeCommand(_in);
+}
+
+ETH_REGISTER_PRECOMPILED(BLS12_381_Pairing)(bytesConstRef _in) {
+    TupleDecoder d(_in);
+    bytes g1 = d.getBytes(), g2 = d.getBytes();
+    return {true, dev::BLS12_381::GT::fromPairing(dev::BLS12_381::G1(ref(g1)), dev::BLS12_381::G2(ref(g2))).asBytes() };
+}
+
+ETH_REGISTER_PRECOMPILED(BLS12_381_MultiPairing)(bytesConstRef _in) {
+    TupleDecoder d(_in);
+    bytes g1 = d.getBytes(), g2 = d.getBytes();
+    return {true, dev::BLS12_381::GT::fromPairing(dev::BLS12_381::G1(ref(g1)), dev::BLS12_381::G2(ref(g2))).asBytes() };
 }
 
 ETH_REGISTER_PRECOMPILED(sha256)(bytesConstRef _in)

@@ -38,9 +38,9 @@ void RLPXHandshake::writeAuth()
 	bytesRef nonce(&m_auth[Signature::size + h256::size + Public::size], h256::size);
 	
 	// E(remote-pubk, S(ecdhe-random, ecdh-shared-secret^nonce) || H(ecdhe-random-pubk) || pubk || nonce || 0x0)
-	Secret staticShared;
+    ECDSA::Secret staticShared;
 	crypto::ecdh::agree(m_host->m_alias.secret(), m_remote, staticShared);
-	sign(m_ecdheLocal.secret(), staticShared.makeInsecure() ^ m_nonce).ref().copyTo(sig);
+    sign<ECDSA>(m_ecdheLocal.secret(), staticShared.makeInsecure() ^ m_nonce).ref().copyTo(sig);
 	sha3(m_ecdheLocal.pub().ref(), hepubk);
 	m_host->m_alias.pub().ref().copyTo(pubk);
 	m_nonce.ref().copyTo(nonce);
@@ -97,7 +97,7 @@ void RLPXHandshake::writeAckEIP8()
 	});
 }
 
-void RLPXHandshake::setAuthValues(Signature const& _sig, Public const& _remotePubk, h256 const& _remoteNonce, uint64_t _remoteVersion)
+void RLPXHandshake::setAuthValues(ECDSA::Signature const& _sig, ECDSA::Public const& _remotePubk, h256 const& _remoteNonce, uint64_t _remoteVersion)
 {
 	_remotePubk.ref().copyTo(m_remote.ref());
 	_remoteNonce.ref().copyTo(m_remoteNonce.ref());
@@ -119,9 +119,9 @@ void RLPXHandshake::readAuth()
 		else if (decryptECIES(m_host->m_alias.secret(), bytesConstRef(&m_authCipher), m_auth))
 		{
 			bytesConstRef data(&m_auth);
-			Signature sig(data.cropped(0, Signature::size));
-			Public pubk(data.cropped(Signature::size + h256::size, Public::size));
-			h256 nonce(data.cropped(Signature::size + h256::size + Public::size, h256::size));
+            ECDSA::Signature sig(data.cropped(0, ECDSA::Signature::size));
+            ECDSA::Public pubk(data.cropped(ECDSA::Signature::size + h256::size, ECDSA::Public::size));
+            h256 nonce(data.cropped(ECDSA::Signature::size + h256::size + ECDSA::Public::size, h256::size));
 			setAuthValues(sig, pubk, nonce, 4);
 			transition();
 		}
@@ -147,8 +147,8 @@ void RLPXHandshake::readAuthEIP8()
 		{
 			RLP rlp(m_auth, RLP::ThrowOnFail | RLP::FailIfTooSmall);
 			setAuthValues(
-				rlp[0].toHash<Signature>(),
-				rlp[1].toHash<Public>(),
+                rlp[0].toHash<ECDSA::Signature>(),
+                rlp[1].toHash<ECDSA::Public>(),
 				rlp[2].toHash<h256>(),
 				rlp[3].toInt<uint64_t>()
 			);
@@ -201,7 +201,7 @@ void RLPXHandshake::readAckEIP8()
 		else if (decryptECIES(m_host->m_alias.secret(), ct.cropped(0, 2), ct.cropped(2), m_ack))
 		{
 			RLP rlp(m_ack, RLP::ThrowOnFail | RLP::FailIfTooSmall);
-			m_ecdheRemote = rlp[0].toHash<Public>();
+            m_ecdheRemote = rlp[0].toHash<ECDSA::Public>();
 			m_remoteNonce = rlp[1].toHash<h256>();
 			m_remoteVersion = rlp[2].toInt<uint64_t>();
 			transition();

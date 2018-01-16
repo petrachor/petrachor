@@ -124,7 +124,7 @@ Json::Value toJson(dev::eth::Transaction const& _t, std::pair<h256, unsigned> _l
 		res["hash"] = toJS(_t.sha3());
 		res["input"] = toJS(_t.data());
 		res["to"] = _t.isCreation() ? Json::Value() : toJS(_t.receiveAddress());
-		res["from"] = toJS(_t.safeSender());
+        res["from"] = toJS(_t.sender());
 		res["gas"] = toJS(_t.gas());
 		res["gasPrice"] = toJS(_t.gasPrice());
 		res["nonce"] = toJS(_t.nonce());
@@ -219,9 +219,7 @@ Json::Value toJson(dev::eth::Transaction const& _t)
 	res["nonce"] = toJS(_t.nonce());
 	res["hash"] = toJS(_t.sha3(WithSignature));
 	res["sighash"] = toJS(_t.sha3(WithoutSignature));
-	res["r"] = toJS(_t.signature().r);
-	res["s"] = toJS(_t.signature().s);
-	res["v"] = toJS(_t.signature().v);
+    res["senderPublic"] = toJS(_t.signature().publicKey);
 	return res;
 }
 
@@ -233,7 +231,7 @@ Json::Value toJson(dev::eth::LocalisedTransaction const& _t)
 		res["hash"] = toJS(_t.sha3());
 		res["input"] = toJS(_t.data());
 		res["to"] = _t.isCreation() ? Json::Value() : toJS(_t.receiveAddress());
-		res["from"] = toJS(_t.safeSender());
+        res["from"] = toJS(_t.sender());
 		res["gas"] = toJS(_t.gas());
 		res["gasPrice"] = toJS(_t.gasPrice());
 		res["nonce"] = toJS(_t.nonce());

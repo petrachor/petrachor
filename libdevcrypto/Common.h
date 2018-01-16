@@ -27,78 +27,139 @@
 #include <mutex>
 #include <libdevcore/Address.h>
 #include <libdevcore/Common.h>
+#include <libdevcore/RLP.h>
 #include <libdevcore/Exceptions.h>
 #include <libdevcore/FixedHash.h>
+#include <libdevcore/SHA3.h>
+#include "BLS12_381.h"
 
 namespace dev
 {
 
-using Secret = SecureFixedHash<32>;
+static const u256 c_secp256k1n("115792089237316195423570985008687907852837564279074904382605163141518161494337");
 
-/// A public key: 64 bytes.
-/// @NOTE This is not endian-specific; it's just a bunch of bytes.
-using Public = h512;
+class BLS {
+public:
+    typedef BLS12_381::Scalar Secret;
+    typedef BLS12_381::G2 Public;
+    typedef BLS12_381::G1 Signature;
+    struct SignatureStruct : public Signature
+    {
+        SignatureStruct() {}
+        SignatureStruct(Signature s) : Signature(s) { }
+        bool isValid() const noexcept;
+        bool isZero() const;
+        bool lowS() const { return false; }
 
-/// A signature: 65 bytes: r: [0, 32), s: [32, 64), v: 64.
-/// @NOTE This is not endian-specific; it's just a bunch of bytes.
-using Signature = h520;
+        void streamRLP(RLPStream& _s, byte) const {
+            _s.appendList(2);
+            _s << Signature(*this) << publicKey;
+        }
 
-struct SignatureStruct
-{
-	SignatureStruct() = default;
-	SignatureStruct(Signature const& _s) { *(h520*)this = _s; }
-	SignatureStruct(h256 const& _r, h256 const& _s, byte _v): r(_r), s(_s), v(_v) {}
-	operator Signature() const { return *(h520 const*)this; }
-
-	/// @returns true if r,s,v values are valid, otherwise false
-	bool isValid() const noexcept;
-
-	h256 r;
-	h256 s;
-	byte v = 0;
+        Public publicKey;
+    };
 };
+
+class ECDSA {
+public:
+    typedef SecureFixedHash<32> Secret;
+    typedef h512 Public;
+    typedef h520 Signature;
+
+    struct SignatureStruct
+    {
+        SignatureStruct() = default;
+        SignatureStruct(Signature const& _s) { *(h520*)this = _s; }
+        SignatureStruct(h256 const& _r, h256 const& _s, byte _v): r(_r), s(_s), v(_v) {}
+        operator Signature() const { return *(h520 const*)this; }
+
+        /// @returns true if r,s,v values are valid, otherwise false
+        bool isValid() const noexcept;
+        bool isZero() const;
+        bool lowS() const { return s > c_secp256k1n / 2; }
+        h256 r;
+        h256 s;
+        byte v = 0;
+
+        void streamRLP(RLPStream& _s, byte chainID) const {
+            _s << (v + (chainID*2 + 35)) << (u256)r << (u256)s;
+        }
+    };
+};
+
+template <class C> typename C::Public toPublic(typename C::Secret const& _secret);
+template <class C> typename C::Signature sign(typename C::Secret const& _k, h256 const& _hash);
+template <class C> bool verify(typename C::Public const& _k, typename C::Signature const& _s, h256 const& _hash);
+
+template <> typename BLS::Public toPublic<BLS>(typename BLS::Secret const& _secret);
+template <> typename ECDSA::Public toPublic<ECDSA>(typename ECDSA::Secret const& _secret);
+extern template typename BLS::Public toPublic<BLS>(typename BLS::Secret const& _secret);
+extern template typename ECDSA::Public toPublic<ECDSA>(typename ECDSA::Secret const& _secret);
+
+template <> typename BLS::Signature sign<BLS>(typename BLS::Secret const& _k, h256 const& _hash);
+template <> typename ECDSA::Signature sign<ECDSA>(typename ECDSA::Secret const& _k, h256 const& _hash);
+extern template typename BLS::Signature sign<BLS>(typename BLS::Secret const& _k, h256 const& _hash);
+extern template typename ECDSA::Signature sign<ECDSA>(typename ECDSA::Secret const& _k, h256 const& _hash);
+
+template <> bool verify<BLS>(typename BLS::Public const& _k, typename BLS::Signature const& _s, h256 const& _hash);
+template <> bool verify<ECDSA>(typename ECDSA::Public const& _k, typename ECDSA::Signature const& _s, h256 const& _hash);
+extern template bool verify<BLS>(typename BLS::Public const& _k, typename BLS::Signature const& _s, h256 const& _hash);
+extern template bool verify<ECDSA>(typename ECDSA::Public const& _k, typename ECDSA::Signature const& _s, h256 const& _hash);
+
+bool verify(BLS::Public const& _k, BLS::Signature const& _s, h256 const& _hash);
+bool verify(ECDSA::Public const& _k, ECDSA::Signature const& _s, h256 const& _hash);
+
+/// Encrypts plain text using Public key.
+void encrypt(ECDSA::Public const& _k, bytesConstRef _plain, bytes& o_cipher);
+
+/// Decrypts cipher using Secret key.
+bool decrypt(ECDSA::Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext);
+
+/// Encrypt payload using ECIES standard with AES128-CTR.
+void encryptECIES(ECDSA::Public const& _k, bytesConstRef _plain, bytes& o_cipher);
+
+/// Encrypt payload using ECIES standard with AES128-CTR.
+/// @a _sharedMacData is shared authenticated data.
+void encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMacData, bytesConstRef _plain, bytes& o_cipher);
+
+/// Decrypt payload using ECIES standard with AES128-CTR.
+bool decryptECIES(ECDSA::Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext);
+
+/// Decrypt payload using ECIES standard with AES128-CTR.
+/// @a _sharedMacData is shared authenticated data.
+bool decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytesConstRef _cipher, bytes& o_plaintext);
+
+
+/// Recovers Public key from signed message hash.
+ECDSA::Public recover(ECDSA::Signature const& _sig, h256 const& _hash);
+
+using Secret = BLS::Secret;
+using Public = BLS::Public;
+using Signature = BLS::Signature;
+using SignatureStruct = BLS::SignatureStruct;
 
 /// A vector of secrets.
 using Secrets = std::vector<Secret>;
 
-/// Convert a secret key into the public key equivalent.
-Public toPublic(Secret const& _secret);
-
 /// Convert a public key to address.
-Address toAddress(Public const& _public);
+template <class C> Address toAddress(typename C::Public const& _public) {
+    return right160(sha3(_public.asBytes()));
+}
 
 /// Convert a secret key into address of public key equivalent.
 /// @returns 0 if it's not a valid secret key.
-Address toAddress(Secret const& _secret);
+template <class C> Address toAddress(typename C::Secret const& _secret) {
+    return toAddress<C>(toPublic<C>(_secret));
+}
 
 // Convert transaction from and nonce to address.
 Address toAddress(Address const& _from, u256 const& _nonce);
 
-/// Encrypts plain text using Public key.
-void encrypt(Public const& _k, bytesConstRef _plain, bytes& o_cipher);
-
-/// Decrypts cipher using Secret key.
-bool decrypt(Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext);
-
 /// Symmetric encryption.
-void encryptSym(Secret const& _k, bytesConstRef _plain, bytes& o_cipher);
+void encryptSym(ECDSA::Secret const& _k, bytesConstRef _plain, bytes& o_cipher);
 
 /// Symmetric decryption.
-bool decryptSym(Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext);
-
-/// Encrypt payload using ECIES standard with AES128-CTR.
-void encryptECIES(Public const& _k, bytesConstRef _plain, bytes& o_cipher);
-
-/// Encrypt payload using ECIES standard with AES128-CTR.
-/// @a _sharedMacData is shared authenticated data.
-void encryptECIES(Public const& _k, bytesConstRef _sharedMacData, bytesConstRef _plain, bytes& o_cipher);
-
-/// Decrypt payload using ECIES standard with AES128-CTR.
-bool decryptECIES(Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext);
-
-/// Decrypt payload using ECIES standard with AES128-CTR.
-/// @a _sharedMacData is shared authenticated data.
-bool decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, bytesConstRef _cipher, bytes& o_plaintext);
+bool decryptSym(ECDSA::Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext);
 
 /// Encrypts payload with random IV/ctr using AES128-CTR.
 std::pair<bytes, h128> encryptSymNoAuth(SecureFixedHash<16> const& _k, bytesConstRef _plain);
@@ -117,15 +178,6 @@ inline bytes encryptSymNoAuth(SecureFixedHash<32> const& _k, h128 const& _iv, by
 inline bytesSec decryptSymNoAuth(SecureFixedHash<16> const& _k, h128 const& _iv, bytesConstRef _cipher) { return decryptAES128CTR(_k.ref(), _iv, _cipher); }
 inline bytesSec decryptSymNoAuth(SecureFixedHash<32> const& _k, h128 const& _iv, bytesConstRef _cipher) { return decryptAES128CTR(_k.ref(), _iv, _cipher); }
 
-/// Recovers Public key from signed message hash.
-Public recover(Signature const& _sig, h256 const& _hash);
-	
-/// Returns siganture of message hash.
-Signature sign(Secret const& _k, h256 const& _hash);
-	
-/// Verify signature.
-bool verify(Public const& _k, Signature const& _s, h256 const& _hash);
-
 /// Derive key via PBKDF2.
 bytesSec pbkdf2(std::string const& _pass, bytes const& _salt, unsigned _iterations, unsigned _dkLen = 32);
 
@@ -135,19 +187,42 @@ bytesSec scrypt(std::string const& _pass, bytes const& _salt, uint64_t _n, uint3
 /// Simple class that represents a "key pair".
 /// All of the data of the class can be regenerated from the secret key (m_secret) alone.
 /// Actually stores a tuplet of secret, public and address (the right 160-bits of the public).
+
+bytes aesDecrypt(bytesConstRef _cipher, std::string const& _password, unsigned _rounds, bytesConstRef _salt);
+h256 sha3(bytes const& _input);
+
+template <class C>
 class KeyPair
 {
 public:
+    typedef typename C::Secret Secret;
+    typedef typename C::Public Public;
 	/// Normal constructor - populates object from the given secret key.
 	/// If the secret key is invalid the constructor succeeds, but public key
-	/// and address stay "null".
-	KeyPair(Secret const& _sec);
+    /// and address stay "null".
+    KeyPair(Secret const& _sec) :
+        m_secret(_sec),
+        m_public(toPublic<C>(_sec))
+    {
+        // Assign address only if the secret key is valid.
+        if (m_public)
+            m_address = toAddress<C>(m_public);
+    }
 
 	/// Create a new, randomly generated object.
-	static KeyPair create();
+    static KeyPair create() {
+        while (true)
+        {
+            KeyPair keyPair(Secret::random());
+            if (keyPair.address())
+                return keyPair;
+        }
+    }
 
 	/// Create from an encrypted seed.
-	static KeyPair fromEncryptedSeed(bytesConstRef _seed, std::string const& _password);
+    static KeyPair fromEncryptedSeed(bytesConstRef _seed, std::string const& _password) {
+        return KeyPair(Secret(sha3(aesDecrypt(_seed, _password, 2000, bytesConstRef())).asBytes()));
+    }
 
 	Secret const& secret() const { return m_secret; }
 
@@ -165,6 +240,9 @@ private:
 	Public m_public;
 	Address m_address;
 };
+
+extern template class KeyPair<ECDSA>;
+extern template class KeyPair<BLS>;
 
 namespace crypto
 {
@@ -202,7 +280,7 @@ private:
 namespace ecdh
 {
 
-bool agree(Secret const& _s, Public const& _r, Secret& o_s) noexcept;
+bool agree(ECDSA::Secret const& _s, ECDSA::Public const& _r, ECDSA::Secret& o_s) noexcept;
 
 }
 

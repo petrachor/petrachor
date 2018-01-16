@@ -96,8 +96,7 @@ public:
 		New,
 		Import,
 		ImportWithAddress,
-		ImportPresale,
-		Export,
+        Export,
 		Recode,
 		Kill,
 		Inspect,
@@ -239,12 +238,6 @@ public:
 			m_inputs = strings(1, argv[++i]);
 			m_name = argv[++i];
 		}
-		else if ((arg == "--import-presale" || arg == "importpresale") && i + 2 < argc)
-		{
-			m_mode = OperationMode::ImportPresale;
-			m_inputs = strings(1, argv[++i]);
-			m_name = argv[++i];
-		}
 		else if ((arg == "--import-with-address" || arg == "importwithaddress") && i + 3 < argc)
 		{
 			m_mode = OperationMode::ImportWithAddress;
@@ -267,11 +260,11 @@ public:
 		return true;
 	}
 
-	KeyPair makeKey() const
+    KeyPair<BLS> makeKey() const
 	{
-		KeyPair k(Secret::random());
+        KeyPair<BLS> k(Secret::random());
 		while (m_icap && k.address()[0])
-			k = KeyPair(Secret(sha3(k.secret().ref())));
+            k = KeyPair<BLS>(Secret(sha3(k.secret().ref())));
 		return k;
 	}
 
@@ -363,11 +356,9 @@ public:
 				cout << "  gas: " << t.gas() << endl;
 				cout << "  gas price: " << formatBalance(t.gasPrice()) << " (" << t.gasPrice() << " wei)" << endl;
 				cout << "  signing hash: " << t.sha3(WithoutSignature).hex() << endl;
-				if (t.safeSender())
+                if (t.sender())
 				{
-					cout << "  v: " << (int)t.signature().v << endl;
-					cout << "  r: " << t.signature().r << endl;
-					cout << "  s: " << t.signature().s << endl;
+                    cout << "  publicKey: " << t.signature().publicKey.hex() << endl;
 				}
 			}
 			catch (Exception& ex)
@@ -410,7 +401,7 @@ public:
 		{
 			keyManager(true);
 			if (m_inputs.empty())
-				m_inputs.push_back(toAddress(KeyManager::brain(getPassword("Enter brain wallet key phrase: "))).hex());
+                m_inputs.push_back(toAddress<BLS>(KeyManager::brain(getPassword("Enter brain wallet key phrase: "))).hex());
 			for (auto i: m_inputs)
 			{
 				Address a = userToAddress(i);
@@ -458,7 +449,7 @@ public:
 						u = secretStore().importKey(input);
 				}
 				if (!u && b.size() == 32)
-					u = secretStore().importSecret(b, lockPassword(toAddress(Secret(b)).abridged()));
+                    u = secretStore().importSecret(b, lockPassword(toAddress<BLS>(Secret(b)).abridged()));
 				if (!u)
 				{
 					cerr << "Cannot import " << input << " not a file or secret." << endl;
@@ -475,17 +466,17 @@ public:
 					bytesSec s = secretStore().secret(u, [&](){ return getPassword("Enter passphrase for key " + i + ": "); });
 					cout << "Key " << i << ":" << endl;
 					cout << "  UUID: " << toUUID(u) << ":" << endl;
-					cout << "  Address: " << toAddress(Secret(s)).hex() << endl;
+                    cout << "  Address: " << toAddress<BLS>(Secret(s)).hex() << endl;
 					cout << "  Secret: " << (m_showSecret ? toHex(s.ref()) : (toHex(s.ref().cropped(0, 8)) + "...")) << endl;
 				}
 				else if (h128 u = fromUUID(i))
 				{
 					bytesSec s = secretStore().secret(u, [&](){ return getPassword("Enter passphrase for key " + toUUID(u) + ": "); });
 					cout << "Key " << i << ":" << endl;
-					cout << "  Address: " << toAddress(Secret(s)).hex() << endl;
+                    cout << "  Address: " << toAddress<BLS>(Secret(s)).hex() << endl;
 					cout << "  Secret: " << (m_showSecret ? toHex(s.ref()) : (toHex(s.ref().cropped(0, 8)) + "...")) << endl;
 				}
-				else if (Address a = toAddress(i))
+                else if (Address a = toAddress<BLS>(i))
 				{
 					cout << "Key " << a.abridged() << ":" << endl;
 					cout << "  Address: " << a.hex() << endl;
@@ -583,7 +574,7 @@ public:
 					u = keyManager().store().importKey(i);
 			}
 			if (!u && b.size() == 32)
-				u = keyManager().store().importSecret(b, lockPassword(toAddress(Secret(b)).abridged()));
+                u = keyManager().store().importSecret(b, lockPassword(toAddress<BLS>(Secret(b)).abridged()));
 			if (!u)
 			{
 				cerr << "Cannot import " << i << " not a file or secret." << endl;
@@ -596,15 +587,7 @@ public:
 			cout << "  Address: " << m_address << endl;
 			break;
 		}
-		case OperationMode::ImportPresale:
-		{
-			keyManager();
-			std::string pw;
-			KeyPair k = keyManager().presaleSecret(contentsString(m_inputs[0]), [&](bool){ return (pw = getPassword("Enter the passphrase for the presale key: ")); });
-			keyManager().import(k.secret(), m_name, pw, "Same passphrase as used for presale key");
-			break;
-		}
-		case OperationMode::Recode:
+        case OperationMode::Recode:
 			for (auto const& i: m_inputs)
 				if (Address a = userToAddress(i))
 				{
@@ -696,7 +679,7 @@ public:
 			<< "    list  List all keys available in wallet." << endl
 			<< "    new <name>  Create a new key with given name and add it in the wallet." << endl
 			<< "    import [<uuid>|<file>|<secret-hex>] <name>  Import keys from given source and place in wallet." << endl
-			<< "    importpresale <file> <name>  Import a presale wallet into a key with the given name." << endl
+//			<< "    importpresale <file> <name>  Import a presale wallet into a key with the given name." << endl
 			<< "    importwithaddress [<uuid>|<file>|<secret-hex>] <address> <name>  Import keys from given source with given address and place in wallet." << endl
 			<< "    export [ <address>|<uuid> , ... ]  Export given keys." << endl
 			<< "    inspect [ <address>|<name>|<uuid>|<brainwallet> ] ...  Print information on the given keys." << endl

@@ -137,9 +137,6 @@ public:
 
 	static boost::filesystem::path defaultPath() { return getDataDir("ethereum") / boost::filesystem::path("keys.info"); }
 
-	/// Extracts the secret key from the presale wallet.
-	static KeyPair presaleSecret(std::string const& _json, std::function<std::string(bool)> const& _password);
-
 	/// @returns the brainwallet secret for the given seed.
 	static Secret brain(std::string const& _seed);
 
@@ -147,7 +144,7 @@ public:
 	static Secret subkey(Secret const& _s, unsigned _index);
 
 	/// @returns new random keypair with given vanity
-	static  KeyPair newKeyPair(NewKeyType _type);
+    static  KeyPair<BLS> newKeyPair(NewKeyType _type);
 private:
 	std::string getPassword(h128 const& _uuid, std::function<std::string()> const& _pass = DontKnowThrow) const;
 	std::string getPassword(h256 const& _passHash, std::function<std::string()> const& _pass = DontKnowThrow) const;

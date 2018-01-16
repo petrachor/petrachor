@@ -144,7 +144,7 @@ bytesSec SecretStore::secret(string const& _content, string const& _pass)
 h128 SecretStore::importSecret(bytesSec const& _s, string const& _pass)
 {
 	h128 r = h128::random();
-	EncryptedKey key{encrypt(_s.ref(), _pass), toUUID(r), KeyPair(Secret(_s)).address()};
+    EncryptedKey key{encrypt(_s.ref(), _pass), toUUID(r), KeyPair<BLS>(Secret(_s)).address()};
 	m_cached[r] = _s;
 	m_keys[r] = move(key);
 	save();
@@ -154,7 +154,7 @@ h128 SecretStore::importSecret(bytesSec const& _s, string const& _pass)
 h128 SecretStore::importSecret(bytesConstRef _s, string const& _pass)
 {
 	h128 r = h128::random();
-	EncryptedKey key{encrypt(_s, _pass), toUUID(r), KeyPair(Secret(_s)).address()};
+    EncryptedKey key{encrypt(_s, _pass), toUUID(r), KeyPair<BLS>(Secret(_s)).address()};
 	m_cached[r] = bytesSec(_s);
 	m_keys[r] = move(key);
 	save();

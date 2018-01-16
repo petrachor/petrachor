@@ -35,6 +35,7 @@
 namespace dev
 {
 class NetworkFace;
+template <class C>
 class KeyPair;
 namespace eth
 {

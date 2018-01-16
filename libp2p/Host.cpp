@@ -97,7 +97,7 @@ bytes ReputationManager::data(SessionFace const& _s, std::string const& _sub) co
 	return bytes();
 }
 
-Host::Host(string const& _clientVersion, KeyPair const& _alias, NetworkPreferences const& _n):
+Host::Host(string const& _clientVersion, KeyPair<ECDSA> const& _alias, NetworkPreferences const& _n):
 	Worker("p2p", 0),
 	m_clientVersion(_clientVersion),
 	m_netPrefs(_n),
@@ -231,7 +231,7 @@ void Host::doneWorking()
 	m_sessions.clear();
 }
 
-void Host::startPeerSession(Public const& _id, RLP const& _rlp, unique_ptr<RLPXFrameCoder>&& _io, std::shared_ptr<RLPXSocket> const& _s)
+void Host::startPeerSession(ECDSA::Public const& _id, RLP const& _rlp, unique_ptr<RLPXFrameCoder>&& _io, std::shared_ptr<RLPXSocket> const& _s)
 {
 	// session maybe ingress or egress so m_peers and node table entries may not exist
 	shared_ptr<Peer> p;
@@ -260,7 +260,7 @@ void Host::startPeerSession(Public const& _id, RLP const& _rlp, unique_ptr<RLPXF
 	auto clientVersion = _rlp[1].toString();
 	auto caps = _rlp[2].toVector<CapDesc>();
 	auto listenPort = _rlp[3].toInt<unsigned short>();
-	auto pub = _rlp[4].toHash<Public>();
+    auto pub = _rlp[4].toHash<ECDSA::Public>();
 
 	if (pub != _id)
 	{
@@ -478,16 +478,16 @@ void Host::runAcceptor()
 	}
 }
 
-std::unordered_map<Public, std::string> Host::pocHosts()
+std::unordered_map<ECDSA::Public, std::string> Host::pocHosts()
 {
 	return {
 		// Mainnet:
-		{ Public("a979fb575495b8d6db44f750317d0f4622bf4c2aa3365d6af7c284339968eef29b69ad0dce72a4d8db5ebb4968de0e3bec910127f134779fbcb0cb6d3331163c"), "52.16.188.185:30303" },
-		{ Public("de471bccee3d042261d52e9bff31458daecc406142b401d4cd848f677479f73104b9fdeb090af9583d3391b7f10cb2ba9e26865dd5fca4fcdc0fb1e3b723c786"), "54.94.239.50:30303" },
-		{ Public("1118980bf48b0a3640bdba04e0fe78b1add18e1cd99bf22d53daac1fd9972ad650df52176e7c7d89d1114cfef2bc23a2959aa54998a46afcf7d91809f0855082"), "52.74.57.123:30303" },
+        { ECDSA::Public("a979fb575495b8d6db44f750317d0f4622bf4c2aa3365d6af7c284339968eef29b69ad0dce72a4d8db5ebb4968de0e3bec910127f134779fbcb0cb6d3331163c"), "52.16.188.185:30303" },
+        { ECDSA::Public("de471bccee3d042261d52e9bff31458daecc406142b401d4cd848f677479f73104b9fdeb090af9583d3391b7f10cb2ba9e26865dd5fca4fcdc0fb1e3b723c786"), "54.94.239.50:30303" },
+        { ECDSA::Public("1118980bf48b0a3640bdba04e0fe78b1add18e1cd99bf22d53daac1fd9972ad650df52176e7c7d89d1114cfef2bc23a2959aa54998a46afcf7d91809f0855082"), "52.74.57.123:30303" },
 		// Testnet:
-		{ Public("6ce05930c72abc632c58e2e4324f7c7ea478cec0ed4fa2528982cf34483094e9cbc9216e7aa349691242576d552a2a56aaeae426c5303ded677ce455ba1acd9d"), "13.84.180.240:30303" },
-		{ Public("20c9ad97c081d63397d7b685a412227a40e23c8bdc6688c6f37e97cfbc22d2b4d1db1510d8f61e6a8866ad7f0e17c02b14182d37ea7c3c8b9c2683aeb6b733a1"), "52.169.14.227:30303" },
+        { ECDSA::Public("6ce05930c72abc632c58e2e4324f7c7ea478cec0ed4fa2528982cf34483094e9cbc9216e7aa349691242576d552a2a56aaeae426c5303ded677ce455ba1acd9d"), "13.84.180.240:30303" },
+        { ECDSA::Public("20c9ad97c081d63397d7b685a412227a40e23c8bdc6688c6f37e97cfbc22d2b4d1db1510d8f61e6a8866ad7f0e17c02b14182d37ea7c3c8b9c2683aeb6b733a1"), "52.169.14.227:30303" },
 	};
 }
 
@@ -942,11 +942,11 @@ void Host::restoreNetwork(bytesConstRef _b)
 	}
 }
 
-KeyPair Host::networkAlias(bytesConstRef _b)
+KeyPair<ECDSA> Host::networkAlias(bytesConstRef _b)
 {
 	RLP r(_b);
 	if (r.itemCount() == 3 && r[0].isInt() && r[0].toInt<unsigned>() >= 3)
-		return KeyPair(Secret(r[1].toBytes()));
+        return KeyPair<ECDSA>(ECDSA::Secret(r[1].toBytes()));
 	else
-		return KeyPair::create();
+        return KeyPair<ECDSA>::create();
 }

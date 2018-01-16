@@ -6,7 +6,7 @@ set(LIBRARY_DIR "${prefix}/lib64/")
 ExternalProject_Add(pairing
     PREFIX "${prefix}"
     URL file:///home/w/pairing-ariel.tar.gz
-    URL_HASH SHA256=b5610368cb7d0cf479b1a3e3b24acad9f48b9f0dec9e647d067b2a8b16cf1dc4
+    URL_HASH SHA256=c88d8f041067f35cab3b4a0bc9bc31008c11a5b4bac74a5a65d4afb7ecf8bd14
     BUILD_BYPRODUCTS "${PAIRING_LIBRARY}"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_INSTALL_DIR=<INSTALL_DIR>
     -DCMAKE_LIB_TARGET_LOCATION=${LIBRARY_DIR}

@@ -129,13 +129,13 @@ private:
 class FixedAccountHolder: public AccountHolder
 {
 public:
-	FixedAccountHolder(std::function<Interface*()> const& _client, std::vector<dev::KeyPair> const& _accounts):
+    FixedAccountHolder(std::function<Interface*()> const& _client, std::vector<dev::KeyPair<dev::BLS>> const& _accounts):
 		AccountHolder(_client)
 	{
 		setAccounts(_accounts);
 	}
 
-	void setAccounts(std::vector<dev::KeyPair> const& _accounts)
+    void setAccounts(std::vector<dev::KeyPair<dev::BLS>> const& _accounts)
 	{
 		for (auto const& i: _accounts)
 			m_accounts[i.address()] = i.secret();

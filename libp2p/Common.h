@@ -244,11 +244,11 @@ class Node
 public:
 	Node() = default;
 	Node(Node const&) = default;
-	Node(Public _publicKey, NodeIPEndpoint const& _ip, PeerType _peerType = PeerType::Optional): id(_publicKey), endpoint(_ip), peerType(_peerType) {}
+    Node(ECDSA::Public _publicKey, NodeIPEndpoint const& _ip, PeerType _peerType = PeerType::Optional): id(_publicKey), endpoint(_ip), peerType(_peerType) {}
 	Node(NodeSpec const& _s, PeerType _peerType = PeerType::Optional);
 
 	virtual NodeID const& address() const { return id; }
-	virtual Public const& publicKey() const { return id; }
+    virtual ECDSA::Public const& publicKey() const { return id; }
 	
 	virtual operator bool() const { return (bool)id; }
 

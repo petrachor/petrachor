@@ -56,6 +56,9 @@ enum class Network
 	HomesteadToEIP150At5 = 102,
 	EIP158ToByzantiumAt5 = 103,
 
+    EthereumYNetwork = 215,
+    EthereumYNetworkTest = 216,
+
 	Special = 0xff			///< Something else.
 };
 

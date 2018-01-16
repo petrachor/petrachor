@@ -21,6 +21,12 @@
 #
 # (c) 2014-2016 cpp-ethereum contributors.
 #------------------------------------------------------------------------------
+add_definitions(-DPUBLICCHAIN=$ENV{PUBLICCHAIN})
+if(PUBLICCHAIN)
+    add_definitions(-DNETWORKP2PPORT=40404 )
+else()
+    add_definitions(-DNETWORKP2PPORT=41414 )
+endif()
 
 cmake_minimum_required(VERSION 3.5.1)
 
