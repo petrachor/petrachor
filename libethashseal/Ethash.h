@@ -36,46 +36,50 @@ namespace dev
 namespace eth
 {
 
+typedef BLS::SignatureStruct StakeSignature;
+
 class Ethash: public SealEngineBase
 {
 public:
-    Ethash();
-    ~Ethash();
-
 	std::string name() const override { return "PoS v4"; }
 	unsigned revision() const override { return 1; }
 	unsigned sealFields() const override { return 2; }
-	bytes sealRLP() const override { return rlp(h256()) + rlp(Nonce()); }
+    bytes sealRLP() const override { return rlp(StakeSignature()) + rlp(Nonce()); }
 
 	StringHashMap jsInfo(BlockHeader const& _bi) const override;
 	void verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const override;
 	void verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const& _startGasUsed) const override;
 	void populateFromParent(BlockHeader& _bi, BlockHeader const& _parent) const override;
 
-    StakeModifier computeChildStakeModifier(StakeModifier const& parentStakeModifier, Public const& sealerPublicKey);
-    StakeHash computeStakeHash(StakeModifier const& seedHash, u64 timestamp, Secret const& sealerSecretKey);
+    static StakeModifier computeChildStakeModifier(StakeModifier const& parentStakeModifier, Address const& sealerAddress);
+    static StakeMessage computeStakeMessage(StakeModifier const& modifier, u64 timestamp);
+    static StakeSignature computeStakeSignature(StakeMessage const& message, Secret const& sealerSecretKey);
+    static bool verifyStakeSignature(StakeSignature const& signature, StakeMessage const& message);
+    static StakeSignatureHash computeStakeSignatureHash(StakeSignature const& stakeSignature);
 
 	strings sealers() const override;
 	std::string sealer() const override { return m_sealer; }
 	void setSealer(std::string const& _sealer) override { m_sealer = _sealer; }
     void cancelGeneration() override { m_generating = false; }
-	void generateSeal(BlockHeader const& _bi) override;
+    void generateSeal(BlockHeader _bi) override;
 	bool shouldSeal(Interface* _i) override;
 
-	enum { MixHashField = 0, NonceField = 1 };
-	static h256 seedHash(BlockHeader const& _bi);
-	static Nonce nonce(BlockHeader const& _bi) { return _bi.seal<Nonce>(NonceField); }
-	static h256 boundary(BlockHeader const& _bi) { auto d = _bi.difficulty(); return d ? (h256)u256((bigint(1) << 256) / d) : h256(); }
-	static BlockHeader& setNonce(BlockHeader& _bi, Nonce _v) { _bi.setSeal(NonceField, _v); return _bi; }
+    enum { SignatureField = 0, NonceField = 1 };
+    static h256 seedHash(BlockHeader const& _bi);
+    static StakeSignature signature(BlockHeader const& _bi) { return _bi.seal<StakeSignature>(SignatureField); }
+    static Nonce nonce(BlockHeader const& _bi) { return _bi.seal<Nonce>(NonceField); }
+    h256 boundary(BlockHeader const& _bi) const;
+    static BlockHeader& setSignature(BlockHeader& _bi, BLS::Signature _v) { _bi.setSeal(SignatureField, _v); return _bi; }
+    static BlockHeader& setNonce(BlockHeader& _bi, Nonce _v) { _bi.setSeal(NonceField, _v); return _bi; }
 
 	u256 calculateDifficulty(BlockHeader const& _bi, BlockHeader const& _parent) const;
 	u256 childGasLimit(BlockHeader const& _bi, u256 const& _gasFloorTarget = Invalid256) const;
 
 	void manuallySetWork(BlockHeader const& _work) { m_sealing = _work; }
-    void manuallySubmitWork(h256 const& _mixHash, Nonce _nonce);
 
 	static void init();
 
+    bool isMining() const { return m_generating; }
 private:
 	bool verifySeal(BlockHeader const& _bi) const;
 

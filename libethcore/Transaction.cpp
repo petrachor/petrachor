@@ -68,8 +68,7 @@ TransactionBase::TransactionBase(bytesConstRef _rlpData, CheckTransaction _check
         RLP sig = rlp[field = 7];
         if (!sig.isList())
             BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("transaction sig RLP must be a list"));
-        m_vrs = SignatureStruct(Signature(sig[0].toBytesConstRef()));
-        m_vrs->publicKey = Public(sig[1].toBytesConstRef());
+        m_vrs = SignatureStruct(Signature(sig[0].toBytesConstRef()), Public(sig[1].toBytesConstRef()));
         if (rlp.itemCount() > 2)
             BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("too many fields in the transaction sig RLP"));
         if (_checkSig >= CheckTransaction::Cheap && !m_vrs->isValid())
@@ -96,8 +95,7 @@ SignatureStruct const& TransactionBase::signature() const
 void TransactionBase::sign(Secret const& _priv)
 {
     auto sig = dev::sign<BLS>(_priv, sha3(WithoutSignature));
-    SignatureStruct sigStruct = SignatureStruct(sig);
-    sigStruct.publicKey = toPublic<BLS>(_priv);
+    SignatureStruct sigStruct = SignatureStruct(sig, toPublic<BLS>(_priv));
 	if (sigStruct.isValid())
 		m_vrs = sigStruct;
 }

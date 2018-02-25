@@ -32,7 +32,6 @@
 #include <boost/filesystem.hpp>
 
 #include <libdevcore/FileSystem.h>
-#include <libethashseal/EthashAux.h>
 #include <libevm/VM.h>
 #include <libevm/VMFactory.h>
 #include <libethcore/KeyManager.h>
@@ -40,6 +39,7 @@
 #include <libethereum/SnapshotImporter.h>
 #include <libethereum/SnapshotStorage.h>
 #include <libethashseal/EthashClient.h>
+#include <libethashseal/Ethash.h>
 #include <libethashseal/GenesisInfo.h>
 #include <libwebthree/WebThree.h>
 
@@ -61,7 +61,7 @@
 #include <libweb3jsonrpc/Debug.h>
 #include <libweb3jsonrpc/Test.h>
 
-#include "MinerAux.h"
+//#include "MinerAux.h"
 #include "BuildInfo.h"
 #include "AccountManager.h"
 
@@ -142,7 +142,6 @@ void help()
 		<< "    --pin  Only accept or connect to trusted peers.\n"
 		<< "    --hermit  Equivalent to --no-discovery --pin.\n"
 		<< "    --sociable  Force discovery and no pinning.\n\n";
-	MinerCLI::streamHelp(cout);
 	cout
 		<< "Import/export modes:\n"
 		<< "    --from <n>  Export only from block n; n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
@@ -161,6 +160,16 @@ void help()
 		<< "Experimental / Proof of Concept:\n"
 		<< "    --shh  Enable Whisper.\n\n";
 		exit(0);
+}
+
+inline std::string credits()
+{
+    std::ostringstream out;
+    out
+        << "cpp-ethereum " << dev::Version << endl
+        << "  By cpp-ethereum contributors, (c) 2013-2016." << endl
+        << "  See the README for contributors and credits." << endl;
+    return out.str();
 }
 
 string ethCredits(bool _interactive = false)
@@ -282,6 +291,16 @@ private:
 
 bool ExitHandler::s_shouldExit = false;
 
+bool isTrue(std::string const& _m)
+{
+    return _m == "on" || _m == "yes" || _m == "true" || _m == "1";
+}
+
+bool isFalse(std::string const& _m)
+{
+    return _m == "off" || _m == "no" || _m == "false" || _m == "0";
+}
+
 int main(int argc, char** argv)
 {
 	setDefaultOrCLocale();
@@ -394,7 +413,7 @@ int main(int argc, char** argv)
 	}
 
 
-	MinerCLI m(MinerCLI::OperationMode::None);
+//	MinerCLI m(MinerCLI::OperationMode::None);
 
 	bool listenSet = false;
 	bool chainConfigIsSet = false;
@@ -403,10 +422,10 @@ int main(int argc, char** argv)
 	for (int i = 1; i < argc; ++i)
 	{
 		string arg = argv[i];
-		if (m.interpretOption(i, argc, argv))
+        /*if (m.interpretOption(i, argc, argv))
 		{
 		}
-		else if (arg == "--listen-ip" && i + 1 < argc)
+        else*/ if (arg == "--listen-ip" && i + 1 < argc)
 		{
 			listenIP = argv[++i];
 			listenSet = true;
@@ -859,8 +878,6 @@ int main(int argc, char** argv)
 	if (g_logVerbosity > 0)
 		cout << EthGrayBold "cpp-ethereum, a C++ Ethereum client" EthReset << "\n";
 
-	m.execute();
-
 	fs::path secretsPath;
 	if (testingMode)
 		secretsPath = boost::filesystem::path(getDataDir()) / "keystore";
@@ -1089,8 +1106,7 @@ int main(int argc, char** argv)
 	if (c)
 	{
 		c->setGasPricer(gasPricer);
-		DEV_IGNORE_EXCEPTIONS(asEthashClient(c)->setShouldPrecomputeDAG(m.shouldPrecompute()));
-		c->setSealer(m.minerType());
+        c->setSealer("cpu");
 		c->setAuthor(author);
 		if (networkID != NoNetworkID)
 			c->setNetworkId(networkID);

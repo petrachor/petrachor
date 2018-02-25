@@ -109,10 +109,10 @@ public:
     h256 getH256() { return *(h256*) getCroppedData(offset, sizeof(h256), data); }
     u256 getU256() { return *(u256*) getCroppedData(offset, sizeof(u256), data); }
 
-    bytesConstRef getNextData() {
+/*    bytesConstRef getNextData() {
 
     }
-
+*/
     bytes getBytes() {
         size_t o = offset; offset += sizeof(h256);
         bytesConstRef bytesOffset = data.cropped(o, offset);
@@ -130,7 +130,7 @@ private:
 public:
     DynamicArrayDecoder(bytesConstRef iData) : tupleDecoder(iData), k(tupleDecoder.getU256()) {}
 
-    bytesConstRef getNextData() { return tupleDecoder.getNextData(); }
+    //bytesConstRef getNextData() { return tupleDecoder.getNextData(); }
 };
 
 unsigned long int getFunctionID(bytesConstRef b) {

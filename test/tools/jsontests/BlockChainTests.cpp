@@ -645,7 +645,7 @@ void overwriteBlockHeaderForTest(mObject const& _blObj, TestBlock& _block, Chain
 			tmp.setDifficulty(((const Ethash*)sealEngine)->calculateDifficulty(tmp, parentHeader));
 		}
 
-		Ethash::setMixHash(tmp, ho.count("mixHash") ? h256(ho["mixHash"].get_str()) : Ethash::mixHash(header));
+        //Ethash::setSignature(tmp, ho.count("signature") ? SignatureStruct(ho["signature"].get_str()) : Ethash::signature(header));
 		Ethash::setNonce(tmp, ho.count("nonce") ? eth::Nonce(ho["nonce"].get_str()) : Ethash::nonce(header));
 		tmp.noteDirty();
 	}
@@ -796,8 +796,8 @@ void overwriteUncleHeaderForTest(mObject& uncleHeaderObj, TestBlock& uncle, std:
 	{
 		if (overwrite == "nonce")
 			Ethash::setNonce(uncleHeader, eth::Nonce(uncleHeaderObj["nonce"].get_str()));
-		if (overwrite == "mixHash")
-			Ethash::setMixHash(uncleHeader, h256(uncleHeaderObj["mixHash"].get_str()));
+//        if (overwrite == "signature")
+//            Ethash::setSignature(uncleHeader, h256(uncleHeaderObj["signature"].get_str()));
 
 		uncle.setBlockHeader(uncleHeader);
 	}
@@ -846,7 +846,7 @@ mObject writeBlockHeaderToJson(BlockHeader const& _bi)
 	o["gasUsed"] = toCompactHexPrefixed(_bi.gasUsed(), 1);
 	o["timestamp"] = toCompactHexPrefixed(_bi.timestamp(), 1);
 	o["extraData"] = (_bi.extraData().size()) ? toHexPrefixed(_bi.extraData()) : "";
-	o["mixHash"] = toString(Ethash::mixHash(_bi));
+    o["signature"] = toString(Ethash::signature(_bi));
 	o["nonce"] = toString(Ethash::nonce(_bi));
 	o["hash"] = toString(_bi.hash());
 	o = ImportTest::makeAllFieldsHex(o, true);

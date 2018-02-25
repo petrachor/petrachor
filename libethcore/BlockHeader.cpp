@@ -55,7 +55,7 @@ BlockHeader::BlockHeader(BlockHeader const& _other) :
 	m_gasUsed(_other.gasUsed()),
 	m_extraData(_other.extraData()),
 	m_timestamp(_other.timestamp()),
-	m_author(_other.author()),
+    m_author(_other.author()),
 	m_difficulty(_other.difficulty()),
 	m_seal(_other.seal()),
 	m_hash(_other.hashRawRead()),
@@ -79,7 +79,7 @@ BlockHeader& BlockHeader::operator=(BlockHeader const& _other)
 	m_gasUsed = _other.gasUsed();
 	m_extraData = _other.extraData();
 	m_timestamp = _other.timestamp();
-	m_author = _other.author();
+    m_author = _other.author();
 	m_difficulty = _other.difficulty();
 	std::vector<bytes> seal = _other.seal();
 	{
@@ -101,7 +101,7 @@ void BlockHeader::clear()
 {
 	m_parentHash = h256();
 	m_sha3Uncles = EmptyListSHA3;
-	m_author = Address();
+    m_author = Address();
 	m_stateRoot = EmptyTrie;
 	m_transactionsRoot = EmptyTrie;
 	m_receiptsRoot = EmptyTrie;
@@ -133,7 +133,7 @@ h256 BlockHeader::hash(IncludeSeal _i) const
 
 void BlockHeader::streamRLPFields(RLPStream& _s) const
 {
-	_s	<< m_parentHash << m_sha3Uncles << m_author << m_stateRoot << m_transactionsRoot << m_receiptsRoot << m_logBloom
+    _s	<< m_parentHash << m_sha3Uncles << m_author << m_stateRoot << m_transactionsRoot << m_receiptsRoot << m_logBloom
         << m_difficulty << m_stakeModifier << m_number << m_gasLimit << m_gasUsed << m_timestamp << m_extraData;
 }
 
@@ -176,7 +176,7 @@ void BlockHeader::populate(RLP const& _header)
 	{
 		m_parentHash = _header[field = 0].toHash<h256>(RLP::VeryStrict);
 		m_sha3Uncles = _header[field = 1].toHash<h256>(RLP::VeryStrict);
-		m_author = _header[field = 2].toHash<Address>(RLP::VeryStrict);
+        m_author = _header[field = 2].toHash<Address>(RLP::VeryStrict);
 		m_stateRoot = _header[field = 3].toHash<h256>(RLP::VeryStrict);
 		m_transactionsRoot = _header[field = 4].toHash<h256>(RLP::VeryStrict);
 		m_receiptsRoot = _header[field = 5].toHash<h256>(RLP::VeryStrict);

@@ -134,8 +134,8 @@ public:
 	// Sealing stuff:
 	// Note: "mining"/"miner" is deprecated. Use "sealing"/"sealer".
 
-	virtual Address author() const override { ReadGuard l(x_preSeal); return m_preSeal.author(); }
-	virtual void setAuthor(Address const& _us) override { WriteGuard l(x_preSeal); m_preSeal.setAuthor(_us); }
+    virtual Address author() const override { ReadGuard l(x_preSeal); return m_preSeal.author(); }
+    virtual void setAuthor(Address const& _us) override { WriteGuard l(x_preSeal); m_preSeal.setAuthor(_us); }
 
 	/// Type of sealers available for this seal engine.
 	strings sealers() const { return sealEngine()->sealers(); }
@@ -150,7 +150,8 @@ public:
 
 	/// Start sealing.
 	void startSealing() override;
-	/// Stop sealing.
+    void startSealing(std::vector<KeyPair<dev::BLS>> keyPairs);
+    /// Stop sealing.
 	void stopSealing() override { m_wouldSeal = false; }
 	/// Are we sealing now?
 	bool wouldSeal() const override { return m_wouldSeal; }
@@ -294,6 +295,7 @@ protected:
 	OverlayDB m_stateDB;					///< Acts as the central point for the state database, so multiple States can share it.
 	mutable SharedMutex x_preSeal;			///< Lock on m_preSeal.
 	Block m_preSeal;						///< The present state of the client.
+    Public m_preSealAuthorPublicKey = Public();
 	mutable SharedMutex x_postSeal;			///< Lock on m_postSeal.
 	Block m_postSeal;						///< The state of the client which we're sealing (i.e. it'll have all the rewards added).
 	mutable SharedMutex x_working;			///< Lock on m_working.

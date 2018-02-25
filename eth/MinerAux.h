@@ -26,7 +26,7 @@
 #include <libdevcore/CommonJS.h>
 #include <libethcore/BasicAuthority.h>
 #include <libethcore/Exceptions.h>
-#include <libethashseal/EthashCPUMiner.h>
+#include <libethashseal/Ethash.h>
 
 // TODO - having using derivatives in header files is very poor style, and we need to fix these up.
 //
@@ -54,26 +54,6 @@
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
-
-bool isTrue(std::string const& _m)
-{
-	return _m == "on" || _m == "yes" || _m == "true" || _m == "1";
-}
-
-bool isFalse(std::string const& _m)
-{
-	return _m == "off" || _m == "no" || _m == "false" || _m == "0";
-}
-
-inline std::string credits()
-{
-	std::ostringstream out;
-	out
-		<< "cpp-ethereum " << dev::Version << endl
-		<< "  By cpp-ethereum contributors, (c) 2013-2016." << endl
-		<< "  See the README for contributors and credits." << endl;
-	return out.str();
-}
 
 class BadArgument: public Exception {};
 struct MiningChannel: public LogChannel
@@ -166,7 +146,7 @@ public:
 				if (m.size() == 64 || m.size() == 66)
 					seedHash = h256(m);
 				else
-					seedHash = EthashAux::seedHash(stol(m));
+                    seedHash = Ethash::seedHash(stol(m));
 				m = boost::to_lower_copy(string(argv[++i]));
 				bi.setDifficulty(u256(m));
 				auto boundary = Ethash::boundary(bi);

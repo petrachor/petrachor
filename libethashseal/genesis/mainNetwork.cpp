@@ -23,12 +23,12 @@ R"E(
 	"sealEngine": "Ethash",
 	"params": {
 		"accountStartNonce": "0x00",
-		"homesteadForkBlock": "0x118c30",
-		"daoHardforkBlock": "0x1d4c00",
-		"EIP150ForkBlock": "0x259518",
-		"EIP158ForkBlock": "0x28d138",
-		"byzantiumForkBlock": "0xffffffffffffffffff",
-		"constantinopleForkBlock": "0xffffffffffffffffff",
+                "homesteadForkBlock": "0x00",
+                "daoHardforkBlock": "0x00",
+                "EIP150ForkBlock": "0x00",
+                "EIP158ForkBlock": "0x00",
+                "byzantiumForkBlock": "0x00",
+                "constantinopleForkBlock": "0xffffffffffffffffff",
 		"networkID" : "0x01",
 		"chainID": "0x01",
 		"maximumExtraDataSize": "0x20",
@@ -65,6 +65,12 @@ R"E(
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_gt", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_pairing", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_multipairing", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
+"0097c89eab24e7c7dfe8faa69e78943b32fa8278": { "balance": "1000000000000000000" },
+"00d8293f179f596ada828468a1ad4495b4cfdcab": { "balance": "1000000000000000000" },
+"0078ed4ac96d2ee19669834b1e91e4b9ea76e6a4": { "balance": "1000000000000000000" },
+"008c97df4dd500a260fa0acf6b83a832ebf2ce4f": { "balance": "1000000000000000000" },
+"0005df757ddf001276d7228910147244d95b0960": { "balance": "1000000000000000000" },
+"00eb064f64260d255278753234a42519e2c611bc": { "balance": "1000000000000000000" },
         }
 }
 )E";

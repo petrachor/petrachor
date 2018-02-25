@@ -33,24 +33,36 @@ void Ethash::init()
 	ETH_REGISTER_SEAL_ENGINE(Ethash);
 }
 
-StakeModifier Ethash::computeChildStakeModifier(StakeModifier const& parentStakeModifier, Public const& sealerPublicKey) {
-    bytes d(parentStakeModifier.size + sealerPublicKey.size);
+StakeModifier Ethash::computeChildStakeModifier(StakeModifier const& parentStakeModifier, Address const& sealerAddress) {
+    bytes d(parentStakeModifier.size + sealerAddress.size);
 
     size_t offset = 0;
     for (size_t x = 0; x < parentStakeModifier.size; ++x) d[offset++] = parentStakeModifier[x];
-    for (size_t x = 0; x < sealerPublicKey.size; ++x) d[offset++] = sealerPublicKey[x];
+    for (size_t x = 0; x < sealerAddress.size; ++x) d[offset++] = sealerAddress[x];
 
     return dev::sha3(d);
 }
 
-StakeHash Ethash::computeStakeHash(StakeModifier const& seedHash, u64 timestamp, Secret const& sealerSecretKey) {
-    bytes d(seedHash.size + sizeof(timestamp));
+StakeMessage Ethash::computeStakeMessage(StakeModifier const& stakeModifier, u64 timestamp) {
+    bytes d(stakeModifier.size + sizeof(timestamp));
 
     size_t offset = 0;
-    for (size_t x = 0; x < seedHash.size; ++x) d[offset++] = seedHash[x];
+    for (size_t x = 0; x < stakeModifier.size; ++x) d[offset++] = stakeModifier[x];
     for (size_t x = 0; x < sizeof(timestamp); ++x) d[offset++] = ((unsigned char*) &timestamp)[x];
 
-    return sign(sealerSecretKey, dev::sha3(d));
+    return dev::sha3(d);
+}
+
+StakeSignature Ethash::computeStakeSignature(StakeMessage const& message, Secret const& sealerSecretKey) {
+    return StakeSignature(sign<dev::BLS>(sealerSecretKey, message), toPublic<BLS>(sealerSecretKey));
+}
+
+bool Ethash::verifyStakeSignature(StakeSignature const& signature, StakeMessage const& message) {
+    return ::verify<BLS>(signature.publicKey, signature, message);
+}
+
+StakeSignatureHash Ethash::computeStakeSignatureHash(StakeSignature const& stakeSignature) {
+    return dev::sha3(stakeSignature);
 }
 
 strings Ethash::sealers() const
@@ -58,14 +70,15 @@ strings Ethash::sealers() const
 	return {"cpu"};
 }
 
-h256 Ethash::seedHash(BlockHeader const& _bi, Public const& sealerPublicKey)
+h256 Ethash::seedHash(BlockHeader const& _bi)
 {
-    return computeChildStakeModifier(_bi.stakeModifier(), sealerPublicKey);
+    return computeChildStakeModifier(_bi.stakeModifier(), _bi.author());
 }
 
 StringHashMap Ethash::jsInfo(BlockHeader const& _bi) const
 {
-    return { { "nonce", toJS(nonce(_bi)) }, { "seedHash", toJS(seedHash(_bi)) }, { "boundary", toJS(boundary(_bi)) }, { "difficulty", toJS(_bi.difficulty()) } };
+    return { { "nonce", toJS(nonce(_bi)) },// { "seedHash", toJS(seedHash(_bi)) },
+        { "boundary", toJS(boundary(_bi)) }, { "difficulty", toJS(_bi.difficulty()) } };
 }
 
 void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const
@@ -111,27 +124,27 @@ void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _p
 	}
 
 	// check it hashes according to proof of work or that it's the genesis block.
-	if (_s == CheckEverything && _bi.parentHash() && !verifySeal(_bi))
+    if ((_s == CheckEverything || _s == QuickNonce) && _bi.parentHash() && !verifySeal(_bi))
 	{
 		InvalidBlockNonce ex;
 		ex << errinfo_nonce(nonce(_bi));
-		ex << errinfo_mixHash(mixHash(_bi));
-		ex << errinfo_seedHash(seedHash(_bi));
-		EthashProofOfWork::Result er = EthashAux::eval(seedHash(_bi), _bi.hash(WithoutSeal), nonce(_bi));
-		ex << errinfo_ethashResult(make_tuple(er.value, er.mixHash));
+//		ex << errinfo_mixHash(mixHash(_bi));
+//		ex << errinfo_seedHash(seedHash(_bi));
+//		EthashProofOfWork::Result er = EthashAux::eval(seedHash(_bi), _bi.hash(WithoutSeal), nonce(_bi));
+//		ex << errinfo_ethashResult(make_tuple(er.value, er.mixHash));
 		ex << errinfo_hash256(_bi.hash(WithoutSeal));
 		ex << errinfo_difficulty(_bi.difficulty());
 		ex << errinfo_target(boundary(_bi));
 		BOOST_THROW_EXCEPTION(ex);
 	}
-	else if (_s == QuickNonce && _bi.parentHash() && !quickVerifySeal(_bi))
+/*	else if (_s == QuickNonce && _bi.parentHash() && !quickVerifySeal(_bi))
 	{
 		InvalidBlockNonce ex;
 		ex << errinfo_hash256(_bi.hash(WithoutSeal));
 		ex << errinfo_difficulty(_bi.difficulty());
 		ex << errinfo_nonce(nonce(_bi));
 		BOOST_THROW_EXCEPTION(ex);
-	}
+    }*/
 }
 
 void Ethash::verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const& _startGasUsed) const
@@ -162,15 +175,8 @@ u256 Ethash::childGasLimit(BlockHeader const& _bi, u256 const& _gasFloorTarget) 
 		return max<u256>(gasFloorTarget, gasLimit - gasLimit / boundDivisor + 1 + (_bi.gasUsed() * 6 / 5) / boundDivisor);
 }
 
-void Ethash::manuallySubmitWork(const h256& _mixHash, Nonce _nonce)
-{
-	m_farm.submitProof(EthashProofOfWork::Solution{_nonce, _mixHash}, nullptr);
-}
-
 u256 Ethash::calculateDifficulty(BlockHeader const& _bi, BlockHeader const& _parent) const
 {
-	const unsigned c_expDiffPeriod = 100000;
-
 	if (!_bi.number())
 		throw GenesisBlockCannotBeCalculated();
 	auto const& minimumDifficulty = chainParams().minimumDifficulty;
@@ -193,12 +199,22 @@ void Ethash::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent) co
 	_bi.setGasLimit(childGasLimit(_parent));
 }
 
-bool Ethash::verifySeal(BlockHeader const& _bi) const
-{
-    return eval(seedHash(_bi), nonce(_bi)).value <= boundary(_bi) && result.mixHash == mixHash(_bi);
+h256 Ethash::boundary(BlockHeader const& _bi) const {
+    auto d = _bi.difficulty();
+    BlockNumber blockNumber = BlockNumber(_bi.number() - 1);
+    auto moneySupplyBeforeBlock = getMoneySupplyAtBlock(blockNumber);
+    auto authorBalance = m_balanceRetriever(_bi.author(), blockNumber);
+    return d ? (h256)u256((((bigint(1) << 256) / moneySupplyBeforeBlock) * authorBalance)/ d) : h256();
 }
 
-void Ethash::generateSeal(BlockHeader const& _bi)
+bool Ethash::verifySeal(BlockHeader const& _bi) const
+{
+    StakeSignature sig = signature(_bi);
+    return computeStakeSignatureHash(sig) <= boundary(_bi)
+            && verifyStakeSignature(sig, computeStakeMessage(seedHash(_bi), nonce(_bi)));
+}
+
+void Ethash::generateSeal(BlockHeader _bi)
 {
     // PubKey + Statehash + Stakemod
     m_generating = true;
@@ -207,31 +223,33 @@ void Ethash::generateSeal(BlockHeader const& _bi)
     sealThread = std::thread([&](){
         while (m_generating) {
             uint64_t timestamp = utcTime();
-
-            Nonce n;
+            Nonce n = (Nonce) timestamp;
             assert(sizeof(n) == sizeof(timestamp));
-            memcpy(&n, &timestamp, sizeof(n));
-            h256 r = computeStakeHash(w.seedHash, n);
-            if (r <= boundary(m_sealing)) {
-                std::unique_lock<Mutex> l(m_submitLock);
-        //         cdebug << m_farm.work().seedHash << m_farm.work().headerHash << sol.nonce << EthashAux::eval(m_farm.work().seedHash, m_farm.work().headerHash, sol.nonce).value;
-                setMixHash(m_sealing, sol.mixHash);
-                setNonce(m_sealing, sol.nonce);
-                if (!quickVerifySeal(m_sealing))
-                    return false;
+            for (auto kp: m_keyPairs) {
+                //u256 balance = m_balanceRetriever(kp.address(), (BlockNumber) (_bi.number() - 1));
+                _bi.setAuthor(kp.address());
+                //_bi.setTimestamp((u256) timestamp);
+                StakeModifier modifier = seedHash(_bi);
+                StakeSignature r = computeStakeSignature(computeStakeMessage(modifier, n), kp.secret());
+                if (computeStakeSignatureHash(r) <= boundary(m_sealing)) {
+                    std::unique_lock<Mutex> l(m_submitLock);
+            //         cdebug << m_farm.work().seedHash << m_farm.work().headerHash << sol.nonce << EthashAux::eval(m_farm.work().seedHash, m_farm.work().headerHash, sol.nonce).value;
+                    setSignature(m_sealing, r);
+                    setNonce(m_sealing, n);
 
-                if (m_onSealGenerated)
-                {
-                    RLPStream ret;
-                    m_sealing.streamRLP(ret);
-                    l.unlock();
-                    m_onSealGenerated(ret.out());
-                }
-                return true;
-            };
-
-        usleep(500);
+                    if (m_onSealGenerated)
+                    {
+                        RLPStream ret;
+                        m_sealing.streamRLP(ret);
+                        l.unlock();
+                        m_onSealGenerated(ret.out());
+                    }
+                    return true;
+                };
+            }
+            usleep(500);
         }
+        return true;
     });
 }
 

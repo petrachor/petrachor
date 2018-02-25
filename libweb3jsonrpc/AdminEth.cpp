@@ -144,12 +144,6 @@ Json::Value AdminEth::admin_eth_newAccount(Json::Value const& _info, string cons
 	return ret;
 }
 
-bool AdminEth::admin_eth_setMiningBenefactor(string const& _uuidOrAddress, string const& _session)
-{
-	RPC_ADMIN;
-	return miner_setEtherbase(_uuidOrAddress);
-}
-
 Json::Value AdminEth::admin_eth_inspect(string const& _address, string const& _session)
 {
 	RPC_ADMIN;
@@ -240,7 +234,12 @@ Json::Value AdminEth::admin_eth_getReceiptByHashAndIndex(string const& _blockNum
 
 bool AdminEth::miner_start(int)
 {
-	m_eth.startSealing();
+    std::function<std::string()> passFunction = [](){ return getPassword("Enter the passphrase for the key: "); };
+    std::vector<KeyPair<BLS>> keyPairs;
+    for (const Address& a: m_keyManager.accounts()) {
+        keyPairs.push_back(KeyPair<BLS>(m_keyManager.secret(a, passFunction)));
+    }
+    m_eth.startSealing(keyPairs);
 	return true;
 }
 

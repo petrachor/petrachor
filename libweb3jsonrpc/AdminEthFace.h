@@ -23,7 +23,6 @@ namespace dev {
                     this->bindAndAddMethod(jsonrpc::Procedure("admin_eth_blockQueueRetryUnknown", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &dev::rpc::AdminEthFace::admin_eth_blockQueueRetryUnknownI);
                     this->bindAndAddMethod(jsonrpc::Procedure("admin_eth_allAccounts", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_ARRAY, "param1",jsonrpc::JSON_STRING, NULL), &dev::rpc::AdminEthFace::admin_eth_allAccountsI);
                     this->bindAndAddMethod(jsonrpc::Procedure("admin_eth_newAccount", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_OBJECT, "param1",jsonrpc::JSON_OBJECT,"param2",jsonrpc::JSON_STRING, NULL), &dev::rpc::AdminEthFace::admin_eth_newAccountI);
-                    this->bindAndAddMethod(jsonrpc::Procedure("admin_eth_setMiningBenefactor", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING,"param2",jsonrpc::JSON_STRING, NULL), &dev::rpc::AdminEthFace::admin_eth_setMiningBenefactorI);
                     this->bindAndAddMethod(jsonrpc::Procedure("admin_eth_inspect", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_OBJECT, "param1",jsonrpc::JSON_STRING,"param2",jsonrpc::JSON_STRING, NULL), &dev::rpc::AdminEthFace::admin_eth_inspectI);
                     this->bindAndAddMethod(jsonrpc::Procedure("admin_eth_reprocess", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_OBJECT, "param1",jsonrpc::JSON_STRING,"param2",jsonrpc::JSON_STRING, NULL), &dev::rpc::AdminEthFace::admin_eth_reprocessI);
                     this->bindAndAddMethod(jsonrpc::Procedure("admin_eth_vmTrace", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_OBJECT, "param1",jsonrpc::JSON_STRING,"param2",jsonrpc::JSON_INTEGER,"param3",jsonrpc::JSON_STRING, NULL), &dev::rpc::AdminEthFace::admin_eth_vmTraceI);
@@ -71,10 +70,6 @@ namespace dev {
                 inline virtual void admin_eth_newAccountI(const Json::Value &request, Json::Value &response)
                 {
                     response = this->admin_eth_newAccount(request[0u], request[1u].asString());
-                }
-                inline virtual void admin_eth_setMiningBenefactorI(const Json::Value &request, Json::Value &response)
-                {
-                    response = this->admin_eth_setMiningBenefactor(request[0u].asString(), request[1u].asString());
                 }
                 inline virtual void admin_eth_inspectI(const Json::Value &request, Json::Value &response)
                 {
@@ -127,7 +122,6 @@ namespace dev {
                 virtual bool admin_eth_blockQueueRetryUnknown(const std::string& param1) = 0;
                 virtual Json::Value admin_eth_allAccounts(const std::string& param1) = 0;
                 virtual Json::Value admin_eth_newAccount(const Json::Value& param1, const std::string& param2) = 0;
-                virtual bool admin_eth_setMiningBenefactor(const std::string& param1, const std::string& param2) = 0;
                 virtual Json::Value admin_eth_inspect(const std::string& param1, const std::string& param2) = 0;
                 virtual Json::Value admin_eth_reprocess(const std::string& param1, const std::string& param2) = 0;
                 virtual Json::Value admin_eth_vmTrace(const std::string& param1, int param2, const std::string& param3) = 0;

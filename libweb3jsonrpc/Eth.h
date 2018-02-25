@@ -61,7 +61,7 @@ namespace rpc
 class Eth: public dev::rpc::EthFace
 {
 public:
-	Eth(eth::Interface& _eth, eth::AccountHolder& _ethAccounts);
+    Eth(eth::Interface& _eth, eth::AccountHolder& _ethAccounts);
 
 	virtual RPCModules implementedModules() const override
 	{

@@ -46,7 +46,7 @@ public:
     struct SignatureStruct : public Signature
     {
         SignatureStruct() {}
-        SignatureStruct(Signature s) : Signature(s) { }
+        SignatureStruct(Signature s, Public _publicKey) : Signature(s), publicKey(_publicKey) { }
         bool isValid() const noexcept;
         bool isZero() const;
         bool lowS() const { return false; }
@@ -143,6 +143,10 @@ using Secrets = std::vector<Secret>;
 
 /// Convert a public key to address.
 template <class C> Address toAddress(typename C::Public const& _public) {
+    return right160(sha3(_public.asBytes()));
+}
+
+template <class P> Address publicToAddress(P const& _public) {
     return right160(sha3(_public.asBytes()));
 }
 

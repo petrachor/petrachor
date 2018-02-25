@@ -110,7 +110,7 @@ Envelope Message::seal(Secret const& _from, Topics const& _fullTopics, unsigned 
 	{
         input.resize(1 + m_payload.size() + sizeof(SignatureStruct));
 		input[0] |= ContainsSignature;
-        SignatureStruct ss = sign<BLS>(_from, sha3(m_payload));
+        SignatureStruct ss = SignatureStruct(sign<BLS>(_from, sha3(m_payload)), toPublic<BLS>(_from));
         *(SignatureStruct*)&(input[1 + m_payload.size()]) = ss;
 	}
 

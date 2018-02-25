@@ -136,7 +136,7 @@ ImportResult Client::queueBlock(bytes const& _block, bool _isSafe)
 tuple<ImportRoute, bool, unsigned> Client::syncQueue(unsigned _max)
 {
 	stopWorking();
-	return bc().sync(m_bq, m_stateDB, _max);
+    return bc().sync(m_bq, m_stateDB, _max);
 }
 
 void Client::onBadBlock(Exception& _ex) const
@@ -254,7 +254,7 @@ void Client::reopenChain(ChainParams const& _p, WithExisting _we)
 		WriteGuard l2(x_preSeal);
 		WriteGuard l3(x_working);
 
-		auto author = m_preSeal.author();	// backup and restore author.
+        auto author = m_preSeal.author();	// backup and restore author.
 		m_preSeal = Block(chainParams().accountStartNonce);
 		m_postSeal = Block(chainParams().accountStartNonce);
 		m_working = Block(chainParams().accountStartNonce);
@@ -264,7 +264,7 @@ void Client::reopenChain(ChainParams const& _p, WithExisting _we)
 		m_stateDB = State::openDB(Defaults::dbPath(), bc().genesisHash(), _we);
 
 		m_preSeal = bc().genesisBlock(m_stateDB);
-		m_preSeal.setAuthor(author);
+        m_preSeal.setAuthor(author);
 		m_postSeal = m_preSeal;
 		m_working = Block(chainParams().accountStartNonce);
 	}
@@ -561,12 +561,18 @@ void Client::onPostStateChanged()
 	m_remoteWorking = false;
 }
 
+void Client::startSealing(std::vector<KeyPair<dev::BLS>> keyPairs) {
+    sealEngine()->setKeyPairs(keyPairs);
+    sealEngine()->setBalanceRetriever([&](Address _a, BlockNumber _block) { return balanceAt(_a, _block); });
+    startSealing();
+}
+
 void Client::startSealing()
 {
 	if (m_wouldSeal == true)
 		return;
-	clog(ClientNote) << "Mining Beneficiary: " << author();
-	if (author())
+    clog(ClientNote) << "Mining Beneficiary address: " << author();
+    if (author())
 	{
 		m_wouldSeal = true;
 		m_signalled.notify_all();

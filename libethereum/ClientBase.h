@@ -154,7 +154,7 @@ public:
 	virtual u256 gasBidPrice() const override { return DefaultGasPrice; }
 
 	/// Get the block author
-	virtual Address author() const override;
+   // virtual Public authorPublicKey() const override;
 
 	virtual bool isKnown(h256 const& _hash) const override;
 	virtual bool isKnown(BlockNumber _block) const override;

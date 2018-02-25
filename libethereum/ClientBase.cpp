@@ -497,10 +497,10 @@ u256 ClientBase::gasLimitRemaining() const
 	return postSeal().gasLimitRemaining();
 }
 
-Address ClientBase::author() const
+/*Address ClientBase::author() const
 {
 	return preSeal().author();
-}
+}*/
 
 h256 ClientBase::hashFromNumber(BlockNumber _number) const
 {

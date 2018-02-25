@@ -66,7 +66,7 @@ public:
 Block::Block(BlockChain const& _bc, OverlayDB const& _db, BaseState _bs, Address const& _author):
 	m_state(Invalid256, _db, _bs),
 	m_precommit(Invalid256),
-	m_author(_author)
+    m_author(_author)
 {
 	noteChain(_bc);
 	m_previousBlock.clear();
@@ -77,7 +77,7 @@ Block::Block(BlockChain const& _bc, OverlayDB const& _db, BaseState _bs, Address
 Block::Block(BlockChain const& _bc, OverlayDB const& _db, h256 const& _root, Address const& _author):
 	m_state(Invalid256, _db, BaseState::PreExisting),
 	m_precommit(Invalid256),
-	m_author(_author)
+    m_author(_author)
 {
 	noteChain(_bc);
 	m_state.setRoot(_root);
@@ -95,7 +95,7 @@ Block::Block(Block const& _s):
 	m_previousBlock(_s.m_previousBlock),
 	m_currentBlock(_s.m_currentBlock),
 	m_currentBytes(_s.m_currentBytes),
-	m_author(_s.m_author),
+    m_author(_s.m_author),
 	m_sealEngine(_s.m_sealEngine)
 {
 	m_committedToSeal = false;
@@ -113,7 +113,7 @@ Block& Block::operator=(Block const& _s)
 	m_previousBlock = _s.m_previousBlock;
 	m_currentBlock = _s.m_currentBlock;
 	m_currentBytes = _s.m_currentBytes;
-	m_author = _s.m_author;
+    m_author = _s.m_author;
 	m_sealEngine = _s.m_sealEngine;
 
 	m_precommit = m_state;
@@ -127,7 +127,7 @@ void Block::resetCurrent(u256 const& _timestamp)
 	m_receipts.clear();
 	m_transactionSet.clear();
 	m_currentBlock = BlockHeader();
-	m_currentBlock.setAuthor(m_author);
+    m_currentBlock.setAuthor(m_author);
 	m_currentBlock.setTimestamp(max(m_previousBlock.timestamp() + 1, _timestamp));
 	m_currentBytes.clear();
 	sealEngine()->populateFromParent(m_currentBlock, m_previousBlock);
@@ -183,7 +183,7 @@ PopulationStatistics Block::populateFromChain(BlockChain const& _bc, h256 const&
 		sync(_bc, bi.parentHash(), bip);
 
 		// 2. Enact the block's transactions onto this state.
-		m_author = bi.author();
+        m_author = bi.author();
 		Timer t;
 		auto vb = _bc.verifyBlock(&b, function<void(Exception&)>(), _ir | ImportRequirements::TransactionBasic);
 		ret.verify = t.elapsed();

@@ -19,7 +19,7 @@
  */
 
 #include <include/BuildInfo.h>
-#include <libethashseal/EthashCPUMiner.h>
+//#include <libethashseal/EthashCPUMiner.h>
 #include <test/tools/libtesteth/TestHelper.h>
 #include <test/tools/libtesteth/TestOutputHelper.h>
 #include <test/tools/libtesteth/Options.h>
@@ -67,7 +67,7 @@ void connectClients(Client& c1, Client& c2)
 
 void mine(Block& s, BlockChain const& _bc, SealEngineFace* _sealer)
 {
-	EthashCPUMiner::setNumInstances(1);
+//	EthashCPUMiner::setNumInstances(1);
 	s.commitToSeal(_bc, s.info().extraData());
 	Notified<bytes> sealed;
 	_sealer->onSealGenerated([&](bytes const& sealedHeader){ sealed = sealedHeader; });
@@ -514,10 +514,10 @@ dev::eth::BlockHeader constructHeader(
 	return BlockHeader(rlpStream.out(), HeaderData);
 }
 
-void updateEthashSeal(dev::eth::BlockHeader& _header, h256 const& _mixHash, h64 const& _nonce)
+void updateEthashSeal(dev::eth::BlockHeader& _header, h256 const&, h64 const& _nonce)
 {
 	Ethash::setNonce(_header, _nonce);
-	Ethash::setMixHash(_header, _mixHash);
+//	Ethash::setMixHash(_header, _mixHash);
 }
 
 namespace

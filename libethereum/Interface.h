@@ -207,9 +207,9 @@ public:
 	// [SEALING API]:
 
 	/// Set the block author address.
-	virtual void setAuthor(Address const& _us) = 0;
+    virtual void setAuthor(Address const& _us) = 0;
 	/// Get the block author address.
-	virtual Address author() const = 0;
+    virtual Address author() const = 0;
 
 	/// Start sealing.
 	/// NOT thread-safe - call it & stopSealing only from a single thread

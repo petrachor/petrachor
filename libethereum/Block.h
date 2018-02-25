@@ -30,6 +30,7 @@
 #include <libethcore/Exceptions.h>
 #include <libethcore/BlockHeader.h>
 #include <libethcore/ChainOperationParams.h>
+#include <libdevcrypto/Common.h>
 #include "Account.h"
 #include "Transaction.h"
 #include "TransactionReceipt.h"
@@ -89,14 +90,14 @@ public:
 	/// which uses it. If you have no preexisting database then set BaseState to something other
 	/// than BaseState::PreExisting in order to prepopulate the Trie.
 	/// You can also set the author address.
-	Block(BlockChain const& _bc, OverlayDB const& _db, BaseState _bs = BaseState::PreExisting, Address const& _author = Address());
+    Block(BlockChain const& _bc, OverlayDB const& _db, BaseState _bs = BaseState::PreExisting, Address const& _author = Address());
 
 	/// Basic state object from database.
 	/// Use the default when you already have a database and you just want to make a Block object
 	/// which uses it.
 	/// Will throw InvalidRoot if the root passed is not in the database.
 	/// You can also set the author address.
-	Block(BlockChain const& _bc, OverlayDB const& _db, h256 const& _root, Address const& _author = Address());
+    Block(BlockChain const& _bc, OverlayDB const& _db, h256 const& _root, Address const& _author = Address());
 
 	enum NullType { Null };
 	Block(NullType): m_state(0, OverlayDB(), BaseState::Empty), m_precommit(0) {}
@@ -111,11 +112,11 @@ public:
 	Block& operator=(Block const& _s);
 
 	/// Get the author address for any transactions we do and rewards we get.
-	Address author() const { return m_author; }
+    Address const& author() const { return m_author; }
 
 	/// Set the author address for any transactions we do and rewards we get.
 	/// This causes a complete reset of current block.
-	void setAuthor(Address const& _id) { m_author = _id; resetCurrent(); }
+    void setAuthor(Address const& _id) { m_author = _id; resetCurrent(); }
 
 	/// Note the fact that this block is being used with a particular chain.
 	/// Call this before using any non-const methods.
@@ -313,7 +314,7 @@ private:
 	bytes m_currentTxs;							///< The RLP-encoded block of transactions.
 	bytes m_currentUncles;						///< The RLP-encoded block of uncles.
 
-	Address m_author;							///< Our address (i.e. the address to which fees go).
+    Address m_author;							///< Our address (i.e. the address to which fees go).
 
 	SealEngineFace* m_sealEngine = nullptr;		///< The chain's seal engine.
 };

@@ -43,7 +43,7 @@ public:
 	StringHashMap jsInfo(BlockHeader const& _bi) const override;
 	void verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const override;
 	bool shouldSeal(Interface*) override;
-	void generateSeal(BlockHeader const& _bi) override;
+    void generateSeal(BlockHeader _bi) override;
 
     static ECDSA::Signature sig(BlockHeader const& _bi) { return _bi.seal<ECDSA::Signature>(); }
     static BlockHeader& setSig(BlockHeader& _bi, ECDSA::Signature const& _sig) { _bi.setSeal(_sig); return _bi; }

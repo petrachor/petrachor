@@ -46,7 +46,7 @@ bool BasicAuthority::shouldSeal(Interface* _i)
 	return _i->pendingInfo().timestamp() + 5 <= utcTime() || (_i->pendingInfo().timestamp() <= utcTime() && !_i->pending().empty());
 }
 
-void BasicAuthority::generateSeal(BlockHeader const& _bi)
+void BasicAuthority::generateSeal(BlockHeader _bi)
 {
 	BlockHeader bi = _bi;
 	h256 h = bi.hash(WithoutSeal);
