@@ -34,7 +34,7 @@ void SealEngineFace::verify(Strictness _s, BlockHeader const& _bi, BlockHeader c
 	_bi.verify(_s, _parent, _block);
 }
 
-void SealEngineFace::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent) const
+void SealEngineFace::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent)
 {
 	_bi.populateFromParent(_parent);
 }

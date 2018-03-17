@@ -71,6 +71,15 @@ DEV_SIMPLE_EXCEPTION(InvalidOperationOnSealedBlock);
  * Keeps track of all transactions, receipts and state for a particular block. Can apply all
  * needed transforms of the state for rewards and contains logic for sealing the block.
  */
+
+typedef u256 Difficulty;
+
+class DifficultyData {
+public:
+    u256 timestamp;
+    Difficulty difficulty;
+};
+
 class Block
 {
 	friend class ExtVM;
@@ -276,7 +285,9 @@ public:
 	bytes const& blockData() const { return m_currentBytes; }
 
 	/// Get the header information on the present block.
-	BlockHeader const& info() const { return m_currentBlock; }
+    BlockHeader const& info() const { return m_currentBlock; }
+    BlockHeader const& previousInfo() const { return m_previousBlock; }
+    BlockHeader& info() { return m_currentBlock; }
 
 private:
 	SealEngineFace* sealEngine() const;

@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(blocks)
 				u256 expectedBlockInfoGasUsed = u256(_b["gasUsed"].asString());
 				h256 expectedBlockInfoHash = h256(fromHex(_b["hash"].asString()));
 //				h256 expectedBlockInfoMixHash = h256(fromHex(_b["mixHash"].asString()));
-				eth::Nonce expectedBlockInfoNonce = eth::Nonce(fromHex(_b["nonce"].asString()));
+//				eth::Nonce expectedBlockInfoNonce = eth::Nonce(fromHex(_b["nonce"].asString()));
 				u256 expectedBlockInfoNumber = u256(_b["number"].asString());
 				h256 expectedBlockInfoParentHash = h256(fromHex(_b["parentHash"].asString()));
 				h256 expectedBlockInfoReceiptsRoot = h256(fromHex(_b["receiptTrie"].asString()));
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(blocks)
 				ETH_CHECK_EQUAL(expectedBlockInfoGasUsed, _blockInfo.gasUsed());
 				ETH_CHECK_EQUAL(expectedBlockInfoHash, _blockInfo.hash());
 //				ETH_CHECK_EQUAL(expectedBlockInfoMixHash, Ethash::mixHash(_blockInfo));
-				ETH_CHECK_EQUAL(expectedBlockInfoNonce, Ethash::nonce(_blockInfo));
+//				ETH_CHECK_EQUAL(expectedBlockInfoNonce, Ethash::nonce(_blockInfo));
 				ETH_CHECK_EQUAL(expectedBlockInfoNumber, _blockInfo.number());
 				ETH_CHECK_EQUAL(expectedBlockInfoParentHash, _blockInfo.parentHash());
 				ETH_CHECK_EQUAL(expectedBlockInfoReceiptsRoot, _blockInfo.receiptsRoot());

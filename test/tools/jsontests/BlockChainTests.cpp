@@ -600,7 +600,7 @@ void overwriteBlockHeaderForTest(mObject const& _blObj, TestBlock& _block, Chain
 	//_parentHeader - parent blockheader
 
 	vector<TestBlock> const& importedBlocks = _chainBranch.importedBlocks;
-	const SealEngineFace* sealEngine = _chainBranch.blockchain.interface().sealEngine();
+    SealEngineFace* sealEngine = _chainBranch.blockchain.interface().sealEngine();
 
 	BlockHeader tmp;
 	BlockHeader const& header = _block.blockHeader();
@@ -642,11 +642,11 @@ void overwriteBlockHeaderForTest(mObject const& _blObj, TestBlock& _block, Chain
 		{
 			BlockHeader parentHeader = importedBlocks.at(importedBlocks.size() - 1).blockHeader();
 			tmp.setTimestamp(toInt(ho["RelTimestamp"]) + parentHeader.timestamp());
-			tmp.setDifficulty(((const Ethash*)sealEngine)->calculateDifficulty(tmp, parentHeader));
+            tmp.setDifficulty(((const Ethash*)sealEngine)->calculateDifficulty(tmp, parentHeader.timestamp(), parentHeader.difficulty()));
 		}
 
         //Ethash::setSignature(tmp, ho.count("signature") ? SignatureStruct(ho["signature"].get_str()) : Ethash::signature(header));
-		Ethash::setNonce(tmp, ho.count("nonce") ? eth::Nonce(ho["nonce"].get_str()) : Ethash::nonce(header));
+//		Ethash::setNonce(tmp, ho.count("nonce") ? eth::Nonce(ho["nonce"].get_str()) : Ethash::nonce(header));
 		tmp.noteDirty();
 	}
 	else
@@ -686,7 +686,7 @@ void overwriteUncleHeaderForTest(mObject& uncleHeaderObj, TestBlock& uncle, std:
 	//uncles		 - previously imported uncles
 	//importedBlocks - blocks already included in BlockChain
 	vector<TestBlock> const& importedBlocks = _chainBranch.importedBlocks;
-	const SealEngineFace* sealEngine = _chainBranch.blockchain.interface().sealEngine();
+    SealEngineFace* sealEngine = _chainBranch.blockchain.interface().sealEngine();
 
 	if (uncleHeaderObj.count("sameAsPreviousSibling"))
 	{
@@ -756,7 +756,7 @@ void overwriteUncleHeaderForTest(mObject& uncleHeaderObj, TestBlock& uncle, std:
 			{
 				BlockHeader parentHeader = importedBlocks.at(number).blockHeader();
 				uncleHeader.setTimestamp(toInt(uncleHeaderObj["RelTimestamp"]) + parentHeader.timestamp());
-				uncleHeader.setDifficulty(((const Ethash*)sealEngine)->calculateDifficulty(uncleHeader, parentHeader));
+                uncleHeader.setDifficulty(((const Ethash*)sealEngine)->calculateDifficulty(uncleHeader, parentHeader.timestamp(), parentHeader.difficulty()));
 				uncleHeaderObj.erase("RelTimestamp");
 			}
 		}
@@ -794,8 +794,8 @@ void overwriteUncleHeaderForTest(mObject& uncleHeaderObj, TestBlock& uncle, std:
 
 	if (overwrite == "nonce" || overwrite == "mixHash")
 	{
-		if (overwrite == "nonce")
-			Ethash::setNonce(uncleHeader, eth::Nonce(uncleHeaderObj["nonce"].get_str()));
+//		if (overwrite == "nonce")
+//			Ethash::setNonce(uncleHeader, eth::Nonce(uncleHeaderObj["nonce"].get_str()));
 //        if (overwrite == "signature")
 //            Ethash::setSignature(uncleHeader, h256(uncleHeaderObj["signature"].get_str()));
 
@@ -846,8 +846,10 @@ mObject writeBlockHeaderToJson(BlockHeader const& _bi)
 	o["gasUsed"] = toCompactHexPrefixed(_bi.gasUsed(), 1);
 	o["timestamp"] = toCompactHexPrefixed(_bi.timestamp(), 1);
 	o["extraData"] = (_bi.extraData().size()) ? toHexPrefixed(_bi.extraData()) : "";
-    o["signature"] = toString(Ethash::signature(_bi));
-	o["nonce"] = toString(Ethash::nonce(_bi));
+    o["stakeSignature"] = toString(Ethash::stakeSignature(_bi));
+    o["blockSignature"] = toString(Ethash::blockSignature(_bi));
+    o["publicKey"] = toString(Ethash::publicKey(_bi));
+    o["stakeModifier"] = toString(Ethash::stakeModifier(_bi));
 	o["hash"] = toString(_bi.hash());
 	o = ImportTest::makeAllFieldsHex(o, true);
 	return o;

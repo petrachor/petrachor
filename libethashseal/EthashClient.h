@@ -66,11 +66,6 @@ public:
 	/// @returns true only if it's worth bothering to prep the mining block.
 	bool shouldServeWork() const { return m_bq.items().first == 0 && (isMining() || remoteActive()); }
 
-	/// Update to the latest transactions and get hash of the current block to be mined minus the
-	/// nonce (the 'work hash') and the difficulty to be met.
-	/// @returns Tuple of hash without seal, seed hash, target boundary.
-	std::tuple<h256, h256, h256> getEthashWork();
-
 	/** @brief Submit the proof for the proof-of-work.
 	 * @param _s A valid solution.
 	 * @return true if the solution was indeed valid and accepted.

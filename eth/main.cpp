@@ -736,7 +736,7 @@ int main(int argc, char** argv)
 				if (keyAndHost.size() != 2)
 					continue;
 				pubk = keyAndHost[0];
-				if (pubk.size() != 128)
+				if (pubk.size() != 2*(NodeID::size))
 					continue;
 				hostIP = keyAndHost[1];
 
@@ -748,7 +748,7 @@ int main(int argc, char** argv)
 				if (!required && type != "default")
 					continue;
 
-                ECDSA::Public publicKey(fromHex(pubk));
+				NodeID publicKey(fromHex(pubk));
 				try
 				{
 					preferredNodes[publicKey] = make_pair(NodeIPEndpoint(bi::address::from_string(hostIP), port, port), required);
@@ -1249,7 +1249,15 @@ int main(int argc, char** argv)
 	{
 		unsigned n = c->blockChain().details().number;
 		if (mining)
-			c->startSealing();
+		{
+			std::function<std::string()> passFunction = [=](){ return getPassword("Enter the passphrase for the key: "); };
+			std::vector<KeyPair<BLS>> keyPairs;
+            
+            for (const Address& a: keyManager.accounts()) {
+                keyPairs.push_back(KeyPair<BLS>(keyManager.secret(a, passFunction)));
+            }
+            c->startSealing(keyPairs);
+        }
 
 		while (!exitHandler.shouldExit())
 			stopSealingAfterXBlocks(c, n, mining);

@@ -63,7 +63,7 @@ public:
 		cdebug << "commiting...";
 		_block.commitToSeal(m_bc);
 		cdebug << (void*)sealer();
-		sealer()->generateSeal(_block.info());
+        sealer()->generateSeal(_block.info(), _block.previousInfo());
 		cdebug << toHex((bytes)sealed);
 		sealed.waitNot({});
 		cdebug << toHex((bytes)sealed);

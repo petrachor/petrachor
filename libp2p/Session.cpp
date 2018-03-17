@@ -355,7 +355,7 @@ void Session::disconnect(DisconnectReason _reason)
 	if (m_socket->ref().is_open())
 	{
 		RLPStream s;
-		prep(s, DisconnectPacket, 1) << (int)_reason;
+        prep(s, DisconnectPacket, 1) << (unsigned)(int)_reason;
 		sealAndSend(s, 0);
 	}
 	drop(_reason);

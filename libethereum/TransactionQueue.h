@@ -59,7 +59,7 @@ public:
 	/// Add transaction to the queue to be verified and imported.
 	/// @param _data RLP encoded transaction data.
 	/// @param _nodeId Optional network identified of a node transaction comes from.
-	void enqueue(RLP const& _data, h512 const& _nodeId);
+    void enqueue(RLP const& _data, ECDSA::Public const& _nodeId);
 
 	/// Verify and add transaction to the queue synchronously.
 	/// @param _tx RLP encoded transaction data.
@@ -123,7 +123,7 @@ public:
 	template <class T> Handler<> onReady(T const& _t) { return m_onReady.add(_t); }
 
 	/// Register a handler that will be called once asynchronous verification is comeplte an transaction has been imported
-	template <class T> Handler<ImportResult, h256 const&, h512 const&> onImport(T const& _t) { return m_onImport.add(_t); }
+    template <class T> Handler<ImportResult, h256 const&, ECDSA::Public const&> onImport(T const& _t) { return m_onImport.add(_t); }
 
 	/// Register a handler that will be called once asynchronous verification is comeplte an transaction has been imported
 	template <class T> Handler<h256 const&> onReplaced(T const& _t) { return m_onReplaced.add(_t); }
@@ -145,8 +145,9 @@ private:
 	/// Transaction pending verification
 	struct UnverifiedTransaction
 	{
+        typedef ECDSA::Public NodeID;
 		UnverifiedTransaction() {}
-		UnverifiedTransaction(bytesConstRef const& _t, h512 const& _nodeId): transaction(_t.toBytes()), nodeId(_nodeId) {}
+        UnverifiedTransaction(bytesConstRef const& _t, NodeID const& _nodeId): transaction(_t.toBytes()), nodeId(_nodeId) {}
 		UnverifiedTransaction(UnverifiedTransaction&& _t): transaction(std::move(_t.transaction)), nodeId(std::move(_t.nodeId)) {}
 		UnverifiedTransaction& operator=(UnverifiedTransaction&& _other)
 		{
@@ -161,7 +162,7 @@ private:
 		UnverifiedTransaction& operator=(UnverifiedTransaction const&) = delete;
 
 		bytes transaction;	///< RLP encoded transaction data
-		h512 nodeId;		///< Network Id of the peer transaction comes from
+        NodeID nodeId;		///< Network Id of the peer transaction comes from
 	};
 
 	struct PriorityCompare
@@ -200,8 +201,9 @@ private:
 	std::unordered_map<Address, std::map<u256, PriorityQueue::iterator>> m_currentByAddressAndNonce; ///< Transactions grouped by account and nonce
 	std::unordered_map<Address, std::map<u256, VerifiedTransaction>> m_future;	/// Future transactions
 
+    typedef ECDSA::Public NodeID;
 	Signal<> m_onReady;															///< Called when a subsequent call to import transactions will return a non-empty container. Be nice and exit fast.
-	Signal<ImportResult, h256 const&, h512 const&> m_onImport;					///< Called for each import attempt. Arguments are result, transaction id an node id. Be nice and exit fast.
+    Signal<ImportResult, h256 const&, NodeID const&> m_onImport;					///< Called for each import attempt. Arguments are result, transaction id an node id. Be nice and exit fast.
 	Signal<h256 const&> m_onReplaced;											///< Called whan transction is dropped during a call to import() to make room for another transaction.
 	unsigned m_limit;															///< Max number of pending transactions
 	unsigned m_futureLimit;														///< Max number of future transactions

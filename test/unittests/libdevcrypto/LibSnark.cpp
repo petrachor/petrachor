@@ -79,8 +79,8 @@ BOOST_AUTO_TEST_CASE(blsTest)
     G2 publicKey = BonehLynnShacham::generatePublicKey(secret);
 
     bytesConstRef x;
-    bytes seed(fromHex("0x0123456789abcdef0123456789abcdef00112233445566778899aabbccddeeff"));
-    bytes data(fromHex("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"));
+    bytes seed(fromHex("0x0123456789abcdef"));
+    bytes data(fromHex("0x0011223344556677"));
     G1 element = G1::mapToElement(ref(seed), ref(data));
     G1 signedElement = BonehLynnShacham::sign(element, secret);
     bool valid = BonehLynnShacham::verify(publicKey, element, signedElement);
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE(blsTest)
     bool incorrectPKValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(incorrectSecret), element, signedElement);
     BOOST_CHECK(!incorrectPKValid);
 
-    bytes incorrectSeed(fromHex("0x23456789abcdef0123456789abcdef00112233445566778899aabbccddeeff01"));
-    bytes incorrectData(fromHex("0x112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"));
+    bytes incorrectSeed(fromHex("0x23456789abcdef01"));
+    bytes incorrectData(fromHex("0x1122334455667700"));
     G1 incorrectDataElement = G1::mapToElement(ref(seed), ref(incorrectData));
     bool incorrectDEValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(secret), incorrectDataElement, signedElement);
     BOOST_CHECK(!incorrectDEValid);

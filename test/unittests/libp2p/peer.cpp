@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_SUITE_END()
 
 int peerTest(int argc, char** argv)
 {
-    ECDSA::Public remoteAlias;
+    Keys::Public remoteAlias;
 	short listenPort = 30304;
 	string remoteHost;
 	short remotePort = 30304;
@@ -339,7 +339,7 @@ int peerTest(int argc, char** argv)
 		else if (arg == "-p" && i + 1 < argc)
 			remotePort = (short)atoi(argv[++i]);
 		else if (arg == "-ra" && i + 1 < argc)
-            remoteAlias = ECDSA::Public(dev::fromHex(argv[++i]));
+            remoteAlias = Keys::Public(dev::fromHex(argv[++i]));
 		else
 			remoteHost = argv[i];
 	}

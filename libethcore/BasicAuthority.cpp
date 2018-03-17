@@ -46,13 +46,13 @@ bool BasicAuthority::shouldSeal(Interface* _i)
 	return _i->pendingInfo().timestamp() + 5 <= utcTime() || (_i->pendingInfo().timestamp() <= utcTime() && !_i->pending().empty());
 }
 
-void BasicAuthority::generateSeal(BlockHeader _bi)
+void BasicAuthority::generateSeal(BlockHeader _bi, BlockHeader const& parent)
 {
 	BlockHeader bi = _bi;
 	h256 h = bi.hash(WithoutSeal);
     ECDSA::Signature s = sign<ECDSA>(m_secret, h);
 	setSig(bi, s);
-	SealEngineBase::generateSeal(bi);
+    SealEngineBase::generateSeal(bi,parent);
 }
 
 bool BasicAuthority::onOptionChanging(std::string const& _name, bytes const& _value)
@@ -67,7 +67,7 @@ bool BasicAuthority::onOptionChanging(std::string const& _name, bytes const& _va
 	return true;
 }
 
-void BasicAuthority::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent) const
+void BasicAuthority::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent)
 {
 	SealEngineFace::populateFromParent(_bi, _parent);
 	// pseudo-random difficulty to facilitate fork reduction.

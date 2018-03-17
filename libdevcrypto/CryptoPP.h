@@ -45,7 +45,7 @@ public:
     void encrypt(ECDSA::Public const& _k, bytes& io_cipher);
 	
 	/// Decrypts text (replace input). (ECIES w/XOR-SHA1)
-	void decrypt(Secret const& _k, bytes& io_text);
+    void decrypt(ECDSA::Secret const& _k, bytes& io_text);
 	
 	/// Encrypts text (replace input). (ECIES w/AES128-CTR-SHA256)
     void encryptECIES(ECDSA::Public const& _k, bytes& io_cipher);
@@ -54,10 +54,10 @@ public:
     void encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher);
 	
 	/// Decrypts text (replace input). (ECIES w/AES128-CTR-SHA256)
-	bool decryptECIES(Secret const& _k, bytes& io_text);
+    bool decryptECIES(ECDSA::Secret const& _k, bytes& io_text);
 	
 	/// Decrypts text (replace input). (ECIES w/AES128-CTR-SHA256)
-	bool decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text);
+    bool decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text);
 
 private:
 	Secp256k1PP() = default;

@@ -41,21 +41,19 @@ static const u256 c_secp256k1n("115792089237316195423570985008687907852837564279
 class BLS {
 public:
     typedef BLS12_381::Scalar Secret;
+    typedef FixedHash<BLS12_381::Scalar::size> NonceScalar;
     typedef BLS12_381::G2 Public;
     typedef BLS12_381::G1 Signature;
     struct SignatureStruct : public Signature
     {
         SignatureStruct() {}
-        SignatureStruct(Signature s, Public _publicKey) : Signature(s), publicKey(_publicKey) { }
+        SignatureStruct(Signature const& s, Public const& _publicKey) : Signature(s), publicKey(_publicKey) { }
+        SignatureStruct(bytesConstRef bytes);
         bool isValid() const noexcept;
         bool isZero() const;
         bool lowS() const { return false; }
 
-        void streamRLP(RLPStream& _s, byte) const {
-            _s.appendList(2);
-            _s << Signature(*this) << publicKey;
-        }
-
+        void streamRLP(RLPStream& _s) const;
         Public publicKey;
     };
 };
@@ -82,7 +80,7 @@ public:
         byte v = 0;
 
         void streamRLP(RLPStream& _s, byte chainID) const {
-            _s << (v + (chainID*2 + 35)) << (u256)r << (u256)s;
+            _s << (unsigned) (v + (chainID*2 + 35)) << (u256)r << (u256)s;
         }
     };
 };
@@ -132,6 +130,7 @@ bool decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytesCo
 
 /// Recovers Public key from signed message hash.
 ECDSA::Public recover(ECDSA::Signature const& _sig, h256 const& _hash);
+BLS::Public recover(BLS::SignatureStruct const& _sig, h256 const& _hash);
 
 using Secret = BLS::Secret;
 using Public = BLS::Public;
@@ -201,6 +200,9 @@ class KeyPair
 public:
     typedef typename C::Secret Secret;
     typedef typename C::Public Public;
+    typedef typename C::Signature Signature;
+    typedef typename C::SignatureStruct SignatureStruct;
+    typedef C Type;
 	/// Normal constructor - populates object from the given secret key.
 	/// If the secret key is invalid the constructor succeeds, but public key
     /// and address stay "null".
@@ -254,7 +256,7 @@ namespace crypto
 DEV_SIMPLE_EXCEPTION(InvalidState);
 
 /// Key derivation
-h256 kdf(Secret const& _priv, h256 const& _hash);
+h256 kdf(ECDSA::Secret const& _priv, h256 const& _hash);
 
 /**
  * @brief Generator for non-repeating nonce material.
@@ -291,7 +293,7 @@ bool agree(ECDSA::Secret const& _s, ECDSA::Public const& _r, ECDSA::Secret& o_s)
 namespace ecies
 {
 
-bytes kdf(Secret const& _z, bytes const& _s1, unsigned kdByteLen);
+bytes kdf(ECDSA::Secret const& _z, bytes const& _s1, unsigned kdByteLen);
 
 }
 }

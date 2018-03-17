@@ -68,7 +68,7 @@ Client::Client(
 	TransactionQueue::Limits const& _l
 ):
 	ClientBase(_l),
-	Worker("eth", 0),
+    Worker("eth", 20),
 	m_bc(_params, _dbPath, _forceAction, [](unsigned d, unsigned t){ std::cerr << "REVISING BLOCKCHAIN: Processed " << d << " of " << t << "...\r"; }),
 	m_gp(_gpForAdoption ? _gpForAdoption : make_shared<TrivialGasPricer>()),
 	m_preSeal(chainParams().accountStartNonce),
@@ -264,6 +264,7 @@ void Client::reopenChain(ChainParams const& _p, WithExisting _we)
 		m_stateDB = State::openDB(Defaults::dbPath(), bc().genesisHash(), _we);
 
 		m_preSeal = bc().genesisBlock(m_stateDB);
+        m_preSeal.resetCurrent();
         m_preSeal.setAuthor(author);
 		m_postSeal = m_preSeal;
 		m_working = Block(chainParams().accountStartNonce);
@@ -572,13 +573,13 @@ void Client::startSealing()
 	if (m_wouldSeal == true)
 		return;
     clog(ClientNote) << "Mining Beneficiary address: " << author();
-    if (author())
+//    if (author())
 	{
 		m_wouldSeal = true;
 		m_signalled.notify_all();
 	}
-	else
-		clog(ClientNote) << "You need to set an author in order to seal!";
+    //else
+        //clog(ClientNote) << "You need to set an author in order to seal!";
 }
 
 void Client::rejigSealing()
@@ -599,21 +600,24 @@ void Client::rejigSealing()
 				}
 				m_working.commitToSeal(bc(), m_extraData);
 			}
+            BlockHeader parent;
 			DEV_READ_GUARDED(x_working)
 			{
-				DEV_WRITE_GUARDED(x_postSeal)
+                DEV_WRITE_GUARDED(x_postSeal)
 					m_postSeal = m_working;
 				m_sealingInfo = m_working.info();
+                parent = m_working.previousInfo();
 			}
 
 			if (wouldSeal())
 			{
 				sealEngine()->onSealGenerated([=](bytes const& header){
+
 					if (!this->submitSealed(header))
 						clog(ClientNote) << "Submitting block failed...";
 				});
 				ctrace << "Generating seal on" << m_sealingInfo.hash(WithoutSeal) << "#" << m_sealingInfo.number();
-				sealEngine()->generateSeal(m_sealingInfo);
+                sealEngine()->generateSeal(m_sealingInfo, parent);
 			}
 		}
 		else
@@ -779,7 +783,11 @@ SyncStatus Client::syncStatus() const
 
 bool Client::submitSealed(bytes const& _header)
 {
-	bytes newBlock;
+    BlockHeader h(_header, HeaderData);
+    clog << "Submit sealed " << h.number();
+    m_working.info().setTimestamp(h.timestamp());
+    m_working.info().setDifficulty(h.difficulty());
+    bytes newBlock;
 	{
 		UpgradableGuard l(x_working);
 		{

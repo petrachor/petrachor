@@ -3,12 +3,13 @@
 
 #include <libdevcore/Address.h>
 #include <libdevcore/Common.h>
+#include <libdevcore/RLP.h>
 #include <libdevcore/Exceptions.h>
 #include <libdevcore/FixedHash.h>
 
 namespace dev {
     using H48 = FixedHash<48>;
-    using H96 = FixedHash<96>;
+    typedef FixedHash<96> H96;
     using H192 = FixedHash<192>;
     using H12_48 = FixedHash<12*48>;
 }
@@ -51,13 +52,21 @@ namespace dev {
             static G1 publicFromPrivateKey(Scalar privateKey) { return getOne().mul(privateKey); }
 
             G1() : H48() {}
-            G1(bytesConstRef d) : H48(d) { }
-            G1 mul(Scalar s);
-            G1 add(G1 other);
-            G1 neg();
+            G1(bytesConstRef d) : H48(d) { assert(d.size() == H48::size); }
+            G1 mul(Scalar const& s) const;
+            G1 add(G1 const& other) const;
+            G1 neg() const;
+            G1(bytes b) : H48(b) { }
+
+            G1 operator-() { return neg(); }
+
+            void streamRLP(RLPStream& s) { s << asBytes(); }
 
             ArrayStruct8 toAS();
         };
+
+        G1 operator * (Scalar const& s, G1 const& a);
+        G1 operator + (G1 const& a, G1 const& b);
 
         class G2 : public H96 {
         public:
@@ -66,20 +75,29 @@ namespace dev {
             static G2 mapToElement(bytesConstRef seed, bytesConstRef data);
             static G2 publicFromPrivateKey(Scalar privateKey) { return getOne().mul(privateKey); }
 
+            explicit G2(std::string const& _s, ConstructFromStringType _t = FromHex, ConstructFromHashType _ht = FailIfDifferent): H96(_s, _t, _ht) {}
+
             G2() : H96() {}
             G2(const G2& g) : H96(g) {}
             G2(dev::FixedHash<96> h) : H96(h) { }
-            G2(bytesConstRef d) : H96(d) { }
+            G2(bytesConstRef d) : H96(d) { assert(d.size() == H96::size); }
             G2(bytes d) : H96(d) { }
 
             G2(dev::FixedHash<32> h) { *this = G2::publicFromPrivateKey(Scalar(h)); }
 //            G2(std::string s) : H96(bytesConstRef(s)) { }
-            G2 mul(Scalar s);
-            G2 add(G2 other);
-            G2 neg();
+            G2 mul(Scalar const& s) const;
+            G2 add(G2 const& other) const;
+            G2 neg() const;
+
+            G2 operator-() { return neg(); }
+
+            void streamRLP(RLPStream& s) { s << asBytes(); }
 
             ArrayStruct8 toAS();
         };
+
+        G2 operator * (Scalar const& s, G2 const& a);
+        G2 operator + (G2 const& a, G2 const& b);
 
         typedef std::pair<G1, G2> G1G2;
         typedef std::vector<G1G2> G1G2s;
@@ -88,25 +106,30 @@ namespace dev {
         public:
             static GT getOne();
             static GT getZero();
-            static GT fromPairing(G1 g1, G2 g2);
-            static GT fromMultiPairing(G1G2s gs);
+            static GT fromPairing(G1 const& g1, G2 const& g2);
+            static GT fromMultiPairing(G1G2s const& gs);
 
             GT() : H12_48() {}
             GT(bytesConstRef d) : H12_48(d) { }
-            GT mul(GT other);
-            GT inv();
+            GT mul(GT const& other) const;
+            GT inv() const;
+            GT(bytes b) : H12_48(b) { }
 
             ArrayStruct64 toAS();
         };
 
         class BonehLynnShacham {
         public:
-            static G2 generatePublicKey(const Scalar& secret);
-            static G1 sign(G1 element, const Scalar& secret);
+            static G2 generatePublicKey(Scalar const& secret);
+            static G1 sign(G1 const& element, Scalar const& secret);
             static bool verify(G2 publicKey, G1 element, G1 signedElement);
         };
 
     }
+
+    template <> struct Converter<BLS12_381::G1> { static BLS12_381::G1 convert(RLP const& _r, int _flags) { return (BLS12_381::G1) _r.toBytes(_flags); } };
+    template <> struct Converter<BLS12_381::G2> { static BLS12_381::G2 convert(RLP const& _r, int _flags) { return (BLS12_381::G2) _r.toBytes(_flags); } };
+    template <> struct Converter<BLS12_381::GT> { static BLS12_381::GT convert(RLP const& _r, int _flags) { return (BLS12_381::GT) _r.toBytes(_flags); } };
 
 }
 

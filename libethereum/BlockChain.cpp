@@ -1445,7 +1445,7 @@ Block BlockChain::genesisBlock(OverlayDB const& _db) const
 		if (ret.mutableState().rootHash() != r)
 		{
 			cwarn << "Hinted genesis block's state root hash is incorrect!";
-			cwarn << "Hinted" << r << ", computed" << ret.mutableState().rootHash();
+            cwarn << "Hinted" << r << ", computed" << ret.mutableState().rootHash() << ", computed full " << ret.mutableState().rootHash().hex();
 			// TODO: maybe try to fix it by altering the m_params's genesis block?
 			exit(-1);
 		}
@@ -1466,13 +1466,14 @@ VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, std::function<voi
 			BOOST_THROW_EXCEPTION(InvalidParentHash() << errinfo_required_h256(h.parentHash()) << errinfo_currentNumber(h.number()));
 
 		BlockHeader parent;
-		if (!!(_ir & ImportRequirements::Parent))
-		{
+        //if (!!(_ir & ImportRequirements::Parent))
+        //{
 			bytes parentHeader(headerData(h.parentHash()));
 			if (parentHeader.empty())
 				BOOST_THROW_EXCEPTION(InvalidParentHash() << errinfo_required_h256(h.parentHash()) << errinfo_currentNumber(h.number()));
 			parent = BlockHeader(parentHeader, HeaderData, h.parentHash());
-		}
+        //}
+        //clog << "H.number: " << h.number() << " parent.mumber " << parent.number() << "\n";
 		sealEngine()->verify((_ir & ImportRequirements::ValidSeal) ? Strictness::CheckEverything : Strictness::QuickNonce, h, parent, _block);
 		res.info = h;
 	}

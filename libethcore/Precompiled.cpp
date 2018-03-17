@@ -202,13 +202,13 @@ ETH_REGISTER_PRECOMPILED(BLS12_381_GT)(bytesConstRef _in) {
     return MultiplicativeGroup<dev::BLS12_381::GT>::executeCommand(_in);
 }
 
-ETH_REGISTER_PRECOMPILED(BLS12_381_Pairing)(bytesConstRef _in) {
+ETH_REGISTER_PRECOMPILED(bls12_381_pairing)(bytesConstRef _in) {
     TupleDecoder d(_in);
     bytes g1 = d.getBytes(), g2 = d.getBytes();
     return {true, dev::BLS12_381::GT::fromPairing(dev::BLS12_381::G1(ref(g1)), dev::BLS12_381::G2(ref(g2))).asBytes() };
 }
 
-ETH_REGISTER_PRECOMPILED(BLS12_381_MultiPairing)(bytesConstRef _in) {
+ETH_REGISTER_PRECOMPILED(bls12_381_multipairing)(bytesConstRef _in) {
     TupleDecoder d(_in);
     bytes g1 = d.getBytes(), g2 = d.getBytes();
     return {true, dev::BLS12_381::GT::fromPairing(dev::BLS12_381::G1(ref(g1)), dev::BLS12_381::G2(ref(g2))).asBytes() };

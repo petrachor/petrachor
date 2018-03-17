@@ -688,15 +688,6 @@ void Block::applyRewards(vector<BlockHeader> const& _uncleBlockHeaders, u256 con
 
 void Block::performIrregularModifications()
 {
-	u256 const& daoHardfork = m_sealEngine->chainParams().daoHardforkBlock;
-	if (daoHardfork != 0 && info().number() == daoHardfork)
-	{
-		Address recipient("0xbf4ed7b27f1d666546e30d74d50d173d20bca754");
-		Addresses allDAOs = childDaos();
-		for (Address const& dao: allDAOs)
-			m_state.transferBalance(dao, recipient, m_state.balance(dao));
-		m_state.commit(State::CommitBehaviour::KeepEmptyAccounts);
-	}
 }
 
 void Block::updateBlockhashContract()
@@ -838,7 +829,11 @@ bool Block::sealBlock(bytesConstRef _header)
 	if (!m_committedToSeal)
 		return false;
 
-	if (BlockHeader(_header, HeaderData).hash(WithoutSeal) != m_currentBlock.hash(WithoutSeal))
+    BlockHeader testHeader(_header, HeaderData);
+    testHeader.setTimestamp(m_currentBlock.timestamp());
+    testHeader.setDifficulty(m_currentBlock.difficulty());
+//    clog << "block A: " << testHeader << " block B: " << m_currentBlock << "\n";
+    if (testHeader.hash(WithoutSeal) != m_currentBlock.hash(WithoutSeal))
 		return false;
 
 	clog(StateDetail) << "Sealing block!";
@@ -851,6 +846,7 @@ bool Block::sealBlock(bytesConstRef _header)
 	ret.appendRaw(m_currentUncles);
 	ret.swapOut(m_currentBytes);
 	m_currentBlock = BlockHeader(_header, HeaderData);
+    clog << "sealblock, currentblock " << m_currentBlock.number();
 //	cnote << "Mined " << m_currentBlock.hash() << "(parent: " << m_currentBlock.parentHash() << ")";
 	// TODO: move into SealEngine
 

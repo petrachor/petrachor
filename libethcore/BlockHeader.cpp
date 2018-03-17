@@ -106,8 +106,7 @@ void BlockHeader::clear()
 	m_transactionsRoot = EmptyTrie;
 	m_receiptsRoot = EmptyTrie;
 	m_logBloom = LogBloom();
-	m_difficulty = 0;
-    m_stakeModifier = StakeModifier();
+    m_difficulty = 0;
 	m_number = 0;
 	m_gasLimit = 0;
 	m_gasUsed = 0;
@@ -134,7 +133,7 @@ h256 BlockHeader::hash(IncludeSeal _i) const
 void BlockHeader::streamRLPFields(RLPStream& _s) const
 {
     _s	<< m_parentHash << m_sha3Uncles << m_author << m_stateRoot << m_transactionsRoot << m_receiptsRoot << m_logBloom
-        << m_difficulty << m_stakeModifier << m_number << m_gasLimit << m_gasUsed << m_timestamp << m_extraData;
+        << m_difficulty << m_number << m_gasLimit << m_gasUsed << m_timestamp << m_extraData;
 }
 
 void BlockHeader::streamRLP(RLPStream& _s, IncludeSeal _i) const
@@ -174,22 +173,21 @@ void BlockHeader::populate(RLP const& _header)
 	int field = 0;
 	try
 	{
-		m_parentHash = _header[field = 0].toHash<h256>(RLP::VeryStrict);
-		m_sha3Uncles = _header[field = 1].toHash<h256>(RLP::VeryStrict);
-        m_author = _header[field = 2].toHash<Address>(RLP::VeryStrict);
-		m_stateRoot = _header[field = 3].toHash<h256>(RLP::VeryStrict);
-		m_transactionsRoot = _header[field = 4].toHash<h256>(RLP::VeryStrict);
-		m_receiptsRoot = _header[field = 5].toHash<h256>(RLP::VeryStrict);
-		m_logBloom = _header[field = 6].toHash<LogBloom>(RLP::VeryStrict);
-		m_difficulty = _header[field = 7].toInt<u256>();
-        m_stakeModifier = _header[field = 8].toHash<StakeModifier>(RLP::VeryStrict);
-        m_number = _header[field = 9].toInt<u256>();
-        m_gasLimit = _header[field = 10].toInt<u256>();
-        m_gasUsed = _header[field = 11].toInt<u256>();
-        m_timestamp = _header[field = 12].toInt<u256>();
-        m_extraData = _header[field = 13].toBytes();
-		m_seal.clear();
-        for (unsigned i = 14; i < _header.itemCount(); ++i)
+        m_parentHash = _header[field++].toHash<h256>(RLP::VeryStrict);
+        m_sha3Uncles = _header[field++].toHash<h256>(RLP::VeryStrict);
+        m_author = _header[field++].toHash<Address>(RLP::VeryStrict);
+        m_stateRoot = _header[field++].toHash<h256>(RLP::VeryStrict);
+        m_transactionsRoot = _header[field++].toHash<h256>(RLP::VeryStrict);
+        m_receiptsRoot = _header[field++].toHash<h256>(RLP::VeryStrict);
+        m_logBloom = _header[field++].toHash<LogBloom>(RLP::VeryStrict);
+        m_difficulty = _header[field++].toInt<u256>();
+        m_number = _header[field++].toInt<u256>();
+        m_gasLimit = _header[field++].toInt<u256>();
+        m_gasUsed = _header[field++].toInt<u256>();
+        m_timestamp = _header[field++].toInt<u256>();
+        m_extraData = _header[field++].toBytes();
+        m_seal.clear();
+        for (unsigned i = field; i < _header.itemCount(); ++i)
 			m_seal.push_back(_header[i].data().toBytes());
 	}
 	catch (Exception const& _e)
@@ -238,7 +236,7 @@ void BlockHeader::verify(Strictness _s, BlockHeader const& _parent, bytesConstRe
 		auto txList = root[1];
 		auto expectedRoot = trieRootOver(txList.itemCount(), [&](unsigned i){ return rlp(i); }, [&](unsigned i){ return txList[i].data().toBytes(); });
 
-		clog(BlockInfoDiagnosticsChannel) << "Expected trie root:" << toString(expectedRoot);
+//		clog(BlockInfoDiagnosticsChannel) << "Expected trie root:" << toString(expectedRoot);
 		if (m_transactionsRoot != expectedRoot)
 		{
 			MemoryDB tm;
@@ -266,7 +264,7 @@ void BlockHeader::verify(Strictness _s, BlockHeader const& _parent, bytesConstRe
 
 			BOOST_THROW_EXCEPTION(InvalidTransactionsRoot() << Hash256RequirementError(expectedRoot, m_transactionsRoot));
 		}
-		clog(BlockInfoDiagnosticsChannel) << "Expected uncle hash:" << toString(sha3(root[2].data()));
+//		clog(BlockInfoDiagnosticsChannel) << "Expected uncle hash:" << toString(sha3(root[2].data()));
 		if (m_sha3Uncles != sha3(root[2].data()))
 			BOOST_THROW_EXCEPTION(InvalidUnclesHash() << Hash256RequirementError(sha3(root[2].data()), m_sha3Uncles));
 	}

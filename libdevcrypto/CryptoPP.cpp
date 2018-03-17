@@ -2,16 +2,16 @@
  This file is part of cpp-ethereum.
  
  cpp-ethereum is free software: you can redistribute it and/or modify
- it under the terms of the GNU General ECDSA::Public License as published by
+ it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
  
  cpp-ethereum is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General ECDSA::Public License for more details.
+ GNU General Public License for more details.
  
- You should have received a copy of the GNU General ECDSA::Public License
+ You should have received a copy of the GNU General Public License
  along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
  */
 /** @file CryptoPP.cpp
@@ -69,7 +69,7 @@ private:
 
 inline CryptoPP::ECP::Point publicToPoint(ECDSA::Public const& _p) { CryptoPP::Integer x(_p.data(), 32); CryptoPP::Integer y(_p.data() + 32, 32); return CryptoPP::ECP::Point(x,y); }
 
-inline CryptoPP::Integer secretToExponent(Secret const& _s) { return CryptoPP::Integer(_s.data(), Secret::size); }
+inline CryptoPP::Integer secretToExponent(ECDSA::Secret const& _s) { return CryptoPP::Integer(_s.data(), ECDSA::Secret::size); }
 
 }
 
@@ -86,9 +86,10 @@ void Secp256k1PP::encryptECIES(ECDSA::Public const& _k, bytes& io_cipher)
 
 void Secp256k1PP::encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher)
 {
+    typedef KeyPair<BLS> Keys;
 	// interop w/go ecies implementation
-    auto r = KeyPair<ECDSA>::create();
-    ECDSA::Secret z;
+    auto r = Keys::create();
+    Secret z;
 	ecdh::agree(r.secret(), _k, z);
 	auto key = ecies::kdf(z, bytes(), 32);
 	bytesConstRef eKey = bytesConstRef(&key).cropped(0, 16);
@@ -103,36 +104,36 @@ void Secp256k1PP::encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMac
 	if (cipherText.empty())
 		return;
 
-    bytes msg(1 + ECDSA::Public::size + h128::size + cipherText.size() + 32);
+    bytes msg(1 + Keys::Public::size + h128::size + cipherText.size() + 32);
 	msg[0] = 0x04;
-    r.pub().ref().copyTo(bytesRef(&msg).cropped(1, ECDSA::Public::size));
-    iv.ref().copyTo(bytesRef(&msg).cropped(1 + ECDSA::Public::size, h128::size));
-    bytesRef msgCipherRef = bytesRef(&msg).cropped(1 + ECDSA::Public::size + h128::size, cipherText.size());
+    r.pub().ref().copyTo(bytesRef(&msg).cropped(1, Keys::Public::size));
+    iv.ref().copyTo(bytesRef(&msg).cropped(1 + Keys::Public::size, h128::size));
+    bytesRef msgCipherRef = bytesRef(&msg).cropped(1 + Keys::Public::size + h128::size, cipherText.size());
 	bytesConstRef(&cipherText).copyTo(msgCipherRef);
 	
 	// tag message
 	CryptoPP::HMAC<CryptoPP::SHA256> hmacctx(mKey.data(), mKey.size());
-    bytesConstRef cipherWithIV = bytesRef(&msg).cropped(1 + ECDSA::Public::size, h128::size + cipherText.size());
+    bytesConstRef cipherWithIV = bytesRef(&msg).cropped(1 + Keys::Public::size, h128::size + cipherText.size());
 	hmacctx.Update(cipherWithIV.data(), cipherWithIV.size());
 	hmacctx.Update(_sharedMacData.data(), _sharedMacData.size());
-    hmacctx.Final(msg.data() + 1 + ECDSA::Public::size + cipherWithIV.size());
+    hmacctx.Final(msg.data() + 1 + Keys::Public::size + cipherWithIV.size());
 	
 	io_cipher.resize(msg.size());
-	io_cipher.swap(msg);
+    io_cipher.swap(msg);
 }
 
-bool Secp256k1PP::decryptECIES(Secret const& _k, bytes& io_text)
+bool Secp256k1PP::decryptECIES(ECDSA::Secret const& _k, bytes& io_text)
 {
 	return decryptECIES(_k, bytesConstRef(), io_text);
 }
 
-bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text)
+bool Secp256k1PP::decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text)
 {
 
 	// interop w/go ecies implementation
 	
     // io_cipher[0] must be 2, 3, or 4, else invalidECDSA::Publickey
-	if (io_text.empty() || io_text[0] < 2 || io_text[0] > 4)
+    if (io_text.empty() || io_text[0] < 2 || io_text[0] > 4)
         // invalid message: ECDSA::Publickey
 		return false;
 	
@@ -140,7 +141,7 @@ bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, b
 		// invalid message: length
 		return false;
 
-	Secret z;
+    ECDSA::Secret z;
     if (!ecdh::agree(_k, *(ECDSA::Public*)(io_text.data() + 1), z))
 		return false;  // Invalid pubkey or seckey.
 	auto key = ecies::kdf(z, bytes(), 64);
@@ -178,9 +179,9 @@ bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, b
 
 void Secp256k1PP::encrypt(ECDSA::Public const& _k, bytes& io_cipher)
 {
-	auto& ctx = Secp256k1PPCtx::get();
+    auto& ctx = Secp256k1PPCtx::get();
 	CryptoPP::ECIES<CryptoPP::ECP>::Encryptor e;
-	{
+    {
 		Guard l(ctx.x_params);
         e.AccessKey().Initialize(ctx.m_params, publicToPoint(_k));
 	}
@@ -195,10 +196,10 @@ void Secp256k1PP::encrypt(ECDSA::Public const& _k, bytes& io_cipher)
 	}
 	
 	memset(io_cipher.data(), 0, io_cipher.size());
-	io_cipher = std::move(ciphertext);
+    io_cipher = std::move(ciphertext);
 }
 
-void Secp256k1PP::decrypt(Secret const& _k, bytes& io_text)
+void Secp256k1PP::decrypt(ECDSA::Secret const& _k, bytes& io_text)
 {
 	auto& ctx = Secp256k1PPCtx::get();
 	CryptoPP::ECIES<CryptoPP::ECP>::Decryptor d;
@@ -230,5 +231,5 @@ void Secp256k1PP::decrypt(Secret const& _k, bytes& io_text)
 	}
 	
 	io_text.resize(r.messageLength);
-	io_text = std::move(plain);
+    io_text = std::move(plain);
 }

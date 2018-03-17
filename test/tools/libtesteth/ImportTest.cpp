@@ -343,8 +343,9 @@ void ImportTest::importState(json_spirit::mObject const& _o, State& _state)
 			BOOST_THROW_EXCEPTION(MissingFields() << errinfo_comment("Import State: Missing state fields!"));
 }
 
-void ImportTest::importTransaction (json_spirit::mObject const& _o, eth::Transaction& o_tr)
+void ImportTest::importTransaction (json_spirit::mObject const& , eth::Transaction& )
 {
+    /*
 	if (_o.count("secretKey") > 0)
 	{
 		BOOST_REQUIRE(_o.count("nonce") > 0);
@@ -396,7 +397,8 @@ void ImportTest::importTransaction (json_spirit::mObject const& _o, eth::Transac
 		{
 			cnote << "invalid transaction" << boost::diagnostic_information(_e);
 		}
-	}
+    }*/
+    cnote << "invalid transaction";
 }
 
 void ImportTest::importTransaction(json_spirit::mObject const& o_tr)

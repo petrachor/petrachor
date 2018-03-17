@@ -338,16 +338,16 @@ dev::bytes TestBlock::createBlockRLPFromFields(mObject const& _tObj, h256 const&
 	return rlpStream.out();
 }
 
-void TestBlock::updateNonce(TestBlockChain const& _bc)
+void TestBlock::updateNonce(TestBlockChain const& )
 {
-	if (((BlockHeader)m_blockHeader).difficulty() == 0)
+/*	if (((BlockHeader)m_blockHeader).difficulty() == 0)
 		BOOST_TEST_MESSAGE("Trying to mine a block with 0 difficulty! " + TestOutputHelper::testName());
 	else
 	{
 		//do not verify blockheader for validity here
 		dev::eth::mine(m_blockHeader, _bc.interface().sealEngine(), false);
 	}
-
+*/
 	recalcBlockHeaderBytes();
 }
 

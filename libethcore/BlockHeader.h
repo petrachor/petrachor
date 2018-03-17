@@ -97,6 +97,7 @@ DEV_SIMPLE_EXCEPTION(GenesisBlockCannotBeCalculated);
 typedef h256 StakeModifier;
 typedef h256 StakeMessage;
 typedef h256 StakeSignatureHash;
+typedef KeyPair<BLS> StakeKeys;
 
 class BlockHeader
 {
@@ -125,8 +126,7 @@ public:
 			m_transactionsRoot == _cmp.transactionsRoot() &&
 			m_receiptsRoot == _cmp.receiptsRoot() &&
 			m_logBloom == _cmp.logBloom() &&
-			m_difficulty == _cmp.difficulty() &&
-            m_stakeModifier == _cmp.stakeModifier() &&
+            m_difficulty == _cmp.difficulty() &&
             m_number == _cmp.number() &&
 			m_gasLimit == _cmp.gasLimit() &&
 			m_gasUsed == _cmp.gasUsed() &&
@@ -156,8 +156,7 @@ public:
 	void setGasLimit(u256 const& _v) { m_gasLimit = _v; noteDirty(); }
 	void setExtraData(bytes const& _v) { m_extraData = _v; noteDirty(); }
 	void setLogBloom(LogBloom const& _v) { m_logBloom = _v; noteDirty(); }
-	void setDifficulty(u256 const& _v) { m_difficulty = _v; noteDirty(); }
-    void setStakeModifier(StakeModifier const& _v) { m_stakeModifier = _v; noteDirty(); }
+    void setDifficulty(u256 const& _v) { m_difficulty = _v; noteDirty(); }
 	template <class T> void setSeal(unsigned _offset, T const& _value) { Guard l(m_sealLock); if (m_seal.size() <= _offset) m_seal.resize(_offset + 1); m_seal[_offset] = rlp(_value); noteDirty(); }
 	template <class T> void setSeal(T const& _value) { setSeal(0, _value); }
 
@@ -174,8 +173,7 @@ public:
 	u256 const& gasLimit() const { return m_gasLimit; }
 	bytes const& extraData() const { return m_extraData; }
 	LogBloom const& logBloom() const { return m_logBloom; }
-	u256 const& difficulty() const { return m_difficulty; }
-    StakeModifier const& stakeModifier() const { return m_stakeModifier; }
+    u256 const& difficulty() const { return m_difficulty; }
     template <class T> T seal(unsigned _offset = 0) const { T ret; Guard l(m_sealLock); if (_offset < m_seal.size()) ret = RLP(m_seal[_offset]).convert<T>(RLP::VeryStrict); return ret; }
 
 private:
@@ -210,9 +208,7 @@ private:
 	u256 m_timestamp = Invalid256;
 
     Address m_author;
-//    dev::BLS::Public m_authorPublicKey;
-	u256 m_difficulty;
-    StakeModifier m_stakeModifier;
+    u256 m_difficulty;
 
 	std::vector<bytes> m_seal;		///< Additional (RLP-encoded) header fields.
 	mutable Mutex m_sealLock;
@@ -225,7 +221,7 @@ private:
 inline std::ostream& operator<<(std::ostream& _out, BlockHeader const& _bi)
 {
 	_out << _bi.hash(WithoutSeal) << " " << _bi.parentHash() << " " << _bi.sha3Uncles() << " " << _bi.author() << " " << _bi.stateRoot() << " " << _bi.transactionsRoot() << " " <<
-            _bi.receiptsRoot() << " " << _bi.logBloom() << " " << _bi.difficulty() << " " << _bi.stakeModifier() << " " << _bi.number() << " " << _bi.gasLimit() << " " <<
+            _bi.receiptsRoot() << " " << _bi.logBloom() << " " << _bi.difficulty() << " " << _bi.number() << " " << _bi.gasLimit() << " " <<
 			_bi.gasUsed() << " " << _bi.timestamp();
 	return _out;
 }

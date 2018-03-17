@@ -67,6 +67,32 @@ bool BLS::SignatureStruct::isValid() const noexcept
     return true;
 }
 
+class RLPList {
+public:
+    RLPList(RLP const& _rlp, size_t expectedItemCount);
+    RLP pop() { return rlp[ix++]; }
+private:
+    RLP const& rlp;
+    size_t ix = 0;
+};
+
+RLPList::RLPList(RLP const& _rlp, size_t expectedItemCount) : rlp(_rlp) {
+    assert(rlp.isList());
+    assert(rlp.itemCount() == expectedItemCount);
+}
+
+template <class T> RLPList& operator>>(RLPList& i, T& data) { data = T(i.pop().convert<T>(RLP::VeryStrict)); return i; }
+
+BLS::SignatureStruct::SignatureStruct(bytesConstRef bytes) {
+    RLP r(bytes);
+    RLPList s(r, 2); s >> ((Signature&) *this) >> publicKey;
+}
+
+void BLS::SignatureStruct::streamRLP(RLPStream& _s) const {
+    _s.appendList(2) << Signature(*this) << publicKey;
+}
+
+
 bool ECDSA::SignatureStruct::isZero() const {
     return !s && !r;
 }
@@ -131,13 +157,13 @@ void dev::encryptECIES(ECDSA::Public const& _k, bytesConstRef _plain, bytes& o_c
 void dev::encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMacData, bytesConstRef _plain, bytes& o_cipher)
 {
 	bytes io = _plain.toBytes();
-	Secp256k1PP::get()->encryptECIES(_k, _sharedMacData, io);
-	o_cipher = std::move(io);
+    Secp256k1PP::get()->encryptECIES(_k, _sharedMacData, io);
+    o_cipher = std::move(io);
 }
 
 bool dev::decryptECIES(ECDSA::Secret const& _k, bytesConstRef _cipher, bytes& o_plaintext)
 {
-	return decryptECIES(_k, bytesConstRef(),  _cipher, o_plaintext);
+    return decryptECIES(_k, bytesConstRef(),  _cipher, o_plaintext);
 }
 
 bool dev::decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytesConstRef _cipher, bytes& o_plaintext)
@@ -209,7 +235,7 @@ bytesSec dev::decryptAES128CTR(bytesConstRef _k, h128 const& _iv, bytesConstRef 
 
 dev::ECDSA::Public dev::recover(dev::ECDSA::Signature const& _sig, h256 const& _message)
 {
-	int v = _sig[64];
+    int v = _sig[64];
 	if (v > 3)
 		return {};
 
@@ -262,16 +288,25 @@ dev::ECDSA::Signature dev::sign<ECDSA>(ECDSA::Secret const& _k, h256 const& _has
 
 bool dev::verify(ECDSA::Public const& _p, ECDSA::Signature const& _s, h256 const& _hash)
 {
-	// TODO: Verify w/o recovery (if faster).
-	if (!_p)
-		return false;
-	return _p == recover(_s, _hash);
+    // TODO: Verify w/o recovery (if faster).
+    if (!_p)
+        return false;
+    return _p == recover(_s, _hash);
 }
 
-    BLS12_381::G1 hashToElement(BLS::Public const& publicKey, h256 const& hash) {
-        bytes pk = publicKey.asBytes();
-        bytes h = hash.asBytes();
-        return BLS12_381::G1::mapToElement(ref(pk), ref(h));
+bool dev::verify(BLS::Public const& _publicKey, BLS::Signature const& _signature, h256 const& _hash) { return verify<BLS>(_publicKey, _signature, _hash); }
+
+bytes to8ByteHash(bytes from) {
+    bytes x = sha3(from).asBytes();
+    for (size_t q = sizeof(h64); q < x.size(); ++q) { x[q % sizeof(h64)] ^= x[q]; }
+    x.resize(sizeof(h64));
+    return x;
+}
+
+    BLS12_381::G1 hashToElement(Public const& publicKey, h256 const& hash) {
+        bytes pkH = to8ByteHash(publicKey.asBytes());
+        bytes h = to8ByteHash(hash.asBytes());
+        return BLS12_381::G1::mapToElement(ref(pkH), ref(h));
     }
 
     template <>
@@ -281,9 +316,9 @@ bool dev::verify(ECDSA::Public const& _p, ECDSA::Signature const& _s, h256 const
     }
 
     template <>
-    bool dev::verify<BLS>(BLS::Public const& publicKey, BLS::Signature const& signedElement, h256 const& hash)
+    bool dev::verify<BLS>(BLS::Public const& publicKey, BLS::Signature const& signature, h256 const& hash)
     {
-        return BLS12_381::BonehLynnShacham::verify(publicKey, hashToElement(publicKey, hash), signedElement);
+        return BLS12_381::BonehLynnShacham::verify(publicKey, hashToElement(publicKey, hash), signature);
     }
 
 bytesSec dev::pbkdf2(string const& _pass, bytes const& _salt, unsigned _iterations, unsigned _dkLen)
@@ -321,11 +356,11 @@ bytesSec dev::scrypt(std::string const& _pass, bytes const& _salt, uint64_t _n, 
 	return ret;
 }
 
-h256 crypto::kdf(Secret const& _priv, h256 const& _hash)
+h256 crypto::kdf(ECDSA::Secret const& _priv, h256 const& _hash)
 {
 	// H(H(r||k)^h)
 	h256 s;
-	sha3mac(Secret::random().ref(), _priv.ref(), s.ref());
+    sha3mac(ECDSA::Secret::random().ref(), _priv.ref(), s.ref());
 	s ^= _hash;
 	sha3(s.ref(), s.ref());
 	
@@ -349,23 +384,23 @@ Secret Nonce::next()
 
 bool ecdh::agree(ECDSA::Secret const& _s, ECDSA::Public const& _r, ECDSA::Secret& o_s) noexcept
 {
-	auto* ctx = getCtx();
-	static_assert(sizeof(Secret) == 32, "Invalid Secret type size");
-	secp256k1_pubkey rawPubkey;
-	std::array<byte, 65> serializedPubKey{{0x04}};
-	std::copy(_r.asArray().begin(), _r.asArray().end(), serializedPubKey.begin() + 1);
-	if (!secp256k1_ec_pubkey_parse(ctx, &rawPubkey, serializedPubKey.data(), serializedPubKey.size()))
-		return false;  // Invalid public key.
-	// FIXME: We should verify the public key when constructed, maybe even keep
-	//        secp256k1_pubkey as the internal data of Public.
-	std::array<byte, 33> compressedPoint;
-	if (!secp256k1_ecdh_raw(ctx, compressedPoint.data(), &rawPubkey, _s.data()))
-		return false;  // Invalid secret key.
-	std::copy(compressedPoint.begin() + 1, compressedPoint.end(), o_s.writable().data());
-	return true;
+    auto* ctx = getCtx();
+        static_assert(sizeof(Secret) == 32, "Invalid Secret type size");
+        secp256k1_pubkey rawPubkey;
+        std::array<byte, 65> serializedPubKey{{0x04}};
+        std::copy(_r.asArray().begin(), _r.asArray().end(), serializedPubKey.begin() + 1);
+        if (!secp256k1_ec_pubkey_parse(ctx, &rawPubkey, serializedPubKey.data(), serializedPubKey.size()))
+            return false;  // Invalid public key.
+        // FIXME: We should verify the public key when constructed, maybe even keep
+        //        secp256k1_pubkey as the internal data of Public.
+        std::array<byte, 33> compressedPoint;
+        if (!secp256k1_ecdh_raw(ctx, compressedPoint.data(), &rawPubkey, _s.data()))
+            return false;  // Invalid secret key.
+    std::copy(compressedPoint.begin() + 1, compressedPoint.end(), o_s.writable().data());
+    return true;
 }
 
-bytes ecies::kdf(Secret const& _z, bytes const& _s1, unsigned kdByteLen)
+bytes ecies::kdf(ECDSA::Secret const& _z, bytes const& _s1, unsigned kdByteLen)
 {
 	auto reps = ((kdByteLen + 7) * 8) / 512;
 	// SEC/ISO/Shoup specify counter size SHOULD be equivalent

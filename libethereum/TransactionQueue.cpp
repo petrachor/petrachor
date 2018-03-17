@@ -353,7 +353,7 @@ void TransactionQueue::clear()
 	m_futureSize = 0;
 }
 
-void TransactionQueue::enqueue(RLP const& _data, h512 const& _nodeId)
+void TransactionQueue::enqueue(RLP const& _data, ECDSA::Public const& _nodeId)
 {
 	bool queued = false;
 	{

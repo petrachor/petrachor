@@ -124,12 +124,13 @@ ChainParams ChainParams::loadGenesis(string const& _json, h256 const& _stateRoot
 	cp.extraData = bytes(fromHex(genesis["extraData"].get_str()));
 
 	// magic code for handling ethash stuff:
-	if ((genesis.count("mixhash") || genesis.count("mixHash")) && genesis.count("nonce"))
+    if ((genesis.count("stakemodifier") || genesis.count("stakeModifier")))
 	{
-		h256 mixHash(genesis[genesis.count("mixhash") ? "mixhash" : "mixHash"].get_str());
-		h64 nonce(genesis["nonce"].get_str());
-		cp.sealFields = 2;
-		cp.sealRLP = rlp(mixHash) + rlp(nonce);
+        StakeModifier stakeModifier(genesis[genesis.count("stakeModifier") ? "stakeModifier" : "stakemodifier"].get_str());
+        StakeKeys::Signature signature;
+        StakeKeys::Public publicKey;
+        cp.sealFields = 4;
+        cp.sealRLP = rlp(publicKey) + rlp(stakeModifier) + rlp(signature) + rlp(signature);
 	}
 	cp.stateRoot = _stateRoot ? _stateRoot : cp.calculateStateRoot();
 	return cp;

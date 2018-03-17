@@ -118,7 +118,7 @@ void TransactionBase::streamRLP(RLPStream& _s, IncludeSignature _sig, bool _forE
 		if (!m_vrs)
 			BOOST_THROW_EXCEPTION(TransactionIsUnsigned());
 
-        m_vrs->streamRLP(_s, m_chainId);
+        m_vrs->streamRLP(_s);
 	}
 }
 

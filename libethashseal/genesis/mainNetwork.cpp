@@ -16,7 +16,7 @@
 */
 #include "../GenesisInfo.h"
 
-static dev::h256 const c_genesisStateRootMainNetwork("d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544");
+static dev::h256 const c_genesisStateRootMainNetwork("8214342c0160525129ac182c32135f4158c2ca23148930a50670ae591fb02512");
 static std::string const c_genesisInfoMainNetwork = std::string() +
 R"E(
 {
@@ -43,12 +43,12 @@ R"E(
 	},
 	"genesis": {
 		"nonce": "0x0000000000000042",
-		"difficulty": "0x400000000",
-		"mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "difficulty": "0x40000000000000000",
+                "stakeModifier": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
 		"author": "0x0000000000000000000000000000000000000000",
 		"timestamp": "0x00",
 		"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-		"extraData": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
+                "extraData":     "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
 		"gasLimit": "0x1388"
 	},
 	"accounts": {
@@ -65,12 +65,10 @@ R"E(
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_gt", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_pairing", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_multipairing", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
-"0097c89eab24e7c7dfe8faa69e78943b32fa8278": { "balance": "1000000000000000000" },
-"00d8293f179f596ada828468a1ad4495b4cfdcab": { "balance": "1000000000000000000" },
-"0078ed4ac96d2ee19669834b1e91e4b9ea76e6a4": { "balance": "1000000000000000000" },
-"008c97df4dd500a260fa0acf6b83a832ebf2ce4f": { "balance": "1000000000000000000" },
-"0005df757ddf001276d7228910147244d95b0960": { "balance": "1000000000000000000" },
-"00eb064f64260d255278753234a42519e2c611bc": { "balance": "1000000000000000000" },
+"003ff0f596f8508b96e7c7f3eb6f8196d5f2309d": { "balance": "1000000000000000000" },
+"00a1fa895297ad0412e867ca57f4dcfd5682f435": { "balance": "1000000000000000000" },
+"00ca0701dd80a8e9cd2e54cbcc74e97451683408": { "balance": "1000000000000000000" },
+"0087f05a319eea6110db401ecd2ee41e7f0b92c4": { "balance": "1000000000000000000" }
         }
 }
 )E";
