@@ -589,15 +589,15 @@ unique_ptr<DiscoveryDatagram> DiscoveryDatagram::interpretUDP(bi::udp::endpoint 
 {
 	unique_ptr<DiscoveryDatagram> decoded;
 	// h256 + Signature + type + RLP (smallest possible packet is empty neighbours packet which is 3 bytes)
-    if (_packet.size() < h256::size + ECDSA::Signature::size + 1 + 3)
+    if (_packet.size() < h256::size + Keys::Signature::size + 1 + 3)
 	{
 		clog(NodeTableWarn) << "Invalid packet (too small) from " << _from.address().to_string() << ":" << _from.port();
 		return decoded;
 	}
 	bytesConstRef hashedBytes(_packet.cropped(h256::size, _packet.size() - h256::size));
-    bytesConstRef signedBytes(hashedBytes.cropped(ECDSA::Signature::size, hashedBytes.size() - ECDSA::Signature::size));
-    bytesConstRef signatureBytes(_packet.cropped(h256::size, ECDSA::Signature::size));
-    bytesConstRef bodyBytes(_packet.cropped(h256::size + ECDSA::Signature::size + 1));
+    bytesConstRef signedBytes(hashedBytes.cropped(Keys::Signature::size, hashedBytes.size() - Keys::Signature::size));
+    bytesConstRef signatureBytes(_packet.cropped(h256::size, Keys::Signature::size));
+    bytesConstRef bodyBytes(_packet.cropped(h256::size + Keys::Signature::size + 1));
 
 	h256 echo(sha3(hashedBytes));
 	if (!_packet.cropped(0, h256::size).contentsEqual(echo.asBytes()))
@@ -605,7 +605,7 @@ unique_ptr<DiscoveryDatagram> DiscoveryDatagram::interpretUDP(bi::udp::endpoint 
 		clog(NodeTableWarn) << "Invalid packet (bad hash) from " << _from.address().to_string() << ":" << _from.port();
 		return decoded;
 	}
-    ECDSA::Public sourceid(dev::recover(*(ECDSA::Signature const*)signatureBytes.data(), sha3(signedBytes)));
+    Keys::Public sourceid(dev::recover(*(Keys::Signature const*)signatureBytes.data(), sha3(signedBytes)));
 	if (!sourceid)
 	{
 		clog(NodeTableWarn) << "Invalid packet (bad signature) from " << _from.address().to_string() << ":" << _from.port();

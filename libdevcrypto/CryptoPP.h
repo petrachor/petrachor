@@ -30,6 +30,8 @@ namespace dev
 namespace crypto
 {
 /// Amount of bytes added when encrypting with encryptECIES.
+typedef KeyPair<ECDSA> Keys;
+
 static const unsigned c_eciesOverhead = 113;
 
 /**
@@ -42,22 +44,22 @@ public:
 	static Secp256k1PP* get();
 
 	/// Encrypts text (replace input). (ECIES w/XOR-SHA1)
-    void encrypt(ECDSA::Public const& _k, bytes& io_cipher);
+    void encrypt(Keys::Public const& _k, bytes& io_cipher);
 	
 	/// Decrypts text (replace input). (ECIES w/XOR-SHA1)
-    void decrypt(ECDSA::Secret const& _k, bytes& io_text);
+    void decrypt(Keys::Secret const& _k, bytes& io_text);
 	
 	/// Encrypts text (replace input). (ECIES w/AES128-CTR-SHA256)
-    void encryptECIES(ECDSA::Public const& _k, bytes& io_cipher);
+    void encryptECIES(Keys::Public const& _k, bytes& io_cipher);
 	
 	/// Encrypts text (replace input). (ECIES w/AES128-CTR-SHA256)
-    void encryptECIES(ECDSA::Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher);
+    void encryptECIES(Keys::Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher);
 	
 	/// Decrypts text (replace input). (ECIES w/AES128-CTR-SHA256)
-    bool decryptECIES(ECDSA::Secret const& _k, bytes& io_text);
+    bool decryptECIES(Keys::Secret const& _k, bytes& io_text);
 	
 	/// Decrypts text (replace input). (ECIES w/AES128-CTR-SHA256)
-    bool decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text);
+    bool decryptECIES(Keys::Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text);
 
 private:
 	Secp256k1PP() = default;
