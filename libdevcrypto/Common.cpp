@@ -303,7 +303,7 @@ bytes to8ByteHash(bytes from) {
     return x;
 }
 
-    BLS12_381::G1 hashToElement(Public const& publicKey, h256 const& hash) {
+    BLS12_381::G1 hashToElement(BLS::Public const& publicKey, h256 const& hash) {
         bytes pkH = to8ByteHash(publicKey.asBytes());
         bytes h = to8ByteHash(hash.asBytes());
         return BLS12_381::G1::mapToElement(ref(pkH), ref(h));
@@ -369,12 +369,12 @@ h256 crypto::kdf(ECDSA::Secret const& _priv, h256 const& _hash)
 	return s;
 }
 
-Secret Nonce::next()
+CommKeys::Secret Nonce::next()
 {
 	Guard l(x_value);
 	if (!m_value)
 	{
-		m_value = Secret::random();
+		m_value = CommKeys::Secret::random();
 		if (!m_value)
 			BOOST_THROW_EXCEPTION(InvalidState());
 	}
@@ -385,7 +385,7 @@ Secret Nonce::next()
 bool ecdh::agree(ECDSA::Secret const& _s, ECDSA::Public const& _r, ECDSA::Secret& o_s) noexcept
 {
     auto* ctx = getCtx();
-        static_assert(sizeof(Secret) == 32, "Invalid Secret type size");
+        static_assert(sizeof(_s) == 32, "Invalid Secret type size");
         secp256k1_pubkey rawPubkey;
         std::array<byte, 65> serializedPubKey{{0x04}};
         std::copy(_r.asArray().begin(), _r.asArray().end(), serializedPubKey.begin() + 1);
@@ -413,7 +413,7 @@ bytes ecies::kdf(ECDSA::Secret const& _z, bytes const& _s1, unsigned kdByteLen)
 	{
 		secp256k1_sha256_initialize(&ctx);
 		secp256k1_sha256_write(&ctx, ctr.data(), ctr.size());
-		secp256k1_sha256_write(&ctx, _z.data(), Secret::size);
+		secp256k1_sha256_write(&ctx, _z.data(), ECDSA::Secret::size);
 		secp256k1_sha256_write(&ctx, _s1.data(), _s1.size());
 		// append hash to k
 		std::array<byte, 32> digest;

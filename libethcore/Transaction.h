@@ -53,13 +53,13 @@ public:
 	TransactionBase() {}
 
 	/// Constructs a transaction from a transaction skeleton & optional secret.
-	TransactionBase(TransactionSkeleton const& _ts, Secret const& _s = Secret());
+	TransactionBase(TransactionSkeleton const& _ts, AccountKeys::Secret const& _s = AccountKeys::Secret());
 
 	/// Constructs a signed message-call transaction.
-	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, Address const& _dest, bytes const& _data, u256 const& _nonce, Secret const& _secret): m_type(MessageCall), m_nonce(_nonce), m_value(_value), m_receiveAddress(_dest), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
+	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, Address const& _dest, bytes const& _data, u256 const& _nonce, AccountKeys::Secret const& _secret): m_type(MessageCall), m_nonce(_nonce), m_value(_value), m_receiveAddress(_dest), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
 
 	/// Constructs a signed contract-creation transaction.
-	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, bytes const& _data, u256 const& _nonce, Secret const& _secret): m_type(ContractCreation), m_nonce(_nonce), m_value(_value), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
+	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, bytes const& _data, u256 const& _nonce, AccountKeys::Secret const& _secret): m_type(ContractCreation), m_nonce(_nonce), m_value(_value), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
 
 	/// Constructs an unsigned message-call transaction.
 	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, Address const& _dest, bytes const& _data, u256 const& _nonce = 0): m_type(MessageCall), m_nonce(_nonce), m_value(_value), m_receiveAddress(_dest), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) {}
@@ -118,8 +118,8 @@ public:
 	/// Synonym for receiveAddress().
 	Address to() const { return m_receiveAddress; }
 
-    Public senderPublic() const { return m_vrs ? m_vrs->publicKey : Public(); }
-    Address from() const { return m_forcedSender ? m_forcedSender : dev::toAddress<dev::BLS>(senderPublic()); }
+    AccountKeys::Public senderPublic() const { return m_vrs ? m_vrs->publicKey : AccountKeys::Public(); }
+    Address from() const { return m_forcedSender ? m_forcedSender : AccountKeys::toAddress(senderPublic()); }
     void forceSender(Address sender) { m_forcedSender = sender; }
 
 	/// @returns the data associated with this (message-call) transaction. Synonym for initCode().
@@ -142,9 +142,9 @@ public:
 
 	/// @returns the signature of the transaction (the signature has the sender encoded in it)
 	/// @throws TransactionIsUnsigned if signature was not initialized
-	SignatureStruct const& signature() const;
+	AccountKeys::SignatureStruct const& signature() const;
 
-	void sign(Secret const& _priv);			///< Sign the transaction.
+	void sign(AccountKeys::Secret const& _priv);			///< Sign the transaction.
 
     Address sender() const { return from(); }
 
@@ -164,7 +164,7 @@ protected:
 	};
 
 	/// Clears the signature.
-	void clearSignature() { m_vrs = SignatureStruct(); }
+	void clearSignature() { m_vrs = AccountKeys::SignatureStruct(); }
 
 	Type m_type = NullTransaction;		///< Is this a contract-creation transaction or a message-call transaction?
 	u256 m_nonce;						///< The transaction-count of the sender.
@@ -173,7 +173,7 @@ protected:
 	u256 m_gasPrice;					///< The base fee and thus the implied exchange rate of ETH to GAS.
 	u256 m_gas;							///< The total gas to convert, paid for from sender's account. Any unused gas gets refunded once the contract is ended.
 	bytes m_data;						///< The data associated with the transaction, or the initialiser if it's a creation transaction.
-    boost::optional<SignatureStruct> m_vrs;	///< The signature of the transaction.  Encodes the sender.
+    boost::optional<AccountKeys::SignatureStruct> m_vrs;	///< The signature of the transaction.  Encodes the sender.
 	int m_chainId = -4;					///< EIP155 value for calculating transaction hash https://github.com/ethereum/EIPs/issues/155
 
 	mutable h256 m_hashWith;			///< Cached hash of transaction with signature.

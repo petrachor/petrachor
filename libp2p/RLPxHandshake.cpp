@@ -179,8 +179,8 @@ void RLPXHandshake::readAck()
 			transition(ec);
 		else if (decryptECIES(m_host->m_alias.secret(), bytesConstRef(&m_ackCipher), m_ack))
 		{
-			bytesConstRef(&m_ack).cropped(0, Public::size).copyTo(m_ecdheRemote.ref());
-			bytesConstRef(&m_ack).cropped(Public::size, h256::size).copyTo(m_remoteNonce.ref());
+			bytesConstRef(&m_ack).cropped(0, CommKeys::Public::size).copyTo(m_ecdheRemote.ref());
+			bytesConstRef(&m_ack).cropped(CommKeys::Public::size, h256::size).copyTo(m_remoteNonce.ref());
 			m_remoteVersion = 4;
 			transition();
 		}

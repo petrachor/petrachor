@@ -191,9 +191,9 @@ string AccountManager::createPassword(string const& _prompt) const
 KeyPair<dev::BLS> AccountManager::makeKey() const
 {
 	bool icap = true;
-    KeyPair<dev::BLS> k(Secret::random());
+    AccountKeys::Pair k(AccountKeys::Secret::random());
 	while (icap && k.address()[0])
-        k = KeyPair<dev::BLS>(Secret(sha3(k.secret().ref())));
+        k = AccountKeys::Pair(AccountKeys::Secret(sha3(k.secret().ref())));
 	return k;
 }
 

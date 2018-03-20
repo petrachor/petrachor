@@ -295,7 +295,7 @@ protected:
 	OverlayDB m_stateDB;					///< Acts as the central point for the state database, so multiple States can share it.
 	mutable SharedMutex x_preSeal;			///< Lock on m_preSeal.
 	Block m_preSeal;						///< The present state of the client.
-    Public m_preSealAuthorPublicKey = Public();
+    AccountKeys::Public m_preSealAuthorPublicKey = AccountKeys::Public();
 	mutable SharedMutex x_postSeal;			///< Lock on m_postSeal.
 	Block m_postSeal;						///< The state of the client which we're sealing (i.e. it'll have all the rewards added).
 	mutable SharedMutex x_working;			///< Lock on m_working.

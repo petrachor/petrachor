@@ -74,6 +74,7 @@ enum class SemanticPassword
 class KeyManager
 {
 public:
+	typedef AccountKeys::Secret Secret;
 	enum class NewKeyType { DirectICAP = 0, NoVanity, FirstTwo, FirstTwoNextTwo, FirstThree, FirstFour };
 
 	KeyManager(boost::filesystem::path const& _keysFile = defaultPath(), boost::filesystem::path const& _secretsPath = SecretStore::defaultPath());

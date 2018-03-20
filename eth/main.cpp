@@ -395,7 +395,7 @@ int main(int argc, char** argv)
 	bytes b = contents(configFile);
 
 	strings passwordsToNote;
-	Secrets toImport;
+	std::vector<AccountKeys::Secret> toImport;
 	if (b.size())
 	{
 		try
@@ -562,12 +562,12 @@ int main(int argc, char** argv)
 			}
 		else if ((arg == "-s" || arg == "--import-secret") && i + 1 < argc)
 		{
-			Secret s(fromHex(argv[++i]));
+			AccountKeys::Secret s(fromHex(argv[++i]));
 			toImport.emplace_back(s);
 		}
 		else if ((arg == "-S" || arg == "--import-session-secret") && i + 1 < argc)
 		{
-			Secret s(fromHex(argv[++i]));
+			AccountKeys::Secret s(fromHex(argv[++i]));
 			toImport.emplace_back(s);
 		}
 		else if ((arg == "-d" || arg == "--path" || arg == "--db-path" || arg == "--datadir") && i + 1 < argc)

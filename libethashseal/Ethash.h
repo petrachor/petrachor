@@ -53,7 +53,7 @@ public:
 
     static StakeModifier computeChildStakeModifier(StakeModifier const& parentStakeModifier, StakeKeys::Public const& minterPubKey, StakeKeys::Signature const& minterStakeSig);
     static StakeMessage computeStakeMessage(StakeModifier const& modifier, u256 timestamp);
-    static StakeKeys::Signature computeStakeSignature(StakeMessage const& message, Secret const& sealerSecretKey);
+    static StakeKeys::Signature computeStakeSignature(StakeMessage const& message, StakeKeys::Secret const& sealerSecretKey);
     static bool verifyStakeSignature(StakeKeys::Public const& publicKey, StakeKeys::Signature const& signature, StakeMessage const& message);
     static StakeSignatureHash computeStakeSignatureHash(StakeKeys::Signature const& stakeSignature);
 

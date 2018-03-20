@@ -32,12 +32,12 @@ namespace dev
 namespace rpc
 {
 
-Whisper::Whisper(WebThreeDirect& _web3, std::vector<dev::KeyPair<dev::BLS>> const& _accounts): m_web3(_web3)
+Whisper::Whisper(WebThreeDirect& _web3, std::vector<WhisperKey::Pair> const& _accounts): m_web3(_web3)
 {
 	setIdentities(_accounts);
 }
 
-void Whisper::setIdentities(std::vector<dev::KeyPair<dev::BLS>> const& _ids)
+void Whisper::setIdentities(std::vector<WhisperKey::Pair> const& _ids)
 {
 	m_ids.clear();
 	for (auto i: _ids)
@@ -54,7 +54,7 @@ bool Whisper::shh_post(Json::Value const& _json)
 	try
 	{
 		shh::Message m = shh::toMessage(_json);
-		Secret from;
+		WhisperKey::Secret from;
 		if (m.from() && m_ids.count(m.from()))
 		{
 			cwarn << "Silently signing message from identity" << m.from() << ": User validation hook goes here.";
@@ -73,7 +73,7 @@ bool Whisper::shh_post(Json::Value const& _json)
 
 std::string Whisper::shh_newIdentity()
 {
-    KeyPair<dev::BLS> kp = KeyPair<dev::BLS>::create();
+    auto kp = WhisperKey::Pair::create();
 	m_ids[kp.pub()] = kp.secret();
 	return toJS(kp.pub());
 }
@@ -108,7 +108,7 @@ std::string Whisper::shh_newFilter(Json::Value const& _json)
 {
 	try
 	{
-		pair<shh::Topics, Public> w = shh::toWatch(_json);
+		pair<shh::Topics, WhisperKey::Public> w = shh::toWatch(_json);
 		auto ret = shh()->installWatch(w.first);
 		m_watches.insert(make_pair(ret, w.second));
 		return toJS(ret);

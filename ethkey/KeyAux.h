@@ -262,21 +262,21 @@ public:
 
     KeyPair<BLS> makeKey() const
 	{
-        KeyPair<BLS> k(Secret::random());
+        KeyPair<BLS> k(AccountKeys::Secret::random());
 		while (m_icap && k.address()[0])
-            k = KeyPair<BLS>(Secret(sha3(k.secret().ref())));
+            k = KeyPair<BLS>(AccountKeys::Secret(sha3(k.secret().ref())));
 		return k;
 	}
 
-	Secret getSecret(std::string const& _signKey)
+	AccountKeys::Secret getSecret(std::string const& _signKey)
 	{
 		string json = contentsString(_signKey);
 		if (!json.empty())
-			return Secret(secretStore().secret(secretStore().readKeyContent(json), [&](){ return getPassword("Enter passphrase for key: "); }));
+			return AccountKeys::Secret(secretStore().secret(secretStore().readKeyContent(json), [&](){ return getPassword("Enter passphrase for key: "); }));
 		else
 		{
 			if (h128 u = fromUUID(_signKey))
-				return Secret(secretStore().secret(u, [&](){ return getPassword("Enter passphrase for key: "); }));
+				return AccountKeys::Secret(secretStore().secret(u, [&](){ return getPassword("Enter passphrase for key: "); }));
 			if (_signKey.substr(0, 6) == "brain#" && _signKey.find(":") != string::npos)
 				return KeyManager::subkey(KeyManager::brain(_signKey.substr(_signKey.find(":"))), stoul(_signKey.substr(6, _signKey.find(":") - 7)));
 			if (_signKey.substr(0, 6) == "brain:")
@@ -369,7 +369,7 @@ public:
 		}
 		case OperationMode::SignTx:
 		{
-			Secret s = getSecret(m_signKey);
+			AccountKeys::Secret s = getSecret(m_signKey);
 			if (m_inputs.empty())
 				m_inputs.push_back(string());
 			for (string const& i: m_inputs)
@@ -412,7 +412,7 @@ public:
 				cout << "  Address: " << a.hex() << endl;
 				if (m_showSecret)
 				{
-					Secret s = keyManager(true).secret(a);
+					AccountKeys::Secret s = keyManager(true).secret(a);
 					cout << "  Secret: " << (m_showSecret ? toHex(s.ref()) : (toHex(s.ref().cropped(0, 8)) + "...")) << endl;
 				}
 			}
@@ -449,7 +449,7 @@ public:
 						u = secretStore().importKey(input);
 				}
 				if (!u && b.size() == 32)
-                    u = secretStore().importSecret(b, lockPassword(toAddress<BLS>(Secret(b)).abridged()));
+                    u = secretStore().importSecret(b, lockPassword(toAddress<BLS>(AccountKeys::Secret(b)).abridged()));
 				if (!u)
 				{
 					cerr << "Cannot import " << input << " not a file or secret." << endl;
@@ -466,14 +466,14 @@ public:
 					bytesSec s = secretStore().secret(u, [&](){ return getPassword("Enter passphrase for key " + i + ": "); });
 					cout << "Key " << i << ":" << endl;
 					cout << "  UUID: " << toUUID(u) << ":" << endl;
-                    cout << "  Address: " << toAddress<BLS>(Secret(s)).hex() << endl;
+                    cout << "  Address: " << toAddress<BLS>(AccountKeys::Secret(s)).hex() << endl;
 					cout << "  Secret: " << (m_showSecret ? toHex(s.ref()) : (toHex(s.ref().cropped(0, 8)) + "...")) << endl;
 				}
 				else if (h128 u = fromUUID(i))
 				{
 					bytesSec s = secretStore().secret(u, [&](){ return getPassword("Enter passphrase for key " + toUUID(u) + ": "); });
 					cout << "Key " << i << ":" << endl;
-                    cout << "  Address: " << toAddress<BLS>(Secret(s)).hex() << endl;
+                    cout << "  Address: " << toAddress<BLS>(AccountKeys::Secret(s)).hex() << endl;
 					cout << "  Secret: " << (m_showSecret ? toHex(s.ref()) : (toHex(s.ref().cropped(0, 8)) + "...")) << endl;
 				}
                 else if (Address a = toAddress<BLS>(i))
@@ -574,7 +574,7 @@ public:
 					u = keyManager().store().importKey(i);
 			}
 			if (!u && b.size() == 32)
-                u = keyManager().store().importSecret(b, lockPassword(toAddress<BLS>(Secret(b)).abridged()));
+                u = keyManager().store().importSecret(b, lockPassword(toAddress<BLS>(AccountKeys::Secret(b)).abridged()));
 			if (!u)
 			{
 				cerr << "Cannot import " << i << " not a file or secret." << endl;
@@ -592,7 +592,7 @@ public:
 				if (Address a = userToAddress(i))
 				{
 					string pw;
-					Secret s = keyManager().secret(a, [&](){ return pw = getPassword("Enter old passphrase for key '" + i + "' (hint: " + keyManager().passwordHint(a) + "): "); });
+					AccountKeys::Secret s = keyManager().secret(a, [&](){ return pw = getPassword("Enter old passphrase for key '" + i + "' (hint: " + keyManager().passwordHint(a) + "): "); });
 					if (!s)
 					{
 						cerr << "Invalid password for address " << a << endl;

@@ -94,7 +94,7 @@ void RLPXFrameCoder::setup(bool _originated, h512 const& _remoteEphemeral, h256 
 	bytesRef keyMaterial(&keyMaterialBytes);
 
 	// shared-secret = sha3(ecdhe-shared-secret || sha3(nonce || initiator-nonce))
-	Secret ephemeralShared;
+	CommKeys::Secret ephemeralShared;
 
 	// Try agree ECDHE. This can fail due to invalid remote public key. In this
 	// case throw an exception to be caught RLPXHandshake::transition().

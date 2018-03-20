@@ -38,7 +38,7 @@ const char* WorkChannel::name() { return EthOrange "⚒" EthWhite "  "; }
 
 static const int64_t c_maxGasEstimate = 50000000;
 
-pair<h256, Address> ClientBase::submitTransaction(TransactionSkeleton const& _t, Secret const& _secret)
+pair<h256, Address> ClientBase::submitTransaction(TransactionSkeleton const& _t, AccountKeys::Secret const& _secret)
 {
 	prepareForTransaction();
 	

@@ -146,7 +146,7 @@ bool KeyManager::load(string const& _pass)
 	}
 }
 
-Secret KeyManager::secret(Address const& _address, function<string()> const& _pass, bool _usePasswordCache) const
+AccountKeys::Secret KeyManager::secret(Address const& _address, function<string()> const& _pass, bool _usePasswordCache) const
 {
 	if (m_addrLookup.count(_address))
 		return secret(m_addrLookup.at(_address), _pass, _usePasswordCache);
@@ -154,7 +154,7 @@ Secret KeyManager::secret(Address const& _address, function<string()> const& _pa
 		return brain(_pass());
 }
 
-Secret KeyManager::secret(h128 const& _uuid, function<string()> const& _pass, bool _usePasswordCache) const
+AccountKeys::Secret KeyManager::secret(h128 const& _uuid, function<string()> const& _pass, bool _usePasswordCache) const
 {
 	if (_usePasswordCache)
 		return Secret(m_store.secret(_uuid, [&](){ return getPassword(_uuid, _pass); }, _usePasswordCache));
@@ -224,7 +224,7 @@ h128 KeyManager::import(Secret const& _s, string const& _accountName, string con
 	return uuid;
 }
 
-Secret KeyManager::brain(string const& _seed)
+AccountKeys::Secret KeyManager::brain(string const& _seed)
 {
 	h256 r = sha3(_seed);
 	for (auto i = 0; i < 16384; ++i)
@@ -236,7 +236,7 @@ Secret KeyManager::brain(string const& _seed)
 	return ret;
 }
 
-Secret KeyManager::subkey(Secret const& _s, unsigned _index)
+AccountKeys::Secret KeyManager::subkey(AccountKeys::Secret const& _s, unsigned _index)
 {
 	RLPStream out(2);
 	out << _s.ref();

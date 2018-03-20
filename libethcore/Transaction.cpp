@@ -30,7 +30,7 @@ using namespace std;
 using namespace dev;
 using namespace dev::eth;
 
-TransactionBase::TransactionBase(TransactionSkeleton const& _ts, Secret const& _s):
+TransactionBase::TransactionBase(TransactionSkeleton const& _ts, AccountKeys::Secret const& _s):
 	m_type(_ts.creation ? ContractCreation : MessageCall),
 	m_nonce(_ts.nonce),
 	m_value(_ts.value),
@@ -68,7 +68,7 @@ TransactionBase::TransactionBase(bytesConstRef _rlpData, CheckTransaction _check
         RLP sig = rlp[field = 7];
         if (!sig.isList())
             BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("transaction sig RLP must be a list"));
-        m_vrs = SignatureStruct(Signature(sig[0].toBytesConstRef()), Public(sig[1].toBytesConstRef()));
+        m_vrs = AccountKeys::SignatureStruct(AccountKeys::Signature(sig[0].toBytesConstRef()), AccountKeys::Public(sig[1].toBytesConstRef()));
         if (rlp.itemCount() > 2)
             BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("too many fields in the transaction sig RLP"));
         if (_checkSig >= CheckTransaction::Cheap && !m_vrs->isValid())
@@ -84,7 +84,7 @@ TransactionBase::TransactionBase(bytesConstRef _rlpData, CheckTransaction _check
 	}
 }
 
-SignatureStruct const& TransactionBase::signature() const
+AccountKeys::SignatureStruct const& TransactionBase::signature() const
 { 
 	if (!m_vrs)
 		BOOST_THROW_EXCEPTION(TransactionIsUnsigned());
@@ -92,10 +92,10 @@ SignatureStruct const& TransactionBase::signature() const
 	return *m_vrs;
 }
 
-void TransactionBase::sign(Secret const& _priv)
+void TransactionBase::sign(AccountKeys::Secret const& _priv)
 {
-    auto sig = dev::sign<BLS>(_priv, sha3(WithoutSignature));
-    SignatureStruct sigStruct = SignatureStruct(sig, toPublic<BLS>(_priv));
+    auto sig = dev::sign<AccountKeys::Type>(_priv, sha3(WithoutSignature));
+    AccountKeys::SignatureStruct sigStruct = AccountKeys::SignatureStruct(sig, toPublic<AccountKeys::Type>(_priv));
 	if (sigStruct.isValid())
 		m_vrs = sigStruct;
 }

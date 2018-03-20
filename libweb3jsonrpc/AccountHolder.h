@@ -154,7 +154,7 @@ public:
 	TransactionNotification authenticate(dev::eth::TransactionSkeleton const& _t) override;
 
 private:
-	std::unordered_map<dev::Address, dev::Secret> m_accounts;
+	std::unordered_map<dev::Address, AccountKeys::Secret> m_accounts;
 };
 
 

@@ -97,7 +97,7 @@ DEV_SIMPLE_EXCEPTION(GenesisBlockCannotBeCalculated);
 typedef h256 StakeModifier;
 typedef h256 StakeMessage;
 typedef h256 StakeSignatureHash;
-typedef KeyPair<BLS> StakeKeys;
+typedef AccountKeys StakeKeys;
 
 class BlockHeader
 {

@@ -39,7 +39,7 @@ string Personal::personal_sendTransaction(Json::Value const& _transaction, strin
 		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
 	}
 
-	if (Secret s = m_keyManager.secret(t.from, [&](){ return _password; }, false))
+	if (typename AccountKeys::Secret s = m_keyManager.secret(t.from, [&](){ return _password; }, false))
 	{
 		// return the tx hash
 		return toJS(m_eth.submitTransaction(t, s).first);

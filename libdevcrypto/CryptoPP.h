@@ -30,7 +30,7 @@ namespace dev
 namespace crypto
 {
 /// Amount of bytes added when encrypting with encryptECIES.
-typedef KeyPair<ECDSA> Keys;
+typedef KeyType<ECDSA> Keys;
 
 static const unsigned c_eciesOverhead = 113;
 

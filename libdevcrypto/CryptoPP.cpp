@@ -32,7 +32,7 @@ static_assert(CRYPTOPP_VERSION == 570, "Wrong Crypto++ version");
 using namespace dev;
 using namespace dev::crypto;
 
-static_assert(dev::Secret::size == 32, "Secret key must be 32 bytes.");
+static_assert(Keys::Secret::size == 32, "Secret key must be 32 bytes.");
 static_assert(Keys::Public::size == 64, "Keys::Public key must be 64 bytes.");
 static_assert(Keys::Signature::size == 65, "Keys::Signature must be 65 bytes.");
 
@@ -87,8 +87,8 @@ void Secp256k1PP::encryptECIES(Keys::Public const& _k, bytes& io_cipher)
 void Secp256k1PP::encryptECIES(Keys::Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher)
 {
 	// interop w/go ecies implementation
-    auto r = Keys::create();
-    Secret z;
+    auto r = Keys::Pair::create();
+    Keys::Secret z;
 	ecdh::agree(r.secret(), _k, z);
 	auto key = ecies::kdf(z, bytes(), 32);
 	bytesConstRef eKey = bytesConstRef(&key).cropped(0, 16);

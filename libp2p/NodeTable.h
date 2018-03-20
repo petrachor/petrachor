@@ -255,7 +255,7 @@ private:
 	std::unique_ptr<NodeTableEventHandler> m_nodeEventHandler;		///< Event handler for node events.
 
 	Node m_node;													///< This node. LOCK x_state if endpoint access or mutation is required. Do not modify id.
-	Secret m_secret;												///< This nodes secret key.
+	CommKeys::Secret m_secret;												///< This nodes secret key.
 
 	mutable Mutex x_nodes;											///< LOCK x_state first if both locks are required. Mutable for thread-safe copy in nodes() const.
 	std::unordered_map<NodeID, std::shared_ptr<NodeEntry>> m_nodes;	///< Known Node Endpoints

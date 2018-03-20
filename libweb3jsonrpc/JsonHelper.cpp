@@ -490,7 +490,7 @@ shh::Message toMessage(Json::Value const& _json)
 	return ret;
 }
 
-shh::Envelope toSealed(Json::Value const& _json, shh::Message const& _m, Secret const& _from)
+shh::Envelope toSealed(Json::Value const& _json, shh::Message const& _m, CommKeys::Secret const& _from)
 {
 	unsigned ttl = 50;
 	unsigned workToProve = 50;
@@ -518,10 +518,10 @@ shh::Envelope toSealed(Json::Value const& _json, shh::Message const& _m, Secret 
 	return _m.seal(_from, bt, ttl, workToProve);
 }
 
-pair<shh::Topics, Public> toWatch(Json::Value const& _json)
+pair<shh::Topics, WhisperKey::Public> toWatch(Json::Value const& _json)
 {
 	shh::BuildTopic bt;
-	Public to;
+	WhisperKey::Public to;
 
 	if (!_json["to"].empty())
 		to = jsToPublic(_json["to"].asString());

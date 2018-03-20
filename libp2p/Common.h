@@ -59,7 +59,7 @@ class Node;
 extern const NodeIPEndpoint UnspecifiedNodeIPEndpoint;
 extern const Node UnspecifiedNode;
 
-typedef KeyPair<ECDSA> Keys;
+typedef KeyType<ECDSA> Keys;
 typedef Keys::Public NodeID;
 
 bool isPrivateAddress(bi::address const& _addressToCheck);

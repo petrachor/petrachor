@@ -132,13 +132,8 @@ bool decryptECIES(ECDSA::Secret const& _k, bytesConstRef _sharedMacData, bytesCo
 ECDSA::Public recover(ECDSA::Signature const& _sig, h256 const& _hash);
 BLS::Public recover(BLS::SignatureStruct const& _sig, h256 const& _hash);
 
-using Secret = BLS::Secret;
-using Public = BLS::Public;
-using Signature = BLS::Signature;
-using SignatureStruct = BLS::SignatureStruct;
-
 /// A vector of secrets.
-using Secrets = std::vector<Secret>;
+//using Secrets = std::vector<Secret>;
 
 /// Convert a public key to address.
 template <class C> Address toAddress(typename C::Public const& _public) {
@@ -200,9 +195,6 @@ class KeyPair
 public:
     typedef typename C::Secret Secret;
     typedef typename C::Public Public;
-    typedef typename C::Signature Signature;
-    typedef typename C::SignatureStruct SignatureStruct;
-    typedef C Type;
 	/// Normal constructor - populates object from the given secret key.
 	/// If the secret key is invalid the constructor succeeds, but public key
     /// and address stay "null".
@@ -250,6 +242,23 @@ private:
 extern template class KeyPair<ECDSA>;
 extern template class KeyPair<BLS>;
 
+template <class C>
+class KeyType
+{
+public:
+    typedef typename C::Secret Secret;
+    typedef typename C::Public Public;
+    typedef KeyPair<C> Pair;
+    typedef typename C::Signature Signature;
+    typedef typename C::SignatureStruct SignatureStruct;
+    typedef C Type;
+    
+    static Address toAddress(Public const& p) { return dev::toAddress<C>(p); }
+};
+
+typedef KeyType<BLS> AccountKeys;
+typedef KeyType<ECDSA> CommKeys;
+
 namespace crypto
 {
 
@@ -271,16 +280,16 @@ class Nonce
 {
 public:
 	/// Returns the next nonce (might be read from a file).
-	static Secret get() { static Nonce s; return s.next(); }
+	static CommKeys::Secret get() { static Nonce s; return s.next(); }
 
 private:
 	Nonce() = default;
 
 	/// @returns the next nonce.
-	Secret next();
+	CommKeys::Secret next();
 
 	std::mutex x_value;
-	Secret m_value;
+	CommKeys::Secret m_value;
 };
 
 namespace ecdh

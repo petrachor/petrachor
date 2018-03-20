@@ -44,7 +44,7 @@ StakeMessage Ethash::computeStakeMessage(StakeModifier const& stakeModifier, u25
     return dev::sha3(stakeModifier.asBytes() + h256(timestamp));
 }
 
-StakeKeys::Signature Ethash::computeStakeSignature(StakeMessage const& message, Secret const& sealerSecretKey) {
+StakeKeys::Signature Ethash::computeStakeSignature(StakeMessage const& message, StakeKeys::Secret const& sealerSecretKey) {
     return sign<dev::BLS>(sealerSecretKey, message);
 }
 
