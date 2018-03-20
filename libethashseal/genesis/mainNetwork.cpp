@@ -16,7 +16,7 @@
 */
 #include "../GenesisInfo.h"
 
-static dev::h256 const c_genesisStateRootMainNetwork("8214342c0160525129ac182c32135f4158c2ca23148930a50670ae591fb02512");
+static dev::h256 const c_genesisStateRootMainNetwork("395a37cc097c03c6d10aab8b0ea2bc121a9806ce741ddf061943ee8d5d97f092");
 static std::string const c_genesisInfoMainNetwork = std::string() +
 R"E(
 {
@@ -68,7 +68,8 @@ R"E(
 "003ff0f596f8508b96e7c7f3eb6f8196d5f2309d": { "balance": "1000000000000000000" },
 "00a1fa895297ad0412e867ca57f4dcfd5682f435": { "balance": "1000000000000000000" },
 "00ca0701dd80a8e9cd2e54cbcc74e97451683408": { "balance": "1000000000000000000" },
-"0087f05a319eea6110db401ecd2ee41e7f0b92c4": { "balance": "1000000000000000000" }
+"0087f05a319eea6110db401ecd2ee41e7f0b92c4": { "balance": "1000000000000000000" },
+"0035d2239538c482d99ae144097ab3fdc8861902": { "balance": "1000000000000000000" }
         }
 }
 )E";
