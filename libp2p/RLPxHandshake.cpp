@@ -28,6 +28,10 @@ using namespace dev;
 using namespace dev::p2p;
 using namespace dev::crypto;
 
+using Public = RLPXKeys::Public;
+using Signature = RLPXKeys::Signature;
+using Secret = RLPXKeys::Secret;
+
 void RLPXHandshake::writeAuth()
 {
 	clog(NetP2PConnect) << "p2p.connect.egress sending auth to " << m_socket->remoteEndpoint();
