@@ -185,7 +185,7 @@ PopulationStatistics Block::populateFromChain(BlockChain const& _bc, h256 const&
 		// 2. Enact the block's transactions onto this state.
         m_author = bi.author();
 		Timer t;
-		auto vb = _bc.verifyBlock(&b, function<void(Exception&)>(), _ir | ImportRequirements::TransactionBasic);
+		auto vb = _bc.verifyBlock(&b, m_state.db(), function<void(Exception&)>(), _ir | ImportRequirements::TransactionBasic);
 		ret.verify = t.elapsed();
 		t.restart();
 		enact(vb, _bc);

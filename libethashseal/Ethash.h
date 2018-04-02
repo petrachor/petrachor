@@ -47,7 +47,7 @@ public:
     bytes sealRLP() const override { return rlp(StakeKeys::Public()) + rlp(Nonce()) + rlp(StakeKeys::Signature()) + rlp(StakeKeys::Signature()); }
 
 	StringHashMap jsInfo(BlockHeader const& _bi) const override;
-	void verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const override;
+	void verify(Strictness _s, BlockHeader const& _bi, BalanceRetriever balanceRetriever, BlockHeader const& _parent, bytesConstRef _block) const override;
 	void verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const& _startGasUsed) const override;
     void populateFromParent(BlockHeader& _bi, BlockHeader const& _parent) override;
 
@@ -61,7 +61,7 @@ public:
 	std::string sealer() const override { return m_sealer; }
 	void setSealer(std::string const& _sealer) override { m_sealer = _sealer; }
     void cancelGeneration() override { m_generating = false; }
-    void generateSeal(BlockHeader _bi, BlockHeader const& parent) override;
+    void generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever) override;
 	bool shouldSeal(Interface* _i) override;
 
     static StakeKeys::Public publicKey(BlockHeader const& _bi) { return _bi.seal<StakeKeys::Public>(PublicKeyField); }
@@ -84,7 +84,7 @@ public:
 
     bool isMining() const { return m_generating; }
 private:
-    bool verifySeal(BlockHeader const& _bi, BlockHeader const& m_parent) const;
+    bool verifySeal(BlockHeader const& _bi, BlockHeader const& m_parent, BalanceRetriever balanceRetriever) const;
 
 	std::string m_sealer = "cpu";
     BlockHeader m_sealing;

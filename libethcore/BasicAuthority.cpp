@@ -46,13 +46,13 @@ bool BasicAuthority::shouldSeal(Interface* _i)
 	return _i->pendingInfo().timestamp() + 5 <= utcTime() || (_i->pendingInfo().timestamp() <= utcTime() && !_i->pending().empty());
 }
 
-void BasicAuthority::generateSeal(BlockHeader _bi, BlockHeader const& parent)
+void BasicAuthority::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever br)
 {
 	BlockHeader bi = _bi;
 	h256 h = bi.hash(WithoutSeal);
     ECDSA::Signature s = sign<ECDSA>(m_secret, h);
 	setSig(bi, s);
-    SealEngineBase::generateSeal(bi,parent);
+    SealEngineBase::generateSeal(bi,parent, br);
 }
 
 bool BasicAuthority::onOptionChanging(std::string const& _name, bytes const& _value)
@@ -74,9 +74,9 @@ void BasicAuthority::populateFromParent(BlockHeader& _bi, BlockHeader const& _pa
 	_bi.setDifficulty(fromBigEndian<uint32_t>(sha3(sha3(m_secret) ^ _bi.parentHash()).ref().cropped(0, 4)));
 }
 
-void BasicAuthority::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const
+void BasicAuthority::verify(Strictness _s, BlockHeader const& _bi, BalanceRetriever balanceRetriever, BlockHeader const& _parent, bytesConstRef _block) const
 {
-	SealEngineFace::verify(_s, _bi, _parent, _block);
+	SealEngineFace::verify(_s, _bi, balanceRetriever, _parent, _block);
 	// check it hashes according to proof of work or that it's the genesis block.
     ECDSA::Signature s = sig(_bi);
 	h256 h = _bi.hash(WithoutSeal);

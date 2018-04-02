@@ -41,9 +41,9 @@ public:
 
     void populateFromParent(BlockHeader&, BlockHeader const&) override;
 	StringHashMap jsInfo(BlockHeader const& _bi) const override;
-	void verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const override;
+	void verify(Strictness _s, BlockHeader const& _bi, BalanceRetriever balanceRetriever, BlockHeader const& _parent, bytesConstRef _block) const override;
 	bool shouldSeal(Interface*) override;
-    void generateSeal(BlockHeader _bi, BlockHeader const& parent) override;
+    void generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever br) override;
 
     static ECDSA::Signature sig(BlockHeader const& _bi) { return _bi.seal<ECDSA::Signature>(); }
     static BlockHeader& setSig(BlockHeader& _bi, ECDSA::Signature const& _sig) { _bi.setSeal(_sig); return _bi; }

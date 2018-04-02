@@ -138,10 +138,10 @@ public:
 	/// Import data into disk-backed DB.
 	/// This will not execute the block and populate the state trie, but rather will simply add the
 	/// block/header and receipts directly into the databases.
-	void insert(bytes const& _block, bytesConstRef _receipts, bool _mustBeNew = true);
-	void insert(VerifiedBlockRef _block, bytesConstRef _receipts, bool _mustBeNew = true);
+	void insert(bytes const& _block, OverlayDB const& _db, bytesConstRef _receipts, bool _mustBeNew = true);
+	void insert(VerifiedBlockRef _block, OverlayDB const& _db, bytesConstRef _receipts, bool _mustBeNew = true);
 	/// Insert that doesn't require parent to be imported, useful when we don't have the full blockchain (like restoring from partial snapshot).
-	ImportRoute insertWithoutParent(bytes const& _block, bytesConstRef _receipts, u256 const& _totalDifficulty);
+	ImportRoute insertWithoutParent(bytes const& _block, OverlayDB const& _db, bytesConstRef _receipts, u256 const& _totalDifficulty);
 
 	/// Returns true if the given block is known (though not necessarily a part of the canon chain).
 	bool isKnown(h256 const& _hash, bool _isCurrent = true) const;
@@ -303,7 +303,9 @@ public:
 	Block genesisBlock(OverlayDB const& _db) const;
 
 	/// Verify block and prepare it for enactment
-	VerifiedBlockRef verifyBlock(bytesConstRef _block, std::function<void(Exception&)> const& _onBad, ImportRequirements::value _ir = ImportRequirements::OutOfOrderChecks) const;
+	VerifiedBlockRef verifyBlock(bytesConstRef _block, std::function<void(Exception&)> const& _onBad, BalanceRetriever balanceRetriever, ImportRequirements::value _ir = ImportRequirements::OutOfOrderChecks) const;
+    VerifiedBlockRef verifyBlock(bytesConstRef _block, OverlayDB const& db, std::function<void(Exception&)> const& _onBad, ImportRequirements::value _ir) const;
+    VerifiedBlockRef verifyBlock(bytesConstRef _block, std::function<void(Exception&)> const& _onBad, ImportRequirements::value _ir) const;
 
 	/// Gives a dump of the blockchain database. For debug/test use only.
 	std::string dumpDatabase() const;

@@ -289,10 +289,10 @@ protected:
 	void callQueuedFunctions();
 
 	BlockChain m_bc;						///< Maintains block database and owns the seal engine.
+    std::shared_ptr<GasPricer> m_gp;		///< The gas pricer.
+    OverlayDB m_stateDB;					///< Acts as the central point for the state database, so multiple States can share it.
 	BlockQueue m_bq;						///< Maintains a list of incoming blocks not yet on the blockchain (to be imported).
-	std::shared_ptr<GasPricer> m_gp;		///< The gas pricer.
 
-	OverlayDB m_stateDB;					///< Acts as the central point for the state database, so multiple States can share it.
 	mutable SharedMutex x_preSeal;			///< Lock on m_preSeal.
 	Block m_preSeal;						///< The present state of the client.
     AccountKeys::Public m_preSealAuthorPublicKey = AccountKeys::Public();

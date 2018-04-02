@@ -237,7 +237,7 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
 			header.setExtraData(abridgedBlock[7].toBytes(RLP::VeryStrict));
 
 			totalDifficulty += difficulty;
-			m_blockChainImporter.importBlock(header, transactions, uncles, receipts, totalDifficulty);
+			m_blockChainImporter.importBlock(header, m_stateImporter.getStateDatabase(), transactions, uncles, receipts, totalDifficulty);
 
 			parentHash = header.hash();
 		}

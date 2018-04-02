@@ -74,12 +74,6 @@ DEV_SIMPLE_EXCEPTION(InvalidOperationOnSealedBlock);
 
 typedef u256 Difficulty;
 
-class DifficultyData {
-public:
-    u256 timestamp;
-    Difficulty difficulty;
-};
-
 class Block
 {
 	friend class ExtVM;

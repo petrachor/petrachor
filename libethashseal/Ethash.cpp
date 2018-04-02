@@ -34,10 +34,7 @@ void Ethash::init()
 }
 
 StakeModifier Ethash::computeChildStakeModifier(StakeModifier const& parentStakeModifier, StakeKeys::Public const& minerPubKey, StakeKeys::Signature const& minterStakeSig) {
-    StakeModifier stakeModifier = dev::sha3(parentStakeModifier.asBytes() + minerPubKey.asBytes() + minterStakeSig.asBytes());
-    //clog << "Stake modifier from parent modifier " << parentStakeModifier.hex() << " miner pub key " << minerPubKey.hex() << " miner stake sig " << minterStakeSig.hex() << " = "
-      //   << stakeModifier << "\n";
-    return stakeModifier;
+    return dev::sha3(parentStakeModifier.asBytes() + minerPubKey.asBytes() + minterStakeSig.asBytes());
 }
 
 StakeMessage Ethash::computeStakeMessage(StakeModifier const& stakeModifier, u256 timestamp) {
@@ -67,9 +64,9 @@ StringHashMap Ethash::jsInfo(BlockHeader const& _bi) const
          { "difficulty", toJS(_bi.difficulty()) } };
 }
 
-void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const
+void Ethash::verify(Strictness _s, BlockHeader const& _bi, BalanceRetriever balanceRetriever, BlockHeader const& _parent, bytesConstRef _block) const
 {
-	SealEngineFace::verify(_s, _bi, _parent, _block);
+	SealEngineFace::verify(_s, _bi, balanceRetriever, _parent, _block);
 
 	if (_s != CheckNothingNew)
 	{
@@ -86,7 +83,7 @@ void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _p
 			BOOST_THROW_EXCEPTION(ExtraDataTooBig() << RequirementError(bigint(chainParams().maximumExtraDataSize), bigint(_bi.extraData().size())) << errinfo_extraData(_bi.extraData()));
 	}
 
-//	if (_parent)
+  	if (_parent)
 	{
 		// Check difficulty is correct given the two timestamps.
         auto expected = calculateDifficulty(_bi, _parent);
@@ -111,27 +108,20 @@ void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _p
 	}
 
 	// check it hashes according to proof of work or that it's the genesis block.
-    if ((_s == CheckEverything || _s == QuickNonce) && _bi.parentHash() && !verifySeal(_bi, _parent))
+    if (_s == CheckEverything && _bi.parentHash() && !verifySeal(_bi, _parent, balanceRetriever))
 	{
 		InvalidBlockNonce ex;
-//		ex << errinfo_nonce(nonce(_bi));
-//		ex << errinfo_mixHash(mixHash(_bi));
-//		ex << errinfo_seedHash(seedHash(_bi));
-//		EthashProofOfWork::Result er = EthashAux::eval(seedHash(_bi), _bi.hash(WithoutSeal), nonce(_bi));
-//		ex << errinfo_ethashResult(make_tuple(er.value, er.mixHash));
 		ex << errinfo_hash256(_bi.hash(WithoutSeal));
 		ex << errinfo_difficulty(_bi.difficulty());
-//		ex << errinfo_target(boundary(_bi));
 		BOOST_THROW_EXCEPTION(ex);
 	}
-/*	else if (_s == QuickNonce && _bi.parentHash() && !quickVerifySeal(_bi))
+	else if (_s == QuickNonce && _bi.parentHash() && !verifySeal(_bi, _parent, balanceRetriever))
 	{
 		InvalidBlockNonce ex;
 		ex << errinfo_hash256(_bi.hash(WithoutSeal));
 		ex << errinfo_difficulty(_bi.difficulty());
-		ex << errinfo_nonce(nonce(_bi));
 		BOOST_THROW_EXCEPTION(ex);
-    }*/
+    }
 }
 
 void Ethash::verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const& _startGasUsed) const
@@ -192,23 +182,37 @@ h256 Ethash::boundary(BlockHeader const& _bi, u256 const& balance) const {
     return d ? (h256)u256(((bigint(1) << 256)/ d) * balance) : h256();
 }
 
-bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& m_parent) const
+bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, BalanceRetriever balanceRetriever) const
 {
-    if (_bi.number() != m_parent.number() + 1)
-        return false;
-    //clog << "verifying signature for block " << _bi.number() << " (" << _bi.hash(WithoutSeal).hex() << ")"
-      //     << " with parent " << m_parent.number() << " (" << m_parent.hash(WithoutSeal).hex() << ")";
-    Address minterAddress = publicToAddress<BLS::Public>(publicKey(_bi));
-    u256 minterBalance = m_balanceRetriever(minterAddress, (BlockNumber) (_bi.number() - 1));
-    StakeKeys::Signature stakeSig = stakeSignature(_bi);
-    bool meetsBounds = computeStakeSignatureHash(stakeSig) <= boundary(_bi, minterBalance);
-    bool modifierCorrect = stakeModifier(_bi) == computeChildStakeModifier(stakeModifier(m_parent), publicKey(_bi), stakeSig);
-    bool stakeSignatureVerified = verifyStakeSignature(publicKey(_bi), stakeSig, computeStakeMessage(stakeModifier(m_parent), _bi.timestamp()));
+    const StakeKeys::Signature stakeSig = stakeSignature(_bi);
+    clog << "block " << _bi.number() << " stakeSig: " << stakeSig.hex() << "\n"; 
     bool blockSignatureVerified = ::verify<BLS>(publicKey(_bi), blockSignature(_bi), _bi.hash(WithoutSeal));
-    return meetsBounds && modifierCorrect && blockSignatureVerified && stakeSignatureVerified;
+    if (_parent) { clog << "withParent\n";
+        if (_bi.number() != _parent.number() + 1)
+            return false;
+        const Address minterAddress = publicToAddress<BLS::Public>(publicKey(_bi));
+        clog << "getting balance\n";
+        const u256 minterBalance = balanceRetriever(minterAddress, (BlockNumber) (_parent.number()));
+        clog << "balance = " << minterBalance << "\n";
+        bool meetsBounds = computeStakeSignatureHash(stakeSig) <= boundary(_bi, minterBalance);
+        bool modifierCorrect = stakeModifier(_bi) == computeChildStakeModifier(stakeModifier(_parent), publicKey(_bi), stakeSig);
+        bool stakeSignatureVerified = verifyStakeSignature(publicKey(_bi), stakeSig, computeStakeMessage(stakeModifier(_parent), _bi.timestamp()));
+        if (!(meetsBounds && modifierCorrect && blockSignatureVerified && stakeSignatureVerified)) {
+            clog << "verifySeal: " << "meetsBounds: " << meetsBounds << " modifierCorrect: " << modifierCorrect << " blockSignatureVerified: " 
+                 << blockSignatureVerified << " stakeSignatureVerified: " << stakeSignatureVerified << "\n";
+            clog << "stakeSig: " << stakeSig.hex() 
+                 << "stakeMessage: " << computeStakeMessage(stakeModifier(_parent), _bi.timestamp()).hex()
+                 << " modifier: " << stakeModifier(_bi).hex()
+                 << " expected: " << computeChildStakeModifier(stakeModifier(_parent), publicKey(_bi), stakeSig).hex() << "\n";
+        }
+        return meetsBounds && modifierCorrect && blockSignatureVerified && stakeSignatureVerified;
+    } else {
+        clog << "verifySeal: " << "blockSignatureVerified: " << blockSignatureVerified << "\n";
+        return blockSignatureVerified;
+    }
 }
 
-void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent)
+void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever)
 {
     clog << " generate seal for " << _bi.number() << " m_parent.nubmer: " << parent.number() << "\n";
     if (!m_generating) {
@@ -216,7 +220,7 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent)
         m_sealing = _bi;
         if (sealThread.joinable()) sealThread.join();
         m_generating = true;
-        sealThread = std::thread([parent, this](){
+        sealThread = std::thread([balanceRetriever, parent, this](){
             u256 timestamp = minimalTimeStamp(parent);
             while (m_generating) {
                 u256 currentTime;
@@ -227,8 +231,8 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent)
                 m_sealing.setTimestamp(timestamp);
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
                 for (auto kp: m_keyPairs) {
-                    u256 balance = m_balanceRetriever(kp.address(), (BlockNumber) (m_sealing.number() - 1));
-                    StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
+                    u256 balance = balanceRetriever(kp.address(), (BlockNumber) (parent.number()));
+                    const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
                     if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
                         std::unique_lock<Mutex> l(m_submitLock);
                         setStakeModifier(m_sealing, computeChildStakeModifier(stakeModifier(parent), kp.pub(), r));
@@ -238,13 +242,17 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent)
 
                         if (m_onSealGenerated)
                         {
-                            clog << "seal generated: " << m_sealing.number() << "\n";
-                            assert(verifySeal(m_sealing, parent));
+                            clog << "seal generated: " << m_sealing.number()
+                                 << " stakeSig: " << r.hex()
+                                 << " stakeMessage: " << computeStakeMessage(stakeModifier(parent), timestamp).hex()
+                                 << "\n";
+                            assert(verifySeal(m_sealing, parent, balanceRetriever));
 
                             RLPStream ret;
                             m_sealing.streamRLP(ret);
                             l.unlock();
                             m_onSealGenerated(ret.out());
+                            clog << "submitted\n"; 
                         }
                         m_generating  = false;
                         return true;

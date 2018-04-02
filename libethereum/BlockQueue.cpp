@@ -434,7 +434,7 @@ void BlockQueue::drain(VerifiedBlocks& o_out, unsigned _max)
 {
 	bool wasFull = false;
 	DEV_WRITE_GUARDED(m_lock)
-	{
+	{ 
 		DEV_INVARIANT_CHECK;
 		wasFull = knownFull();
 		if (m_drainingSet.empty())

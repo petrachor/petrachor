@@ -67,6 +67,7 @@ public:
 	}
 
 	void commitStateDatabase() override { m_trie.db()->commit(); }
+    OverlayDB const& getStateDatabase() const override { return *m_trie.db(); }
 
 	h256 stateRoot() const override { return m_trie.root(); }
 

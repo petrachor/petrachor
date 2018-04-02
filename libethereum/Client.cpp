@@ -71,6 +71,11 @@ Client::Client(
     Worker("eth", 20),
 	m_bc(_params, _dbPath, _forceAction, [](unsigned d, unsigned t){ std::cerr << "REVISING BLOCKCHAIN: Processed " << d << " of " << t << "...\r"; }),
 	m_gp(_gpForAdoption ? _gpForAdoption : make_shared<TrivialGasPricer>()),
+    // Cannot be opened until after blockchain is open, since BlockChain may upgrade the database.
+	// TODO: consider returning the upgrade mechanism here. will delaying the opening of the blockchain database
+	// until after the construction.
+	m_stateDB(State::openDB(_dbPath, bc().genesisHash(), _forceAction)),
+    m_bq(),
 	m_preSeal(chainParams().accountStartNonce),
 	m_postSeal(chainParams().accountStartNonce),
 	m_working(chainParams().accountStartNonce)
@@ -88,10 +93,6 @@ void Client::init(p2p::Host* _extNet, fs::path const& _dbPath, WithExisting _for
 {
 	DEV_TIMED_FUNCTION_ABOVE(500);
 
-	// Cannot be opened until after blockchain is open, since BlockChain may upgrade the database.
-	// TODO: consider returning the upgrade mechanism here. will delaying the opening of the blockchain database
-	// until after the construction.
-	m_stateDB = State::openDB(_dbPath, bc().genesisHash(), _forceAction);
 	// LAZY. TODO: move genesis state construction/commiting to stateDB openning and have this just take the root from the genesis block.
 	m_preSeal = bc().genesisBlock(m_stateDB);
 	m_postSeal = m_preSeal;
@@ -564,7 +565,6 @@ void Client::onPostStateChanged()
 
 void Client::startSealing(std::vector<KeyPair<dev::BLS>> keyPairs) {
     sealEngine()->setKeyPairs(keyPairs);
-    sealEngine()->setBalanceRetriever([&](Address _a, BlockNumber _block) { return balanceAt(_a, _block); });
     startSealing();
 }
 
@@ -617,7 +617,7 @@ void Client::rejigSealing()
 						clog(ClientNote) << "Submitting block failed...";
 				});
 				ctrace << "Generating seal on" << m_sealingInfo.hash(WithoutSeal) << "#" << m_sealingInfo.number();
-                sealEngine()->generateSeal(m_sealingInfo, parent);
+                sealEngine()->generateSeal(m_sealingInfo, parent, [=](Address _a, BlockNumber _block) { return balanceAt(_a, _block); });
 			}
 		}
 		else
