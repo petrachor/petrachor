@@ -185,15 +185,12 @@ h256 Ethash::boundary(BlockHeader const& _bi, u256 const& balance) const {
 bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, BalanceRetriever balanceRetriever) const
 {
     const StakeKeys::Signature stakeSig = stakeSignature(_bi);
-    clog << "block " << _bi.number() << " stakeSig: " << stakeSig.hex() << "\n"; 
     bool blockSignatureVerified = ::verify<BLS>(publicKey(_bi), blockSignature(_bi), _bi.hash(WithoutSeal));
-    if (_parent) { clog << "withParent\n";
+    if (_parent) { 
         if (_bi.number() != _parent.number() + 1)
             return false;
         const Address minterAddress = publicToAddress<BLS::Public>(publicKey(_bi));
-        clog << "getting balance\n";
         const u256 minterBalance = balanceRetriever(minterAddress, (BlockNumber) (_parent.number()));
-        clog << "balance = " << minterBalance << "\n";
         bool meetsBounds = computeStakeSignatureHash(stakeSig) <= boundary(_bi, minterBalance);
         bool modifierCorrect = stakeModifier(_bi) == computeChildStakeModifier(stakeModifier(_parent), publicKey(_bi), stakeSig);
         bool stakeSignatureVerified = verifyStakeSignature(publicKey(_bi), stakeSig, computeStakeMessage(stakeModifier(_parent), _bi.timestamp()));
@@ -207,7 +204,6 @@ bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, Bala
         }
         return meetsBounds && modifierCorrect && blockSignatureVerified && stakeSignatureVerified;
     } else {
-        clog << "verifySeal: " << "blockSignatureVerified: " << blockSignatureVerified << "\n";
         return blockSignatureVerified;
     }
 }
@@ -242,17 +238,12 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
 
                         if (m_onSealGenerated)
                         {
-                            clog << "seal generated: " << m_sealing.number()
-                                 << " stakeSig: " << r.hex()
-                                 << " stakeMessage: " << computeStakeMessage(stakeModifier(parent), timestamp).hex()
-                                 << "\n";
                             assert(verifySeal(m_sealing, parent, balanceRetriever));
 
                             RLPStream ret;
                             m_sealing.streamRLP(ret);
                             l.unlock();
                             m_onSealGenerated(ret.out());
-                            clog << "submitted\n"; 
                         }
                         m_generating  = false;
                         return true;
