@@ -48,7 +48,7 @@ public:
     {
         SignatureStruct() {}
         SignatureStruct(Signature const& s, Public const& _publicKey) : Signature(s), publicKey(_publicKey) { }
-        SignatureStruct(bytesConstRef bytes);
+        SignatureStruct(RLP const& bytes);
         bool isValid() const noexcept;
         bool isZero() const;
         bool lowS() const { return false; }

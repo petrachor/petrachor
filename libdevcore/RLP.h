@@ -52,7 +52,7 @@ static const byte c_rlpDataIndLenZero = c_rlpDataImmLenStart + c_rlpDataImmLenCo
 static const byte c_rlpListImmLenCount = 256 - c_rlpListStart - c_rlpMaxLengthBytes;
 static const byte c_rlpListIndLenZero = c_rlpListStart + c_rlpListImmLenCount - 1;
 
-template <class T> struct Converter { static T convert(RLP const&, int) { BOOST_THROW_EXCEPTION(BadCast()); } };
+template <class T> struct Converter { static T convert(RLP const& rlp, int) { return T(rlp); } };
 
 /**
  * @brief Class for interpreting Recursive Linear-Prefix Data.
@@ -477,7 +477,18 @@ template <class ... _Ts> bytes rlpList(_Ts ... _ts)
 /// The empty string in RLP format.
 extern bytes RLPNull;
 
-/// The empty list in RLP format.
+class RLPList {
+public:
+    RLPList(RLP const& _rlp, size_t expectedItemCount);
+    RLP  pop();
+private:
+    RLP const& rlp;
+    size_t ix = 0;
+};
+
+template <class T> RLPList& operator>>(RLPList& i, T& data) { data = T(i.pop().convert<T>(RLP::VeryStrict)); return i; }
+template <> 
+RLPList& operator>>(RLPList& i, bytes& data);/// The empty list in RLP format.
 extern bytes RLPEmptyList;
 
 /// Human readable version of RLP.

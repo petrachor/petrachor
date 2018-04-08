@@ -67,25 +67,14 @@ bool BLS::SignatureStruct::isValid() const noexcept
     return true;
 }
 
-class RLPList {
-public:
-    RLPList(RLP const& _rlp, size_t expectedItemCount);
-    RLP pop() { return rlp[ix++]; }
-private:
-    RLP const& rlp;
-    size_t ix = 0;
-};
-
-RLPList::RLPList(RLP const& _rlp, size_t expectedItemCount) : rlp(_rlp) {
-    assert(rlp.isList());
-    assert(rlp.itemCount() == expectedItemCount);
-}
-
-template <class T> RLPList& operator>>(RLPList& i, T& data) { data = T(i.pop().convert<T>(RLP::VeryStrict)); return i; }
-
+/*
 BLS::SignatureStruct::SignatureStruct(bytesConstRef bytes) {
     RLP r(bytes);
     RLPList s(r, 2); s >> ((Signature&) *this) >> publicKey;
+}
+*/
+BLS::SignatureStruct::SignatureStruct(RLP const& rlp) {
+    RLPList s(rlp, 2); s >> ((Signature&) *this) >> publicKey;
 }
 
 void BLS::SignatureStruct::streamRLP(RLPStream& _s) const {
@@ -98,7 +87,7 @@ bool ECDSA::SignatureStruct::isZero() const {
 }
 
 bool BLS::SignatureStruct::isZero() const {
-    return (bool) (*this);
+    return !(bool) (*this);
 }
 
 template <> ECDSA::Public dev::toPublic<ECDSA>(ECDSA::Secret const& _secret)

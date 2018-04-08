@@ -49,7 +49,7 @@ R"E(
 		"timestamp": "0x00",
 		"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
                 "extraData":     "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
-		"gasLimit": "0x1388"
+		"gasLimit": "0x781388"
 	},
 	"accounts": {
 		"0000000000000000000000000000000000000001": { "precompiled": { "name": "ecrecover", "linear": { "base": 3000, "word": 0 } } },

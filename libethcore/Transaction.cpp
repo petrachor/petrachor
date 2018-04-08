@@ -45,37 +45,21 @@ TransactionBase::TransactionBase(TransactionSkeleton const& _ts, AccountKeys::Se
 
 TransactionBase::TransactionBase(bytesConstRef _rlpData, CheckTransaction _checkSig)
 {
-	int field = 0;
 	RLP rlp(_rlpData);
 	try
 	{
-		if (!rlp.isList())
-			BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("transaction RLP must be a list"));
-
-		m_nonce = rlp[field = 0].toInt<u256>();
-		m_gasPrice = rlp[field = 1].toInt<u256>();
-		m_gas = rlp[field = 2].toInt<u256>();
-		m_type = rlp[field = 3].isEmpty() ? ContractCreation : MessageCall;
-		m_receiveAddress = rlp[field = 3].isEmpty() ? Address() : rlp[field = 3].toHash<Address>(RLP::VeryStrict);
-		m_value = rlp[field = 4].toInt<u256>();
-
-		if (!rlp[field = 5].isData())
-			BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("transaction data RLP must be an array"));
-
-		m_data = rlp[field = 5].toBytes();
-
-        m_chainId = uint32_t(rlp[field = 6]);
-        RLP sig = rlp[field = 7];
-        if (!sig.isList())
-            BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("transaction sig RLP must be a list"));
-        m_vrs = AccountKeys::SignatureStruct(AccountKeys::Signature(sig[0].toBytesConstRef()), AccountKeys::Public(sig[1].toBytesConstRef()));
-        if (rlp.itemCount() > 2)
-            BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("too many fields in the transaction sig RLP"));
+        //clog << rlp.itemCount() << "\n";
+        RLPList s(rlp, 8);
+        s >> m_nonce >> m_gasPrice >> m_gas;
+        RLP const& recvAField = s.pop();
+		m_type = recvAField.isEmpty() ? ContractCreation : MessageCall;
+		m_receiveAddress = recvAField.isEmpty() ? Address() : recvAField.toHash<Address>(RLP::VeryStrict);
+        bytes chainIdBytes;
+        s >> m_value >> m_data >> chainIdBytes;
+        m_chainId = (char) chainIdBytes[0];
+        s >> m_vrs;
         if (_checkSig >= CheckTransaction::Cheap && !m_vrs->isValid())
             BOOST_THROW_EXCEPTION(InvalidSignature());
-
-        if (rlp.itemCount() > 8)
-			BOOST_THROW_EXCEPTION(InvalidTransactionFormat() << errinfo_comment("too many fields in the transaction RLP"));
 	}
 	catch (Exception& _e)
 	{
@@ -105,13 +89,16 @@ void TransactionBase::streamRLP(RLPStream& _s, IncludeSignature _sig, bool _forE
 	if (m_type == NullTransaction)
 		return;
 
-	_s.appendList((_sig || _forEip155hash ? 3 : 0) + 6);
+	_s.appendList((_sig || _forEip155hash ? 1 : 0) + 7);
 	_s << m_nonce << m_gasPrice << m_gas;
 	if (m_type == MessageCall)
 		_s << m_receiveAddress;
 	else
 		_s << "";
-    _s << m_value << m_chainId;
+    _s << m_value << m_data;
+    bytes chainIdBytes(1);
+    chainIdBytes[0] = m_chainId;
+    _s << chainIdBytes;
 
     if (_sig)
 	{
