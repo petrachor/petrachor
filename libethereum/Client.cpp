@@ -573,13 +573,14 @@ void Client::startSealing()
 	if (m_wouldSeal == true)
 		return;
     clog(ClientNote) << "Mining Beneficiary address: " << author();
-//    if (author())
+
+    if (author())
 	{
 		m_wouldSeal = true;
 		m_signalled.notify_all();
 	}
-    //else
-        //clog(ClientNote) << "You need to set an author in order to seal!";
+    else
+        clog(ClientNote) << "You need to set an author in order to seal!";
 }
 
 void Client::rejigSealing()
@@ -598,6 +599,7 @@ void Client::rejigSealing()
 					clog(ClientNote) << "Tried to seal sealed block...";
 					return;
 				}
+                m_working.setAuthor(author());
 				m_working.commitToSeal(bc(), m_extraData);
 			}
             BlockHeader parent;
@@ -612,7 +614,6 @@ void Client::rejigSealing()
 			if (wouldSeal())
 			{
 				sealEngine()->onSealGenerated([=](bytes const& header){
-
 					if (!this->submitSealed(header))
 						clog(ClientNote) << "Submitting block failed...";
 				});

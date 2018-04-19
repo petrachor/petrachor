@@ -72,6 +72,7 @@ using namespace dev::eth;
 using namespace boost::algorithm;
 namespace fs = boost::filesystem;
 
+
 static std::atomic<bool> g_silence = {false};
 
 void help()
@@ -1053,7 +1054,7 @@ int main(int argc, char** argv)
 					masterPassword = getPassword("Please enter your MASTER password: ");
 					if (keyManager.load(masterPassword))
 						break;
-					cout << "The password you entered is incorrect. If you have forgotten your password, and you wish to start afresh, manually remove the file: " << (getDataDir("ethereum") / fs::path("keys.info")).string() << "\n";
+                    cout << "The password you entered is incorrect. If you have forgotten your password, and you wish to start afresh, manually remove the file: " << (getDataDir(defaultDataDir) / fs::path("keys.info")).string() << "\n";
 				}
 			}
 		}

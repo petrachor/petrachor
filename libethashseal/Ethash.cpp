@@ -1,4 +1,4 @@
-/*
+       /*
 	This file is part of cpp-ethereum.
 
 	cpp-ethereum is free software: you can redistribute it and/or modify
@@ -179,6 +179,7 @@ void Ethash::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent)
 
 h256 Ethash::boundary(BlockHeader const& _bi, u256 const& balance) const {
     auto d = _bi.difficulty();
+   // clog << "balance: " << balance << "\n";
     return d ? (h256)u256(((bigint(1) << 256)/ d) * balance) : h256();
 }
 
@@ -218,16 +219,23 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
         m_generating = true;
         sealThread = std::thread([balanceRetriever, parent, this](){
             u256 timestamp = minimalTimeStamp(parent);
+            clog << "Minimal timestamp: " << timestamp << "\n";
+            std::map<Address, u256> balanceMap;
+            for (auto kp: m_keyPairs) {
+                u256 balance = balanceRetriever(kp.address(), (BlockNumber) (parent.number()));
+                balanceMap.insert(std::make_pair(kp.address(), balance));
+            }
+
             while (m_generating) {
                 u256 currentTime;
                 while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(100));
                 if (!m_generating) break;
 
-//                clog << "Timestamp: " << timestamp << " keypairs = " << m_keyPairs.size() << " parent no: " << parent.number() << "\n";
                 m_sealing.setTimestamp(timestamp);
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
                 for (auto kp: m_keyPairs) {
-                    u256 balance = balanceRetriever(kp.address(), (BlockNumber) (parent.number()));
+                    u256 balance = balanceMap.find(kp.address())->second;
+                    //clog << "[ts: " << timestamp << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
                     const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
                     if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
                         std::unique_lock<Mutex> l(m_submitLock);

@@ -16,7 +16,7 @@
 */
 #include "../GenesisInfo.h"
 
-static dev::h256 const c_genesisStateRootMainNetwork("395a37cc097c03c6d10aab8b0ea2bc121a9806ce741ddf061943ee8d5d97f092");
+static dev::h256 const c_genesisStateRootMainNetwork("b97d4d5492c07ade79f73398013c22d9d5d232a7c1d2d82a687040de6658ea40");
 static std::string const c_genesisInfoMainNetwork = std::string() +
 R"E(
 {
@@ -36,17 +36,17 @@ R"E(
 		"minGasLimit": "0x1388",
 		"maxGasLimit": "7fffffffffffffff",
 		"gasLimitBoundDivisor": "0x0400",
-		"minimumDifficulty": "0x020000",
+                "minimumDifficulty": "0x0200",
 		"difficultyBoundDivisor": "0x0800",
 		"durationLimit": "0x0d",
 		"blockReward": "0x4563918244F40000"
 	},
 	"genesis": {
 		"nonce": "0x0000000000000042",
-    "difficulty": "0x40000000000000000",
+    "difficulty": "0x01DE0B6B3A764000000",
                 "stakeModifier": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
 		"author": "0x0000000000000000000000000000000000000000",
-		"timestamp": "0x00",
+                "timestamp": "5AD8D498",
 		"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
                 "extraData":     "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
 		"gasLimit": "0x781388"
@@ -65,6 +65,8 @@ R"E(
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_gt", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_pairing", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
 "0000000000000000000000010000000000000000": { "precompiled": { "name": "bls12_381_multipairing", "startingBlock": "0xffffffffffffffffff", "linear": { "base": 500, "word": 0 } } },
+"009cd09e0d9985d50f1d8b750c0a59fe582419c4": { "balance": "1000000000000000000" },
+"00c125163b85c7beaaf40ca096645e64e5dd99be": { "balance": "1000000000000000000" },
 "003ff0f596f8508b96e7c7f3eb6f8196d5f2309d": { "balance": "1000000000000000000" },
 "00a1fa895297ad0412e867ca57f4dcfd5682f435": { "balance": "1000000000000000000" },
 "00ca0701dd80a8e9cd2e54cbcc74e97451683408": { "balance": "1000000000000000000" },
