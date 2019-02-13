@@ -618,7 +618,7 @@ void Client::rejigSealing()
 						clog(ClientNote) << "Submitting block failed...";
 				});
 				ctrace << "Generating seal on" << m_sealingInfo.hash(WithoutSeal) << "#" << m_sealingInfo.number();
-                sealEngine()->generateSeal(m_sealingInfo, parent, [=](Address _a, BlockNumber _block) { return balanceAt(_a, _block); });
+                sealEngine()->generateSeal(m_sealingInfo, parent, [=](Address _a, BlockNumber _block) { return balanceAt(_a, std::max((BlockNumber) 0, _block - 255)); });
 			}
 		}
 		else
