@@ -477,20 +477,20 @@ tuple<ImportRoute, bool, unsigned> BlockChain::sync(BlockQueue& _bq, OverlayDB c
 				cwarn << "ODD: Import queue contains already imported block";
 				continue;
 			}
-			catch (dev::eth::UnknownParent)
+            catch (dev::eth::UnknownParent const&)
 			{
 				cwarn << "ODD: Import queue contains block with unknown parent.";// << LogTag::Error << boost::current_exception_diagnostic_information();
 				// NOTE: don't reimport since the queue should guarantee everything in the right order.
 				// Can't continue - chain bad.
 				badBlocks.push_back(block.verified.info.hash());
 			}
-			catch (dev::eth::FutureTime)
+            catch (dev::eth::FutureTime const&)
 			{
 				cwarn << "ODD: Import queue contains a block with future time.";
 				this_thread::sleep_for(chrono::seconds(1));
 				continue;
 			}
-			catch (dev::eth::TransientError)
+            catch (dev::eth::TransientError const&)
 			{
 				this_thread::sleep_for(chrono::milliseconds(100));
 				continue;
@@ -1455,6 +1455,8 @@ Block BlockChain::genesisBlock(OverlayDB const& _db) const
 	return ret;
 } 
 
+BalanceRetriever getBalanceRetrieverForDB();
+
 VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, OverlayDB const& db, std::function<void(Exception&)> const& _onBad, ImportRequirements::value _ir) const
 {
     return verifyBlock(_block, _onBad, [&](Address _a, BlockNumber _block) { 
@@ -1468,8 +1470,12 @@ VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, OverlayDB const& 
 
 VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, std::function<void(Exception&)> const& _onBad, ImportRequirements::value _ir) const
 {
-    return verifyBlock(_block, _onBad, [&](Address , BlockNumber _block) { 
-        return getMoneySupplyAtBlock(_block);
+    return verifyBlock(_block, _onBad, [&](Address _a, BlockNumber _block) {
+        try {
+            Block ret(*this, m_blocksDB);
+            ret.populateFromChain(*this, numberHash(_block));
+            return ret.balance(_a);
+        } catch (Exception&) { return u256(); }
     }, _ir);
 }
 

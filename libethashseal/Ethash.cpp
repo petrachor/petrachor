@@ -183,6 +183,10 @@ h256 Ethash::boundary(BlockHeader const& _bi, u256 const& balance) const {
     return d ? (h256)u256(((bigint(1) << 256)/ d) * balance) : h256();
 }
 
+u256 Ethash::getAgedBalance(Address a, BlockNumber bn, BalanceRetriever balanceRetriever) const {
+    return balanceRetriever(a, (bn > 255) ? (bn - 255) : (BlockNumber) 0);
+}
+
 bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, BalanceRetriever balanceRetriever) const
 {
     const StakeKeys::Signature stakeSig = stakeSignature(_bi);
@@ -191,7 +195,7 @@ bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, Bala
         if (_bi.number() != _parent.number() + 1)
             return false;
         const Address minterAddress = publicToAddress<BLS::Public>(publicKey(_bi));
-        const u256 minterBalance = balanceRetriever(minterAddress, (BlockNumber) (_parent.number()));
+        const u256 minterBalance = getAgedBalance(minterAddress, (BlockNumber) _parent.number(), balanceRetriever);
         bool meetsBounds = computeStakeSignatureHash(stakeSig) <= boundary(_bi, minterBalance);
         bool modifierCorrect = stakeModifier(_bi) == computeChildStakeModifier(stakeModifier(_parent), publicKey(_bi), stakeSig);
         bool stakeSignatureVerified = verifyStakeSignature(publicKey(_bi), stakeSig, computeStakeMessage(stakeModifier(_parent), _bi.timestamp()));
@@ -221,10 +225,7 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
             u256 timestamp = minimalTimeStamp(parent);
             clog << "Minimal timestamp: " << timestamp << "\n";
             std::map<Address, u256> balanceMap;
-            for (auto kp: m_keyPairs) {
-                u256 balance = balanceRetriever(kp.address(), (BlockNumber) (parent.number()));
-                balanceMap.insert(std::make_pair(kp.address(), balance));
-            }
+            for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
 
             while (m_generating) {
                 u256 currentTime;
@@ -235,7 +236,7 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
                 for (auto kp: m_keyPairs) {
                     u256 balance = balanceMap.find(kp.address())->second;
-                    //clog << "[ts: " << timestamp << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
+                  //  clog << "[ts: " << timestamp << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
                     const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
                     if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
                         std::unique_lock<Mutex> l(m_submitLock);

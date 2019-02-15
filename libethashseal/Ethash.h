@@ -84,6 +84,7 @@ public:
 
     bool isMining() const { return m_generating; }
 private:
+    u256 getAgedBalance(Address a, BlockNumber bn, BalanceRetriever balanceRetriever) const;
     bool verifySeal(BlockHeader const& _bi, BlockHeader const& m_parent, BalanceRetriever balanceRetriever) const;
 
 	std::string m_sealer = "cpu";
