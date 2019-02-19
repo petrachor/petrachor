@@ -119,7 +119,7 @@ public:
 
 	/// Set the author address for any transactions we do and rewards we get.
 	/// This causes a complete reset of current block.
-    void setAuthor(Address const& _id) { m_author = _id; resetCurrent(); }
+    void setAuthor(Address const& _id) { m_author = _id; }
 
 	/// Note the fact that this block is being used with a particular chain.
 	/// Call this before using any non-const methods.
