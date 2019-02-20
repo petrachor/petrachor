@@ -263,7 +263,7 @@ public:
     KeyPair<BLS> makeKey() const
 	{
         KeyPair<BLS> k(AccountKeys::Secret::random());
-		while (m_icap && k.address()[0])
+        while (m_icap && (k.address()[0] ^ dev::eth::addressPrefix))
             k = KeyPair<BLS>(AccountKeys::Secret(sha3(k.secret().ref())));
 		return k;
 	}
