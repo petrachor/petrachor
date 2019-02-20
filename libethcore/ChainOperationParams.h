@@ -97,6 +97,7 @@ public:
 	u256 minimumDifficulty;
 	u256 difficultyBoundDivisor;
 	u256 durationLimit;
+    u256 targetBlockInterval = 9;
 	bool allowFutureBlocks = false;
 	u256 registrar;
 

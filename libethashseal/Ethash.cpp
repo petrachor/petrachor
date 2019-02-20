@@ -161,14 +161,12 @@ u256 Ethash::calculateDifficulty(BlockHeader const& _bi, bigint const& parentTim
 {
 	if (!_bi.number())
 		throw GenesisBlockCannotBeCalculated();
-	auto const& minimumDifficulty = chainParams().minimumDifficulty;
 
     bigint const timestampDiff = bigint(_bi.timestamp()) - bigint(parentTimeStamp);
-    bigint const adjFactor = max<bigint>(1 - timestampDiff / 9, -99); // Byzantium-era difficulty adjustment
-
-    bigint target = parentDifficulty + parentDifficulty / 2048 * adjFactor;
+    bigint const adjFactor = max<bigint>((chainParams().targetBlockInterval - timestampDiff), -99);
+    bigint target = parentDifficulty + (parentDifficulty * adjFactor) / chainParams().difficultyBoundDivisor;
     //clog << "Parent timestamp: " << parentTimeStamp << " bi.timestamp " << _bi.timestamp() << " timestampDiff: " << timestampDiff << " parent diff: " << parentDifficulty << " target: " << target << "\n";
-    return u256(min<bigint>(max<bigint>(minimumDifficulty, target), std::numeric_limits<u256>::max()));
+    return u256(min<bigint>(max<bigint>(chainParams().minimumDifficulty, target), std::numeric_limits<u256>::max()));
 }
 
 void Ethash::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent)
@@ -218,45 +216,47 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
     clog << " generate seal for " << _bi.number() << " m_parent.nubmer: " << parent.number() << "\n";
     if (!m_generating) {
         Guard l(m_submitLock);
-        m_sealing = _bi;
         if (sealThread.joinable()) sealThread.join();
+        m_sealing = _bi;
         m_generating = true;
         sealThread = std::thread([balanceRetriever, parent, this](){
             u256 timestamp = minimalTimeStamp(parent);
-            clog << "Minimal timestamp: " << timestamp << "\n";
+      //      clog << "Minimal timestamp: " << timestamp << "\n";
             std::map<Address, u256> balanceMap;
             for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
 
             while (m_generating) {
                 u256 currentTime;
-                while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(100));
+                while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(20));
                 if (!m_generating) break;
 
                 m_sealing.setTimestamp(timestamp);
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
                 for (auto kp: m_keyPairs) {
                     u256 balance = balanceMap.find(kp.address())->second;
-                  //  clog << "[ts: " << timestamp << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
-                    const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
-                    if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
-                        std::unique_lock<Mutex> l(m_submitLock);
-                        setStakeModifier(m_sealing, computeChildStakeModifier(stakeModifier(parent), kp.pub(), r));
-                        setPublicKey(m_sealing, kp.pub());
-                        setStakeSignature(m_sealing, r);
-                        setBlockSignature(m_sealing, sign<BLS>(kp.secret(), m_sealing.hash(WithoutSeal)));
+                    if (balance != (u256) 0) {
+//                        clog << "[parent ts: " << parent.timestamp() << " ts: " << timestamp << " delta:" << (timestamp - parent.timestamp()) << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
+                        const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
+                        if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
+                            std::unique_lock<Mutex> l(m_submitLock);
+                            setStakeModifier(m_sealing, computeChildStakeModifier(stakeModifier(parent), kp.pub(), r));
+                            setPublicKey(m_sealing, kp.pub());
+                            setStakeSignature(m_sealing, r);
+                            setBlockSignature(m_sealing, sign<BLS>(kp.secret(), m_sealing.hash(WithoutSeal)));
 
-                        if (m_onSealGenerated)
-                        {
-                            assert(verifySeal(m_sealing, parent, balanceRetriever));
+                            if (m_onSealGenerated)
+                            {
+                                assert(verifySeal(m_sealing, parent, balanceRetriever));
 
-                            RLPStream ret;
-                            m_sealing.streamRLP(ret);
-                            l.unlock();
-                            m_onSealGenerated(ret.out());
-                        }
-                        m_generating  = false;
-                        return true;
-                    };
+                                RLPStream ret;
+                                m_sealing.streamRLP(ret);
+                                l.unlock();
+                                m_onSealGenerated(ret.out());
+                            }
+                            m_generating  = false;
+                            return true;
+                        };
+                    }
                 }
                 timestamp += 1;
           //      if (m_generating && lastPaused) this_thread::sleep_for(chrono::milliseconds(500));

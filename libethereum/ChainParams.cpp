@@ -80,8 +80,9 @@ ChainParams ChainParams::loadConfig(string const& _json, h256 const& _stateRoot)
 	setOptionalU256Parameter(cp.byzantiumForkBlock, "byzantiumForkBlock");
 	setOptionalU256Parameter(cp.constantinopleForkBlock, "constantinopleForkBlock");
 	setOptionalU256Parameter(cp.daoHardforkBlock, "daoHardforkBlock");
-	setOptionalU256Parameter(cp.minimumDifficulty, "minimumDifficulty");
-	setOptionalU256Parameter(cp.difficultyBoundDivisor, "difficultyBoundDivisor");
+    setOptionalU256Parameter(cp.minimumDifficulty, "minimumDifficulty");
+    setOptionalU256Parameter(cp.targetBlockInterval, "targetBlockInterval");
+    setOptionalU256Parameter(cp.difficultyBoundDivisor, "difficultyBoundDivisor");
 	setOptionalU256Parameter(cp.durationLimit, "durationLimit");
 
 	if (params.count("chainID"))
