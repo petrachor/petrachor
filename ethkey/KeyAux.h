@@ -260,13 +260,7 @@ public:
 		return true;
 	}
 
-    KeyPair<BLS> makeKey() const
-	{
-        KeyPair<BLS> k(AccountKeys::Secret::random());
-        while (m_icap && (k.address()[0] ^ dev::eth::addressPrefix))
-            k = KeyPair<BLS>(AccountKeys::Secret(sha3(k.secret().ref())));
-		return k;
-	}
+    KeyPair<AccountKeys::KeyType::Type> makeKey() { return KeyPair<AccountKeys::KeyType::Type>::create(m_icap); }
 
 	AccountKeys::Secret getSecret(std::string const& _signKey)
 	{
@@ -429,7 +423,7 @@ public:
 		{
 			if (m_lock.empty())
 				m_lock = createPassword("Enter a passphrase with which to secure this account: ");
-			auto k = makeKey();
+            auto k = makeKey();
 			h128 u = secretStore().importSecret(k.secret().ref(), m_lock);
 			cout << "Created key " << toUUID(u) << endl;
 			cout << "  Address: " << k.address().hex() << endl;

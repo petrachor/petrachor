@@ -34,8 +34,6 @@ namespace dev
 namespace eth
 {
 
-static const unsigned char addressPrefix = 0xF1;
-
 class PasswordUnknown: public Exception {};
 
 struct KeyInfo

@@ -189,9 +189,9 @@ bytesSec scrypt(std::string const& _pass, bytes const& _salt, uint64_t _n, uint3
 bytes aesDecrypt(bytesConstRef _cipher, std::string const& _password, unsigned _rounds, bytesConstRef _salt);
 h256 sha3(bytes const& _input);
 
-template <class C>
-class KeyPair
-{
+
+template <class C> class KeyPair {
+    static const unsigned char addressPrefix = 0xF1;
 public:
     typedef typename C::Secret Secret;
     typedef typename C::Public Public;
@@ -208,12 +208,12 @@ public:
     }
 
 	/// Create a new, randomly generated object.
-    static KeyPair create() {
+    static KeyPair create(bool icap = false, unsigned firstByte = addressPrefix) {
         while (true)
         {
-            KeyPair keyPair(Secret::random());
-            if (keyPair.address())
-                return keyPair;
+            KeyPair kp(Secret::random());
+            while (icap && (kp.address()[0] ^ firstByte)) kp = KeyPair(Secret(sha3(kp.secret().ref())));
+            if (kp.address()) return kp;
         }
     }
 

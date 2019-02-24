@@ -96,7 +96,7 @@ bool AccountManager::execute(int argc, char** argv)
 			string lock;
 			string lockHint;
 			lock = createPassword("Enter a passphrase with which to secure this account:");
-			auto k = makeKey();
+            auto k = KeyPair<BLS>::create(true);
 			h128 u = m_keyManager->import(k.secret(), name, lock, lockHint);
 			cout << "Created key " << toUUID(u) << "\n";
 			cout << "  Address: " << k.address().hex() << "\n";
@@ -186,15 +186,6 @@ string AccountManager::createPassword(string const& _prompt) const
 		cout << "Passwords were different. Try again." << "\n";
 	}
 	return ret;
-}
-
-KeyPair<dev::BLS> AccountManager::makeKey() const
-{
-	bool icap = true;
-    AccountKeys::Pair k(AccountKeys::Secret::random());
-	while (icap && k.address()[0])
-        k = AccountKeys::Pair(AccountKeys::Secret(sha3(k.secret().ref())));
-	return k;
 }
 
 bool AccountManager::openWallet()
