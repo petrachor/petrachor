@@ -32,7 +32,6 @@
 #include <boost/filesystem.hpp>
 
 #include <libdevcore/FileSystem.h>
-#include <libethashseal/EthashAux.h>
 #include <libevm/VM.h>
 #include <libevm/VMFactory.h>
 #include <libethcore/KeyManager.h>
@@ -40,6 +39,7 @@
 #include <libethereum/SnapshotImporter.h>
 #include <libethereum/SnapshotStorage.h>
 #include <libethashseal/EthashClient.h>
+#include <libethashseal/Ethash.h>
 #include <libethashseal/GenesisInfo.h>
 #include <libwebthree/WebThree.h>
 
@@ -61,7 +61,7 @@
 #include <libweb3jsonrpc/Debug.h>
 #include <libweb3jsonrpc/Test.h>
 
-#include "MinerAux.h"
+//#include "MinerAux.h"
 #include "BuildInfo.h"
 #include "AccountManager.h"
 
@@ -72,25 +72,26 @@ using namespace dev::eth;
 using namespace boost::algorithm;
 namespace fs = boost::filesystem;
 
+
 static std::atomic<bool> g_silence = {false};
 
 void help()
 {
 	cout
-		<< "Usage eth [OPTIONS]\n"
+		<< "Usage petrichor [OPTIONS]\n"
 		<< "Options:\n\n"
 		<< "Wallet usage:\n";
 	AccountManager::streamAccountHelp(cout);
 	AccountManager::streamWalletHelp(cout);
 	cout
 		<< "\nClient mode (default):\n"
-		<< "    --mainnet  Use the main network protocol.\n"
-		<< "    --ropsten  Use the Ropsten testnet.\n"
-		<< "    --private <name>  Use a private chain.\n"
-		<< "    --test  Testing mode: Disable PoW and provide test rpc interface.\n"
-		<< "    --config <file>  Configure specialised blockchain using given JSON information.\n"
-		<< "    --oppose-dao-fork  Ignore DAO hard fork (default is to participate).\n\n"
-		<< "    -o,--mode <full/peer>  Start a full node or a peer node (default: full).\n\n"
+//		<< "    --mainnet  Use the main network protocol.\n"
+//		<< "    --ropsten  Use the Ropsten testnet.\n"
+//		<< "    --private <name>  Use a private chain.\n"
+//		<< "    --test  Testing mode: Disable PoW and provide test rpc interface.\n"
+//		<< "    --config <file>  Configure specialised blockchain using given JSON information.\n"
+//		<< "    --oppose-dao-fork  Ignore DAO hard fork (default is to participate).\n\n"
+//		<< "    -o,--mode <full/peer>  Start a full node or a peer node (default: full).\n\n"
 		<< "    -j,--json-rpc  Enable JSON-RPC server (default: off).\n"
 		<< "    --ipc  Enable IPC server (default: on).\n"
 		<< "    --ipcpath Set .ipc socket path (default: data directory)\n"
@@ -109,13 +110,13 @@ void help()
 		<< "Client transacting:\n"
 		<< "    --ask <wei>  Set the minimum ask gas price under which no transaction will be mined (default " << toString(DefaultGasPrice) << " ).\n"
 		<< "    --bid <wei>  Set the bid gas price to pay for transactions (default " << toString(DefaultGasPrice) << " ).\n"
-		<< "    --unsafe-transactions  Allow all transactions to proceed without verification. EXTREMELY UNSAFE.\n"
+		<< "    --unsafe-transactions  Allow all transactions to proceed without verification. EXTREMELY UNSAFE.\n\n"
 		<< "Client mining:\n"
 		<< "    -a,--address <addr>  Set the author (mining payout) address to given address (default: auto).\n"
-		<< "    -m,--mining <on/off/number>  Enable mining, optionally for a specified number of blocks (default: off).\n"
-		<< "    -f,--force-mining  Mine even when there are no transactions to mine (default: off).\n"
-		<< "    -C,--cpu  When mining, use the CPU.\n"
-		<< "    -t, --mining-threads <n>  Limit number of CPU/GPU miners to n (default: use everything available on selected platform).\n\n"
+		<< "    -m,--mining <on/off/number>  Enable mining, optionally for a specified number of blocks (default: off).\n\n"
+//		<< "    -f,--force-mining  Mine even when there are no transactions to mine (default: off).\n"
+//		<< "    -C,--cpu  When mining, use the CPU.\n"
+//		<< "    -t, --mining-threads <n>  Limit number of CPU/GPU miners to n (default: use everything available on selected platform).\n\n"
 		<< "Client networking:\n"
 		<< "    --client-name <name>  Add a name to your client's version string (default: blank).\n"
 		<< "    --bootstrap  Connect to the default Ethereum peer servers (default unless --no-discovery used).\n"
@@ -142,14 +143,13 @@ void help()
 		<< "    --pin  Only accept or connect to trusted peers.\n"
 		<< "    --hermit  Equivalent to --no-discovery --pin.\n"
 		<< "    --sociable  Force discovery and no pinning.\n\n";
-	MinerCLI::streamHelp(cout);
 	cout
-		<< "Import/export modes:\n"
-		<< "    --from <n>  Export only from block n; n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
-		<< "    --to <n>  Export only to block n (inclusive); n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
-		<< "    --only <n>  Equivalent to --export-from n --export-to n.\n"
-		<< "    --dont-check  Prevent checking some block aspects. Faster importing, but to apply only when the data is known to be valid.\n\n"
-		<< "    --import-snapshot <path>  Import blockchain and state data from the Parity Warp Sync snapshot." << endl
+//		<< "Import/export modes:\n"
+//		<< "    --from <n>  Export only from block n; n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
+//		<< "    --to <n>  Export only to block n (inclusive); n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
+//		<< "    --only <n>  Equivalent to --export-from n --export-to n.\n"
+//		<< "    --dont-check  Prevent checking some block aspects. Faster importing, but to apply only when the data is known to be valid.\n\n"
+//		<< "    --import-snapshot <path>  Import blockchain and state data from the Parity Warp Sync snapshot." << endl
 		<< "General Options:\n"
 		<< "    -d,--db-path,--datadir <path>  Load database from path (default: " << getDataDir() << ").\n"
 #if ETH_EVMJIT
@@ -157,10 +157,20 @@ void help()
 #endif // ETH_EVMJIT
 		<< "    -v,--verbosity <0 - 9>  Set the log verbosity from 0 to 9 (default: 8).\n"
 		<< "    -V,--version  Show the version and exit.\n"
-		<< "    -h,--help  Show this help message and exit.\n\n"
-		<< "Experimental / Proof of Concept:\n"
-		<< "    --shh  Enable Whisper.\n\n";
+		<< "    -h,--help  Show this help message and exit.\n\n";
+//		<< "Experimental / Proof of Concept:\n"
+//		<< "    --shh  Enable Whisper.\n\n";
 		exit(0);
+}
+
+inline std::string credits()
+{
+    std::ostringstream out;
+    out
+        << "petrichor " << dev::Version << endl
+        << "  By petrichor contributors, (c) 2017-2019." << endl
+        << "  See the README for contributors and credits." << endl;
+    return out.str();
 }
 
 string ethCredits(bool _interactive = false)
@@ -174,8 +184,8 @@ string ethCredits(bool _interactive = false)
 
 void version()
 {
-	cout << "eth version " << dev::Version << "\n";
-	cout << "eth network protocol version: " << dev::eth::c_protocolVersion << "\n";
+	cout << "petrichor version " << dev::Version << "\n";
+	cout << "petrichor network protocol version: " << dev::eth::c_protocolVersion << "\n";
 	cout << "Client database version: " << dev::eth::c_databaseVersion << "\n";
 	cout << "Build: " << DEV_QUOTED(ETH_BUILD_PLATFORM) << "/" << DEV_QUOTED(ETH_BUILD_TYPE) << "\n";
 	exit(0);
@@ -202,12 +212,6 @@ void setDefaultOrCLocale()
 		setenv("LC_ALL", "C", 1);
 	}
 #endif
-}
-
-void importPresale(KeyManager& _km, string const& _file, function<string()> _pass)
-{
-	KeyPair k = _km.presaleSecret(contentsString(_file), [&](bool){ return _pass(); });
-	_km.import(k.secret(), "Presale wallet" + _file + " (insecure)");
 }
 
 Address c_config = Address("ccdeac59d35627b7de09332e819d5159e7bb7250");
@@ -288,12 +292,22 @@ private:
 
 bool ExitHandler::s_shouldExit = false;
 
+bool isTrue(std::string const& _m)
+{
+    return _m == "on" || _m == "yes" || _m == "true" || _m == "1";
+}
+
+bool isFalse(std::string const& _m)
+{
+    return _m == "off" || _m == "no" || _m == "false" || _m == "0";
+}
+
 int main(int argc, char** argv)
 {
 	setDefaultOrCLocale();
 
 	// Init secp256k1 context by calling one of the functions.
-	toPublic({});
+    toPublic<dev::ECDSA>({});
 
 	// Init defaults
 	Defaults::get();
@@ -340,10 +354,10 @@ int main(int argc, char** argv)
 	/// Networking params.
 	string clientName;
 	string listenIP;
-	unsigned short listenPort = 30303;
+    unsigned short listenPort = dev::p2p::c_defaultIPPort;
 	string publicIP;
 	string remoteHost;
-	unsigned short remotePort = 30303;
+    unsigned short remotePort = dev::p2p::c_defaultIPPort;
 
 	unsigned peers = 11;
 	unsigned peerStretch = 7;
@@ -354,7 +368,7 @@ int main(int argc, char** argv)
 	bool enableDiscovery = false;
 	bool noPinning = false;
 	static const unsigned NoNetworkID = (unsigned)-1;
-	unsigned networkID = NoNetworkID;
+    unsigned networkID = (unsigned) eth::Network::EthereumYNetwork;
 
 	/// Mining params
 	unsigned mining = 0;
@@ -382,7 +396,7 @@ int main(int argc, char** argv)
 	bytes b = contents(configFile);
 
 	strings passwordsToNote;
-	Secrets toImport;
+	std::vector<AccountKeys::Secret> toImport;
 	if (b.size())
 	{
 		try
@@ -400,7 +414,7 @@ int main(int argc, char** argv)
 	}
 
 
-	MinerCLI m(MinerCLI::OperationMode::None);
+//	MinerCLI m(MinerCLI::OperationMode::None);
 
 	bool listenSet = false;
 	bool chainConfigIsSet = false;
@@ -409,10 +423,10 @@ int main(int argc, char** argv)
 	for (int i = 1; i < argc; ++i)
 	{
 		string arg = argv[i];
-		if (m.interpretOption(i, argc, argv))
+        /*if (m.interpretOption(i, argc, argv))
 		{
 		}
-		else if (arg == "--listen-ip" && i + 1 < argc)
+        else*/ if (arg == "--listen-ip" && i + 1 < argc)
 		{
 			listenIP = argv[++i];
 			listenSet = true;
@@ -549,12 +563,12 @@ int main(int argc, char** argv)
 			}
 		else if ((arg == "-s" || arg == "--import-secret") && i + 1 < argc)
 		{
-			Secret s(fromHex(argv[++i]));
+			AccountKeys::Secret s(fromHex(argv[++i]));
 			toImport.emplace_back(s);
 		}
 		else if ((arg == "-S" || arg == "--import-session-secret") && i + 1 < argc)
 		{
-			Secret s(fromHex(argv[++i]));
+			AccountKeys::Secret s(fromHex(argv[++i]));
 			toImport.emplace_back(s);
 		}
 		else if ((arg == "-d" || arg == "--path" || arg == "--db-path" || arg == "--datadir") && i + 1 < argc)
@@ -723,7 +737,7 @@ int main(int argc, char** argv)
 				if (keyAndHost.size() != 2)
 					continue;
 				pubk = keyAndHost[0];
-				if (pubk.size() != 128)
+				if (pubk.size() != 2*(NodeID::size))
 					continue;
 				hostIP = keyAndHost[1];
 
@@ -735,7 +749,7 @@ int main(int argc, char** argv)
 				if (!required && type != "default")
 					continue;
 
-				Public publicKey(fromHex(pubk));
+				NodeID publicKey(fromHex(pubk));
 				try
 				{
 					preferredNodes[publicKey] = make_pair(NodeIPEndpoint(bi::address::from_string(hostIP), port, port), required);
@@ -863,9 +877,7 @@ int main(int argc, char** argv)
 		chainParams = ChainParams(genesisInfo(eth::Network::MainNetwork), genesisStateRoot(eth::Network::MainNetwork));
 
 	if (g_logVerbosity > 0)
-		cout << EthGrayBold "cpp-ethereum, a C++ Ethereum client" EthReset << "\n";
-
-	m.execute();
+		cout << EthGrayBold "Petrichor C++ Client" EthReset << "\n";
 
 	fs::path secretsPath;
 	if (testingMode)
@@ -1042,7 +1054,7 @@ int main(int argc, char** argv)
 					masterPassword = getPassword("Please enter your MASTER password: ");
 					if (keyManager.load(masterPassword))
 						break;
-					cout << "The password you entered is incorrect. If you have forgotten your password, and you wish to start afresh, manually remove the file: " << (getDataDir("ethereum") / fs::path("keys.info")).string() << "\n";
+                    cout << "The password you entered is incorrect. If you have forgotten your password, and you wish to start afresh, manually remove the file: " << (getDataDir(defaultDataDir) / fs::path("keys.info")).string() << "\n";
 				}
 			}
 		}
@@ -1059,9 +1071,6 @@ int main(int argc, char** argv)
 		cerr << "Error initializing key manager: " << boost::current_exception_diagnostic_information() << "\n";
 		return -1;
 	}
-
-	for (auto const& presale: presaleImports)
-		importPresale(keyManager, presale, [&](){ return getPassword("Enter your wallet password for " + presale + ": "); });
 
 	for (auto const& s: toImport)
 	{
@@ -1098,8 +1107,7 @@ int main(int argc, char** argv)
 	if (c)
 	{
 		c->setGasPricer(gasPricer);
-		DEV_IGNORE_EXCEPTIONS(asEthashClient(c)->setShouldPrecomputeDAG(m.shouldPrecompute()));
-		c->setSealer(m.minerType());
+        c->setSealer("cpu");
 		c->setAuthor(author);
 		if (networkID != NoNetworkID)
 			c->setNetworkId(networkID);
@@ -1242,7 +1250,15 @@ int main(int argc, char** argv)
 	{
 		unsigned n = c->blockChain().details().number;
 		if (mining)
-			c->startSealing();
+		{
+			std::function<std::string()> passFunction = [=](){ return getPassword("Enter the passphrase for the key: "); };
+			std::vector<KeyPair<BLS>> keyPairs;
+            
+            for (const Address& a: keyManager.accounts()) {
+                keyPairs.push_back(KeyPair<BLS>(keyManager.secret(a, passFunction)));
+            }
+            c->startSealing(keyPairs);
+        }
 
 		while (!exitHandler.shouldExit())
 			stopSealingAfterXBlocks(c, n, mining);

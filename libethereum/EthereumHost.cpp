@@ -389,7 +389,7 @@ EthereumHost::EthereumHost(BlockChain const& _ch, OverlayDB const& _db, Transact
 	m_sync.reset(new BlockChainSync(*this));
 	m_peerObserver = make_shared<EthereumPeerObserver>(*m_sync, x_sync, m_tq);
 	m_latestBlockSent = _ch.currentHash();
-	m_tq.onImport([this](ImportResult _ir, h256 const& _h, h512 const& _nodeId) { onTransactionImported(_ir, _h, _nodeId); });
+    m_tq.onImport([this](ImportResult _ir, h256 const& _h, p2p::NodeID const& _nodeId) { onTransactionImported(_ir, _h, _nodeId); });
 }
 
 EthereumHost::~EthereumHost()
@@ -610,7 +610,7 @@ SyncStatus EthereumHost::status() const
 	return m_sync->status();
 }
 
-void EthereumHost::onTransactionImported(ImportResult _ir, h256 const& _h, h512 const& _nodeId)
+void EthereumHost::onTransactionImported(ImportResult _ir, h256 const& _h, p2p::NodeID const& _nodeId)
 {
 	auto session = host()->peerSession(_nodeId);
 	if (!session)

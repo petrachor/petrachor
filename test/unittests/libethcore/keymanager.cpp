@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(KeyManagerKill)
 {
 	string password = "hardPassword";
 	TransientDirectory tmpDir;
-	KeyPair kp = KeyPair::create();
+    KeyPair<BLS> kp = KeyPair<BLS>::create();
 
 	{
 		KeyManager km(tmpDir.path() + "keysFile.json", tmpDir.path());

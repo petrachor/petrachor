@@ -67,8 +67,8 @@ fs::path dev::getIpcPath()
 fs::path dev::getDataDir(string _prefix)
 {
 	if (_prefix.empty())
-		_prefix = "ethereum";
-	if (_prefix == "ethereum" && !s_ethereumDatadir.empty())
+        _prefix = defaultDataDir;
+    if (_prefix == defaultDataDir && !s_ethereumDatadir.empty())
 		return s_ethereumDatadir;
 	return getDefaultDataDir(_prefix);
 }
@@ -76,7 +76,7 @@ fs::path dev::getDataDir(string _prefix)
 fs::path dev::getDefaultDataDir(string _prefix)
 {
 	if (_prefix.empty())
-		_prefix = "ethereum";
+        _prefix = defaultDataDir;
 
 #if defined(_WIN32)
 	_prefix[0] = toupper(_prefix[0]);

@@ -65,25 +65,25 @@ protected:
 struct TestNodeTable: public NodeTable
 {
 	/// Constructor
-	TestNodeTable(ba::io_service& _io, KeyPair _alias, bi::address const& _addr, uint16_t _port = 30300): NodeTable(_io, _alias, NodeIPEndpoint(_addr, _port, _port)) {}
+    TestNodeTable(ba::io_service& _io, Keys _alias, bi::address const& _addr, uint16_t _port = 30300): NodeTable(_io, _alias, NodeIPEndpoint(_addr, _port, _port)) {}
 
-	static std::vector<std::pair<KeyPair,unsigned>> createTestNodes(unsigned _count)
+    static std::vector<std::pair<Keys,unsigned>> createTestNodes(unsigned _count)
 	{
-		std::vector<std::pair<KeyPair,unsigned>> ret;
+        std::vector<std::pair<Keys,unsigned>> ret;
 		asserts(_count < 1000);
 		static uint16_t s_basePort = 30500;
 
 		ret.clear();
 		for (unsigned i = 0; i < _count; i++)
 		{
-			KeyPair k = KeyPair::create();
+            auto k = Keys::create();
 			ret.push_back(make_pair(k,s_basePort+i));
 		}
 
 		return ret;
 	}
 
-	void pingTestNodes(std::vector<std::pair<KeyPair,unsigned>> const& _testNodes)
+    void pingTestNodes(std::vector<std::pair<Keys,unsigned>> const& _testNodes)
 	{
 		bi::address ourIp = bi::address::from_string("127.0.0.1");
 		for (auto& n: _testNodes)
@@ -93,7 +93,7 @@ struct TestNodeTable: public NodeTable
 		}
 	}
 
-	void populateTestNodes(std::vector<std::pair<KeyPair,unsigned>> const& _testNodes, size_t _count = 0)
+    void populateTestNodes(std::vector<std::pair<Keys,unsigned>> const& _testNodes, size_t _count = 0)
 	{
 		if (!_count)
 			_count = _testNodes.size();
@@ -127,7 +127,7 @@ struct TestNodeTable: public NodeTable
  */
 struct TestNodeTableHost: public TestHost
 {
-	TestNodeTableHost(unsigned _count = 8): m_alias(KeyPair::create()), nodeTable(new TestNodeTable(m_io, m_alias, bi::address::from_string("127.0.0.1"))), testNodes(TestNodeTable::createTestNodes(_count)) {};
+    TestNodeTableHost(unsigned _count = 8): m_alias(Keys::create()), nodeTable(new TestNodeTable(m_io, m_alias, bi::address::from_string("127.0.0.1"))), testNodes(TestNodeTable::createTestNodes(_count)) {};
 	~TestNodeTableHost() { m_io.stop(); stopWorking(); }
 
 	void setup() { for (auto n: testNodes) nodeTables.push_back(make_shared<TestNodeTable>(m_io,n.first, bi::address::from_string("127.0.0.1"),n.second)); }
@@ -138,9 +138,9 @@ struct TestNodeTableHost: public TestHost
 
 	void populate(size_t _count = 0) { nodeTable->populateTestNodes(testNodes, _count); }
 
-	KeyPair m_alias;
+    Keys m_alias;
 	shared_ptr<TestNodeTable> nodeTable;
-	std::vector<std::pair<KeyPair,unsigned>> testNodes; // keypair and port
+    std::vector<std::pair<Keys,unsigned>> testNodes; // keypair and port
 	std::vector<shared_ptr<TestNodeTable>> nodeTables;
 };
 
@@ -230,37 +230,6 @@ BOOST_AUTO_TEST_CASE(isIPAddressType)
 	BOOST_REQUIRE(!isLocalHostAddress(privateAddress10));
 }
 
-BOOST_AUTO_TEST_CASE(neighboursPacketLength)
-{
-	if (test::Options::get().nonetwork)
-	{
-		clog << "Skipping test network/net/neighboursPacketLength. --nonetwork flag is set.\n";
-		return;
-	}
-
-	KeyPair k = KeyPair::create();
-	std::vector<std::pair<KeyPair,unsigned>> testNodes(TestNodeTable::createTestNodes(16));
-	bi::udp::endpoint to(boost::asio::ip::address::from_string("127.0.0.1"), 30000);
-	
-	// hash(32), signature(65), overhead: packetSz(3), type(1), nodeListSz(3), ts(5),
-	static unsigned const nlimit = (1280 - 109) / 90; // neighbour: 2 + 65 + 3 + 3 + 17
-	for (unsigned offset = 0; offset < testNodes.size(); offset += nlimit)
-	{
-		Neighbours out(to);
-		
-		auto limit = nlimit ? std::min(testNodes.size(), (size_t)(offset + nlimit)) : testNodes.size();
-		for (auto i = offset; i < limit; i++)
-		{
-			Node n(testNodes[i].first.pub(), NodeIPEndpoint(boost::asio::ip::address::from_string("200.200.200.200"), testNodes[i].second, testNodes[i].second));
-			Neighbours::Neighbour neighbour(n);
-			out.neighbours.push_back(neighbour);
-		}
-		
-		out.sign(k.secret());
-		BOOST_REQUIRE_LE(out.data.size(), 1280);
-	}
-}
-
 BOOST_AUTO_TEST_CASE(neighboursPacket)
 {
 	if (test::Options::get().nonetwork)
@@ -269,8 +238,8 @@ BOOST_AUTO_TEST_CASE(neighboursPacket)
 		return;
 	}
 
-	KeyPair k = KeyPair::create();
-	std::vector<std::pair<KeyPair,unsigned>> testNodes(TestNodeTable::createTestNodes(16));
+    auto k = Keys::create();
+    std::vector<std::pair<Keys,unsigned>> testNodes(TestNodeTable::createTestNodes(16));
 	bi::udp::endpoint to(boost::asio::ip::address::from_string("127.0.0.1"), 30000);
 
 	Neighbours out(to);
@@ -391,11 +360,11 @@ BOOST_AUTO_TEST_CASE(unspecifiedNode)
 	Node n = UnspecifiedNode;
 	BOOST_REQUIRE(!n);
 	
-	Node node(Public(sha3("0")), NodeIPEndpoint(bi::address(), 0, 0));
+    Node node(NodeID(sha3("0")), NodeIPEndpoint(bi::address(), 0, 0));
 	BOOST_REQUIRE(node);
 	BOOST_REQUIRE(n != node);
 	
-	Node nodeEq(Public(sha3("0")), NodeIPEndpoint(bi::address(), 0, 0));
+    Node nodeEq(NodeID(sha3("0")), NodeIPEndpoint(bi::address(), 0, 0));
 	BOOST_REQUIRE_EQUAL(node, nodeEq);
 }
 
@@ -405,7 +374,7 @@ BOOST_AUTO_TEST_CASE(nodeTableReturnsUnspecifiedNode)
 		return;
 
 	ba::io_service io;
-	NodeTable t(io, KeyPair::create(), NodeIPEndpoint(bi::address::from_string("127.0.0.1"), 30303, 30303));
+    NodeTable t(io, Keys::create(), NodeIPEndpoint(bi::address::from_string("127.0.0.1"), 30303, 30303));
 	if (Node n = t.node(NodeID()))
 		BOOST_REQUIRE(false);
 	else

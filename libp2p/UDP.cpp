@@ -27,7 +27,7 @@ using namespace dev::p2p;
 const char* RLPXWarn::name() { return "!X!"; }
 const char* RLPXNote::name() { return "-X-"; }
 
-h256 RLPXDatagramFace::sign(Secret const& _k)
+h256 RLPXDatagramFace::sign(ECDSA::Secret const& _k)
 {
 	assert(packetType());
 	
@@ -39,12 +39,12 @@ h256 RLPXDatagramFace::sign(Secret const& _k)
 	
 	bytesConstRef rlpx(&rlpxBytes);
 	h256 sighash(dev::sha3(rlpx)); // H(type||data)
-	Signature sig = dev::sign(_k, sighash); // S(H(type||data))
+    ECDSA::Signature sig = dev::sign<ECDSA>(_k, sighash); // S(H(type||data))
 	
-	data.resize(h256::size + Signature::size + rlpx.size());
+    data.resize(h256::size + ECDSA::Signature::size + rlpx.size());
 	bytesRef rlpxHash(&data[0], h256::size);
-	bytesRef rlpxSig(&data[h256::size], Signature::size);
-	bytesRef rlpxPayload(&data[h256::size + Signature::size], rlpx.size());
+    bytesRef rlpxSig(&data[h256::size], ECDSA::Signature::size);
+    bytesRef rlpxPayload(&data[h256::size + ECDSA::Signature::size], rlpx.size());
 	
 	sig.ref().copyTo(rlpxSig);
 	rlpx.copyTo(rlpxPayload);
@@ -55,9 +55,9 @@ h256 RLPXDatagramFace::sign(Secret const& _k)
 	return sighash;
 }
 
-Public RLPXDatagramFace::authenticate(bytesConstRef _sig, bytesConstRef _rlp)
+ECDSA::Public RLPXDatagramFace::authenticate(bytesConstRef _sig, bytesConstRef _rlp)
 {
-	Signature const& sig = *(Signature const*)_sig.data();
+    ECDSA::Signature const& sig = *(ECDSA::Signature const*)_sig.data();
 	return dev::recover(sig, sha3(_rlp));
 }
 

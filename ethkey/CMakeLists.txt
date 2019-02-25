@@ -1,2 +1,2 @@
-add_executable(ethkey KeyAux.h main.cpp)
-target_link_libraries(ethkey PRIVATE ethcore devcore)
+add_executable(petrichor-key KeyAux.h main.cpp)
+target_link_libraries(petrichor-key PRIVATE ethcore devcore)

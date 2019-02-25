@@ -32,9 +32,9 @@ static_assert(CRYPTOPP_VERSION == 570, "Wrong Crypto++ version");
 using namespace dev;
 using namespace dev::crypto;
 
-static_assert(dev::Secret::size == 32, "Secret key must be 32 bytes.");
-static_assert(dev::Public::size == 64, "Public key must be 64 bytes.");
-static_assert(dev::Signature::size == 65, "Signature must be 65 bytes.");
+static_assert(Keys::Secret::size == 32, "Secret key must be 32 bytes.");
+static_assert(Keys::Public::size == 64, "Keys::Public key must be 64 bytes.");
+static_assert(Keys::Signature::size == 65, "Keys::Signature must be 65 bytes.");
 
 namespace
 {
@@ -67,9 +67,9 @@ private:
 	{}
 };
 
-inline CryptoPP::ECP::Point publicToPoint(Public const& _p) { CryptoPP::Integer x(_p.data(), 32); CryptoPP::Integer y(_p.data() + 32, 32); return CryptoPP::ECP::Point(x,y); }
+inline CryptoPP::ECP::Point publicToPoint(Keys::Public const& _p) { CryptoPP::Integer x(_p.data(), 32); CryptoPP::Integer y(_p.data() + 32, 32); return CryptoPP::ECP::Point(x,y); }
 
-inline CryptoPP::Integer secretToExponent(Secret const& _s) { return CryptoPP::Integer(_s.data(), Secret::size); }
+inline CryptoPP::Integer secretToExponent(Keys::Secret const& _s) { return CryptoPP::Integer(_s.data(), Keys::Secret::size); }
 
 }
 
@@ -79,16 +79,16 @@ Secp256k1PP* Secp256k1PP::get()
 	return &s_this;
 }
 
-void Secp256k1PP::encryptECIES(Public const& _k, bytes& io_cipher)
+void Secp256k1PP::encryptECIES(Keys::Public const& _k, bytes& io_cipher)
 {
 	encryptECIES(_k, bytesConstRef(), io_cipher);
 }
 
-void Secp256k1PP::encryptECIES(Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher)
+void Secp256k1PP::encryptECIES(Keys::Public const& _k, bytesConstRef _sharedMacData, bytes& io_cipher)
 {
 	// interop w/go ecies implementation
-	auto r = KeyPair::create();
-	Secret z;
+    auto r = Keys::Pair::create();
+    Keys::Secret z;
 	ecdh::agree(r.secret(), _k, z);
 	auto key = ecies::kdf(z, bytes(), 32);
 	bytesConstRef eKey = bytesConstRef(&key).cropped(0, 16);
@@ -103,45 +103,45 @@ void Secp256k1PP::encryptECIES(Public const& _k, bytesConstRef _sharedMacData, b
 	if (cipherText.empty())
 		return;
 
-	bytes msg(1 + Public::size + h128::size + cipherText.size() + 32);
+    bytes msg(1 + Keys::Public::size + h128::size + cipherText.size() + 32);
 	msg[0] = 0x04;
-	r.pub().ref().copyTo(bytesRef(&msg).cropped(1, Public::size));
-	iv.ref().copyTo(bytesRef(&msg).cropped(1 + Public::size, h128::size));
-	bytesRef msgCipherRef = bytesRef(&msg).cropped(1 + Public::size + h128::size, cipherText.size());
+    r.pub().ref().copyTo(bytesRef(&msg).cropped(1, Keys::Public::size));
+    iv.ref().copyTo(bytesRef(&msg).cropped(1 + Keys::Public::size, h128::size));
+    bytesRef msgCipherRef = bytesRef(&msg).cropped(1 + Keys::Public::size + h128::size, cipherText.size());
 	bytesConstRef(&cipherText).copyTo(msgCipherRef);
 	
 	// tag message
 	CryptoPP::HMAC<CryptoPP::SHA256> hmacctx(mKey.data(), mKey.size());
-	bytesConstRef cipherWithIV = bytesRef(&msg).cropped(1 + Public::size, h128::size + cipherText.size());
+    bytesConstRef cipherWithIV = bytesRef(&msg).cropped(1 + Keys::Public::size, h128::size + cipherText.size());
 	hmacctx.Update(cipherWithIV.data(), cipherWithIV.size());
 	hmacctx.Update(_sharedMacData.data(), _sharedMacData.size());
-	hmacctx.Final(msg.data() + 1 + Public::size + cipherWithIV.size());
+    hmacctx.Final(msg.data() + 1 + Keys::Public::size + cipherWithIV.size());
 	
 	io_cipher.resize(msg.size());
-	io_cipher.swap(msg);
+    io_cipher.swap(msg);
 }
 
-bool Secp256k1PP::decryptECIES(Secret const& _k, bytes& io_text)
+bool Secp256k1PP::decryptECIES(Keys::Secret const& _k, bytes& io_text)
 {
 	return decryptECIES(_k, bytesConstRef(), io_text);
 }
 
-bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text)
+bool Secp256k1PP::decryptECIES(Keys::Secret const& _k, bytesConstRef _sharedMacData, bytes& io_text)
 {
 
 	// interop w/go ecies implementation
 	
-	// io_cipher[0] must be 2, 3, or 4, else invalidpublickey
-	if (io_text.empty() || io_text[0] < 2 || io_text[0] > 4)
-		// invalid message: publickey
+    // io_cipher[0] must be 2, 3, or 4, else invalidKeys::Publickey
+    if (io_text.empty() || io_text[0] < 2 || io_text[0] > 4)
+        // invalid message: Keys::Publickey
 		return false;
 	
-	if (io_text.size() < (1 + Public::size + h128::size + 1 + h256::size))
+    if (io_text.size() < (1 + Keys::Public::size + h128::size + 1 + h256::size))
 		// invalid message: length
 		return false;
 
-	Secret z;
-	if (!ecdh::agree(_k, *(Public*)(io_text.data() + 1), z))
+    Keys::Secret z;
+    if (!ecdh::agree(_k, *(Keys::Public*)(io_text.data() + 1), z))
 		return false;  // Invalid pubkey or seckey.
 	auto key = ecies::kdf(z, bytes(), 64);
 	bytesConstRef eKey = bytesConstRef(&key).cropped(0, 16);
@@ -152,8 +152,8 @@ bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, b
 	ctx.Final(mKey.data());
 	
 	bytes plain;
-	size_t cipherLen = io_text.size() - 1 - Public::size - h128::size - h256::size;
-	bytesConstRef cipherWithIV(io_text.data() + 1 + Public::size, h128::size + cipherLen);
+    size_t cipherLen = io_text.size() - 1 - Keys::Public::size - h128::size - h256::size;
+    bytesConstRef cipherWithIV(io_text.data() + 1 + Keys::Public::size, h128::size + cipherLen);
 	bytesConstRef cipherIV = cipherWithIV.cropped(0, h128::size);
 	bytesConstRef cipherNoIV = cipherWithIV.cropped(h128::size, cipherLen);
 	bytesConstRef msgMac(cipherNoIV.data() + cipherLen, h256::size);
@@ -176,13 +176,13 @@ bool Secp256k1PP::decryptECIES(Secret const& _k, bytesConstRef _sharedMacData, b
 	return true;
 }
 
-void Secp256k1PP::encrypt(Public const& _k, bytes& io_cipher)
+void Secp256k1PP::encrypt(Keys::Public const& _k, bytes& io_cipher)
 {
-	auto& ctx = Secp256k1PPCtx::get();
+    auto& ctx = Secp256k1PPCtx::get();
 	CryptoPP::ECIES<CryptoPP::ECP>::Encryptor e;
-	{
+    {
 		Guard l(ctx.x_params);
-		e.AccessKey().Initialize(ctx.m_params, publicToPoint(_k));
+        e.AccessKey().Initialize(ctx.m_params, publicToPoint(_k));
 	}
 
 	size_t plen = io_cipher.size();
@@ -195,10 +195,10 @@ void Secp256k1PP::encrypt(Public const& _k, bytes& io_cipher)
 	}
 	
 	memset(io_cipher.data(), 0, io_cipher.size());
-	io_cipher = std::move(ciphertext);
+    io_cipher = std::move(ciphertext);
 }
 
-void Secp256k1PP::decrypt(Secret const& _k, bytes& io_text)
+void Secp256k1PP::decrypt(Keys::Secret const& _k, bytes& io_text)
 {
 	auto& ctx = Secp256k1PPCtx::get();
 	CryptoPP::ECIES<CryptoPP::ECP>::Decryptor d;
@@ -230,5 +230,5 @@ void Secp256k1PP::decrypt(Secret const& _k, bytes& io_text)
 	}
 	
 	io_text.resize(r.messageLength);
-	io_text = std::move(plain);
+    io_text = std::move(plain);
 }

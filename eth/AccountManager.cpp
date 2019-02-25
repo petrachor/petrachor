@@ -37,10 +37,8 @@ void AccountManager::streamAccountHelp(ostream& _out)
 		<< "    account import [<uuid>|<file>|<secret-hex>]	Import keys from given source and place in wallet.\n";
 }
 
-void AccountManager::streamWalletHelp(ostream& _out)
+void AccountManager::streamWalletHelp(ostream&)
 {
-	_out
-		<< "    wallet import <file>	Import a presale wallet.\n";
 }
 
 bool AccountManager::execute(int argc, char** argv)
@@ -49,28 +47,7 @@ bool AccountManager::execute(int argc, char** argv)
 	{
 		if (3 < argc && string(argv[2]) == "import")
 		{
-			if (!openWallet())
-				return false;
-			string file = argv[3];
-			string name = "presale wallet";
-			string pw;
-			try
-			{
-				KeyPair k = m_keyManager->presaleSecret(
-					contentsString(file),
-					[&](bool){ return (pw = getPassword("Enter the passphrase for the presale key: "));}
-				);
-				m_keyManager->import(k.secret(), name, pw, "Same passphrase as used for presale key");
-				cout << "  Address: {" << k.address().hex() << "}\n";
-			}
-			catch (Exception const& _e)
-			{
-				if (auto err = boost::get_error_info<errinfo_comment>(_e))
-					cout << "  Decryption failed: " << *err << "\n";
-				else
-					cout << "  Decryption failed: Unknown reason.\n";
-				return false;
-			}
+            return false;
 		}
 		else
 			streamWalletHelp(cout);
@@ -119,7 +96,7 @@ bool AccountManager::execute(int argc, char** argv)
 			string lock;
 			string lockHint;
 			lock = createPassword("Enter a passphrase with which to secure this account:");
-			auto k = makeKey();
+            auto k = KeyPair<BLS>::create(true);
 			h128 u = m_keyManager->import(k.secret(), name, lock, lockHint);
 			cout << "Created key " << toUUID(u) << "\n";
 			cout << "  Address: " << k.address().hex() << "\n";
@@ -209,15 +186,6 @@ string AccountManager::createPassword(string const& _prompt) const
 		cout << "Passwords were different. Try again." << "\n";
 	}
 	return ret;
-}
-
-KeyPair AccountManager::makeKey() const
-{
-	bool icap = true;
-	KeyPair k(Secret::random());
-	while (icap && k.address()[0])
-		k = KeyPair(Secret(sha3(k.secret().ref())));
-	return k;
 }
 
 bool AccountManager::openWallet()

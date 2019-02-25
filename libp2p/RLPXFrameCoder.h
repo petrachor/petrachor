@@ -77,12 +77,12 @@ public:
 	RLPXFrameCoder(RLPXHandshake const& _init);
 	
 	/// Construct with external key material.
-	RLPXFrameCoder(bool _originated, h512 const& _remoteEphemeral, h256 const& _remoteNonce, KeyPair const& _ecdheLocal, h256 const& _nonce, bytesConstRef _ackCipher, bytesConstRef _authCipher);
+    RLPXFrameCoder(bool _originated, h512 const& _remoteEphemeral, h256 const& _remoteNonce, KeyPair<ECDSA> const& _ecdheLocal, h256 const& _nonce, bytesConstRef _ackCipher, bytesConstRef _authCipher);
 	
 	~RLPXFrameCoder();
 	
 	/// Establish shared secrets and setup AES and MAC states.
-	void setup(bool _originated, h512 const& _remoteEphemeral, h256 const& _remoteNonce, KeyPair const& _ecdheLocal, h256 const& _nonce, bytesConstRef _ackCipher, bytesConstRef _authCipher);
+    void setup(bool _originated, h512 const& _remoteEphemeral, h256 const& _remoteNonce, KeyPair<ECDSA> const& _ecdheLocal, h256 const& _nonce, bytesConstRef _ackCipher, bytesConstRef _authCipher);
 	
 	/// Write single-frame payload of packet(s).
 	void writeFrame(uint16_t _protocolType, bytesConstRef _payload, bytes& o_bytes);

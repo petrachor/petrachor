@@ -21,9 +21,12 @@
 #include <libdevcore/CommonIO.h>
 #include <boost/test/unit_test.hpp>
 
+#include <libdevcrypto/BLS12_381.h>
+
 using namespace std;
 using namespace dev;
 using namespace dev::crypto;
+using namespace dev::BLS12_381;
 
 BOOST_AUTO_TEST_SUITE(LibSnark)
 
@@ -68,6 +71,37 @@ bytes addG1(bytes const& _x, bytes const& _y)
 	return ret.second;
 }
 
+}
+
+BOOST_AUTO_TEST_CASE(blsTest)
+{
+    Scalar secret("0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+    G2 publicKey = BonehLynnShacham::generatePublicKey(secret);
+
+    bytesConstRef x;
+    bytes seed(fromHex("0x0123456789abcdef"));
+    bytes data(fromHex("0x0011223344556677"));
+    G1 element = G1::mapToElement(ref(seed), ref(data));
+    G1 signedElement = BonehLynnShacham::sign(element, secret);
+    bool valid = BonehLynnShacham::verify(publicKey, element, signedElement);
+    BOOST_CHECK(valid);
+
+    Scalar incorrectSecret("0x23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01");
+    bool incorrectPKValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(incorrectSecret), element, signedElement);
+    BOOST_CHECK(!incorrectPKValid);
+
+    bytes incorrectSeed(fromHex("0x23456789abcdef01"));
+    bytes incorrectData(fromHex("0x1122334455667700"));
+    G1 incorrectDataElement = G1::mapToElement(ref(seed), ref(incorrectData));
+    bool incorrectDEValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(secret), incorrectDataElement, signedElement);
+    BOOST_CHECK(!incorrectDEValid);
+    G1 incorrectSeedElement = G1::mapToElement(ref(incorrectSeed), ref(data));
+    bool incorrectSValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(secret), incorrectSeedElement, signedElement);
+    BOOST_CHECK(!incorrectSValid);
+
+    G1 incorrectSignedElement = element.add(element);
+    bool incorrectSEValid = BonehLynnShacham::verify(BonehLynnShacham::generatePublicKey(secret), element, incorrectSignedElement);
+    BOOST_CHECK(!incorrectSEValid);
 }
 
 BOOST_AUTO_TEST_CASE(ecadd)

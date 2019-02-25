@@ -53,13 +53,13 @@ public:
 	TransactionBase() {}
 
 	/// Constructs a transaction from a transaction skeleton & optional secret.
-	TransactionBase(TransactionSkeleton const& _ts, Secret const& _s = Secret());
+	TransactionBase(TransactionSkeleton const& _ts, AccountKeys::Secret const& _s = AccountKeys::Secret());
 
 	/// Constructs a signed message-call transaction.
-	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, Address const& _dest, bytes const& _data, u256 const& _nonce, Secret const& _secret): m_type(MessageCall), m_nonce(_nonce), m_value(_value), m_receiveAddress(_dest), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
+	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, Address const& _dest, bytes const& _data, u256 const& _nonce, AccountKeys::Secret const& _secret): m_type(MessageCall), m_nonce(_nonce), m_value(_value), m_receiveAddress(_dest), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
 
 	/// Constructs a signed contract-creation transaction.
-	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, bytes const& _data, u256 const& _nonce, Secret const& _secret): m_type(ContractCreation), m_nonce(_nonce), m_value(_value), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
+	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, bytes const& _data, u256 const& _nonce, AccountKeys::Secret const& _secret): m_type(ContractCreation), m_nonce(_nonce), m_value(_value), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) { sign(_secret); }
 
 	/// Constructs an unsigned message-call transaction.
 	TransactionBase(u256 const& _value, u256 const& _gasPrice, u256 const& _gas, Address const& _dest, bytes const& _data, u256 const& _nonce = 0): m_type(MessageCall), m_nonce(_nonce), m_value(_value), m_receiveAddress(_dest), m_gasPrice(_gasPrice), m_gas(_gas), m_data(_data) {}
@@ -77,14 +77,6 @@ public:
 	bool operator==(TransactionBase const& _c) const { return m_type == _c.m_type && (m_type == ContractCreation || m_receiveAddress == _c.m_receiveAddress) && m_value == _c.m_value && m_data == _c.m_data; }
 	/// Checks inequality of transactions.
 	bool operator!=(TransactionBase const& _c) const { return !operator==(_c); }
-
-	/// @returns sender of the transaction from the signature (and hash).
-	/// @throws TransactionIsUnsigned if signature was not initialized
-	Address const& sender() const;
-	/// Like sender() but will never throw. @returns a null Address if the signature is invalid.
-	Address const& safeSender() const noexcept;
-	/// Force the sender to a particular value. This will result in an invalid transaction RLP.
-	void forceSender(Address const& _a) { m_sender = _a; }
 
 	/// @throws TransactionIsUnsigned if signature was not initialized
 	/// @throws InvalidSValue if the signature has an invalid S value.
@@ -126,8 +118,9 @@ public:
 	/// Synonym for receiveAddress().
 	Address to() const { return m_receiveAddress; }
 
-	/// Synonym for safeSender().
-	Address from() const { return safeSender(); }
+    AccountKeys::Public senderPublic() const { return m_vrs ? m_vrs->publicKey : AccountKeys::Public(); }
+    Address from() const { return m_forcedSender ? m_forcedSender : AccountKeys::toAddress(senderPublic()); }
+    void forceSender(Address sender) { m_forcedSender = sender; }
 
 	/// @returns the data associated with this (message-call) transaction. Synonym for initCode().
 	bytes const& data() const { return m_data; }
@@ -142,16 +135,18 @@ public:
 	bool hasSignature() const { return m_vrs.is_initialized(); }
 
 	/// @returns true if the transaction was signed with zero signature
-	bool hasZeroSignature() const { return m_vrs && !m_vrs->s && !m_vrs->r; }
+    bool hasZeroSignature() const { return m_vrs && m_vrs->isZero(); }
 
 	/// @returns true if the transaction uses EIP155 replay protection
 	bool isReplayProtected() const { return m_chainId != -4; }
 
 	/// @returns the signature of the transaction (the signature has the sender encoded in it)
 	/// @throws TransactionIsUnsigned if signature was not initialized
-	SignatureStruct const& signature() const;
+	AccountKeys::SignatureStruct const& signature() const;
 
-	void sign(Secret const& _priv);			///< Sign the transaction.
+	void sign(AccountKeys::Secret const& _priv);			///< Sign the transaction.
+
+    Address sender() const { return from(); }
 
 	/// @returns amount of gas required for the basic payment.
 	int64_t baseGasRequired(EVMSchedule const& _es) const { return baseGasRequired(isCreation(), &m_data, _es); }
@@ -169,7 +164,7 @@ protected:
 	};
 
 	/// Clears the signature.
-	void clearSignature() { m_vrs = SignatureStruct(); }
+	void clearSignature() { m_vrs = AccountKeys::SignatureStruct(); }
 
 	Type m_type = NullTransaction;		///< Is this a contract-creation transaction or a message-call transaction?
 	u256 m_nonce;						///< The transaction-count of the sender.
@@ -178,11 +173,11 @@ protected:
 	u256 m_gasPrice;					///< The base fee and thus the implied exchange rate of ETH to GAS.
 	u256 m_gas;							///< The total gas to convert, paid for from sender's account. Any unused gas gets refunded once the contract is ended.
 	bytes m_data;						///< The data associated with the transaction, or the initialiser if it's a creation transaction.
-	boost::optional<SignatureStruct> m_vrs;	///< The signature of the transaction. Encodes the sender.
+    boost::optional<AccountKeys::SignatureStruct> m_vrs;	///< The signature of the transaction.  Encodes the sender.
 	int m_chainId = -4;					///< EIP155 value for calculating transaction hash https://github.com/ethereum/EIPs/issues/155
 
 	mutable h256 m_hashWith;			///< Cached hash of transaction with signature.
-	mutable Address m_sender;			///< Cached sender, determined from signature.
+    mutable Address m_forcedSender;
 };
 
 /// Nice name for vector of Transaction.
@@ -198,7 +193,7 @@ inline std::ostream& operator<<(std::ostream& _out, TransactionBase const& _t)
 		_out << "[CREATE]";
 
 	_out << "/" << _t.data().size() << "$" << _t.value() << "+" << _t.gas() << "@" << _t.gasPrice();
-	_out << "<-" << _t.safeSender().abridged() << " #" << _t.nonce() << "}";
+    _out << "<-" << _t.from().abridged() << " #" << _t.nonce() << "}";
 	return _out;
 }
 

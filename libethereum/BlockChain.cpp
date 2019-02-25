@@ -477,20 +477,20 @@ tuple<ImportRoute, bool, unsigned> BlockChain::sync(BlockQueue& _bq, OverlayDB c
 				cwarn << "ODD: Import queue contains already imported block";
 				continue;
 			}
-			catch (dev::eth::UnknownParent)
+            catch (dev::eth::UnknownParent const&)
 			{
 				cwarn << "ODD: Import queue contains block with unknown parent.";// << LogTag::Error << boost::current_exception_diagnostic_information();
 				// NOTE: don't reimport since the queue should guarantee everything in the right order.
 				// Can't continue - chain bad.
 				badBlocks.push_back(block.verified.info.hash());
 			}
-			catch (dev::eth::FutureTime)
+            catch (dev::eth::FutureTime const&)
 			{
 				cwarn << "ODD: Import queue contains a block with future time.";
 				this_thread::sleep_for(chrono::seconds(1));
 				continue;
 			}
-			catch (dev::eth::TransientError)
+            catch (dev::eth::TransientError const&)
 			{
 				this_thread::sleep_for(chrono::milliseconds(100));
 				continue;
@@ -513,7 +513,7 @@ pair<ImportResult, ImportRoute> BlockChain::attemptImport(bytes const& _block, O
 {
 	try
 	{
-		return make_pair(ImportResult::Success, import(verifyBlock(&_block, m_onBad, ImportRequirements::OutOfOrderChecks), _stateDB, _mustBeNew));
+		return make_pair(ImportResult::Success, import(verifyBlock(&_block, _stateDB, m_onBad, ImportRequirements::OutOfOrderChecks), _stateDB, _mustBeNew));
 	}
 	catch (UnknownParent&)
 	{
@@ -538,18 +538,18 @@ pair<ImportResult, ImportRoute> BlockChain::attemptImport(bytes const& _block, O
 ImportRoute BlockChain::import(bytes const& _block, OverlayDB const& _db, bool _mustBeNew)
 {
 	// VERIFY: populates from the block and checks the block is internally coherent.
-	VerifiedBlockRef const block = verifyBlock(&_block, m_onBad, ImportRequirements::OutOfOrderChecks);
+	VerifiedBlockRef const block = verifyBlock(&_block, _db, m_onBad, ImportRequirements::OutOfOrderChecks);
 	return import(block, _db, _mustBeNew);
 }
 
-void BlockChain::insert(bytes const& _block, bytesConstRef _receipts, bool _mustBeNew)
+void BlockChain::insert(bytes const& _block, OverlayDB const& _db, bytesConstRef _receipts, bool _mustBeNew)
 {
 	// VERIFY: populates from the block and checks the block is internally coherent.
-	VerifiedBlockRef const block = verifyBlock(&_block, m_onBad, ImportRequirements::OutOfOrderChecks);
-	insert(block, _receipts, _mustBeNew);
+	VerifiedBlockRef const block = verifyBlock(&_block, _db, m_onBad, ImportRequirements::OutOfOrderChecks);
+	insert(block, _db, _receipts, _mustBeNew);
 }
 
-void BlockChain::insert(VerifiedBlockRef _block, bytesConstRef _receipts, bool _mustBeNew)
+void BlockChain::insert(VerifiedBlockRef _block, OverlayDB const& _db, bytesConstRef _receipts, bool _mustBeNew)
 {
 	// Check block doesn't already exist first!
 	if (_mustBeNew)
@@ -593,7 +593,7 @@ void BlockChain::insert(VerifiedBlockRef _block, bytesConstRef _receipts, bool _
 	checkBlockTimestamp(_block.info);
 
 	// Verify parent-critical parts
-	verifyBlock(_block.block, m_onBad, ImportRequirements::InOrderChecks);
+	verifyBlock(_block.block, _db, m_onBad, ImportRequirements::InOrderChecks);
 
 	// OK - we're happy. Insert into database.
 	ldb::WriteBatch blocksBatch;
@@ -680,7 +680,7 @@ ImportRoute BlockChain::import(VerifiedBlockRef const& _block, OverlayDB const& 
 	checkBlockTimestamp(_block.info);
 
 	// Verify parent-critical parts
-	verifyBlock(_block.block, m_onBad, ImportRequirements::InOrderChecks);
+	verifyBlock(_block.block, _db, m_onBad, ImportRequirements::InOrderChecks);
 
 	clog(BlockChainChat) << "Attempting import of " << _block.info.hash() << "...";
 
@@ -726,9 +726,9 @@ ImportRoute BlockChain::import(VerifiedBlockRef const& _block, OverlayDB const& 
 	return insertBlockAndExtras(_block, ref(receipts), td, performanceLogger);
 }
 
-ImportRoute BlockChain::insertWithoutParent(bytes const& _block, bytesConstRef _receipts, u256 const& _totalDifficulty)
+ImportRoute BlockChain::insertWithoutParent(bytes const& _block, OverlayDB const& _db, bytesConstRef _receipts, u256 const& _totalDifficulty)
 {
-	VerifiedBlockRef const block = verifyBlock(&_block, m_onBad, ImportRequirements::OutOfOrderChecks);
+	VerifiedBlockRef const block = verifyBlock(&_block, _db, m_onBad, ImportRequirements::OutOfOrderChecks);
 
 	// Check block doesn't already exist first!
 	checkBlockIsNew(block);
@@ -1445,7 +1445,7 @@ Block BlockChain::genesisBlock(OverlayDB const& _db) const
 		if (ret.mutableState().rootHash() != r)
 		{
 			cwarn << "Hinted genesis block's state root hash is incorrect!";
-			cwarn << "Hinted" << r << ", computed" << ret.mutableState().rootHash();
+            cwarn << "Hinted" << r << ", computed" << ret.mutableState().rootHash() << ", computed full " << ret.mutableState().rootHash().hex();
 			// TODO: maybe try to fix it by altering the m_params's genesis block?
 			exit(-1);
 		}
@@ -1453,9 +1453,33 @@ Block BlockChain::genesisBlock(OverlayDB const& _db) const
 	ret.m_previousBlock = BlockHeader(m_params.genesisBlock());
 	ret.resetCurrent();
 	return ret;
+} 
+
+BalanceRetriever getBalanceRetrieverForDB();
+
+VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, OverlayDB const& db, std::function<void(Exception&)> const& _onBad, ImportRequirements::value _ir) const
+{
+    return verifyBlock(_block, _onBad, [&](Address _a, BlockNumber _block) { 
+        try { 
+            Block ret(*this, db);
+            ret.populateFromChain(*this, numberHash(_block));
+            return ret.balance(_a);
+        } catch (Exception&) { return u256(); }
+    }, _ir);
 }
 
 VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, std::function<void(Exception&)> const& _onBad, ImportRequirements::value _ir) const
+{
+    return verifyBlock(_block, _onBad, [&](Address _a, BlockNumber _block) {
+        try {
+            Block ret(*this, m_blocksDB);
+            ret.populateFromChain(*this, numberHash(_block));
+            return ret.balance(_a);
+        } catch (Exception&) { return u256(); }
+    }, _ir);
+}
+
+VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, std::function<void(Exception&)> const& _onBad,  BalanceRetriever balanceRetriever, ImportRequirements::value _ir) const
 {
 	VerifiedBlockRef res;
 	BlockHeader h;
@@ -1466,14 +1490,16 @@ VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, std::function<voi
 			BOOST_THROW_EXCEPTION(InvalidParentHash() << errinfo_required_h256(h.parentHash()) << errinfo_currentNumber(h.number()));
 
 		BlockHeader parent;
-		if (!!(_ir & ImportRequirements::Parent))
-		{
+        bool withParent = !!(_ir & ImportRequirements::Parent);
+        if (withParent /* || !!(_ir & ImportRequirements::ValidSeal) */)
+        {
 			bytes parentHeader(headerData(h.parentHash()));
 			if (parentHeader.empty())
 				BOOST_THROW_EXCEPTION(InvalidParentHash() << errinfo_required_h256(h.parentHash()) << errinfo_currentNumber(h.number()));
 			parent = BlockHeader(parentHeader, HeaderData, h.parentHash());
-		}
-		sealEngine()->verify((_ir & ImportRequirements::ValidSeal) ? Strictness::CheckEverything : Strictness::QuickNonce, h, parent, _block);
+        }
+        //clog << "H.number: " << h.number() << " parent.mumber " << parent.number() << "\n";
+        sealEngine()->verify((_ir & ImportRequirements::ValidSeal) ? Strictness::CheckEverything : Strictness::QuickNonce, h, balanceRetriever, parent, _block);
 		res.info = h;
 	}
 	catch (Exception& ex)
@@ -1501,7 +1527,7 @@ VerifiedBlockRef BlockChain::verifyBlock(bytesConstRef _block, std::function<voi
 						BOOST_THROW_EXCEPTION(InvalidUncleParentHash() << errinfo_required_h256(uh.parentHash()) << errinfo_currentNumber(h.number()) << errinfo_uncleNumber(uh.number()));
 					parent = BlockHeader(parentHeader, HeaderData, uh.parentHash());
 				}
-				sealEngine()->verify((_ir & ImportRequirements::UncleSeals) ? Strictness::CheckEverything : Strictness::IgnoreSeal, uh, parent);
+				sealEngine()->verify((_ir & ImportRequirements::UncleSeals) ? Strictness::CheckEverything : Strictness::IgnoreSeal, uh, balanceRetriever, parent);
 			}
 			catch (Exception& ex)
 			{

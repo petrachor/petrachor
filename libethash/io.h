@@ -28,7 +28,7 @@
 #endif
 #include <inttypes.h>
 #include "endian.h"
-#include "ethash.h"
+//#include "ethash.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,33 +71,6 @@ enum ethash_io_rc {
 #define ETHASH_CRITICAL(...)          
 #endif
 
-/**
- * Prepares io for ethash
- *
- * Create the DAG directory and the DAG file if they don't exist.
- *
- * @param[in] dirname        A null terminated c-string of the path of the ethash
- *                           data directory. If it does not exist it's created.
- * @param[in] seedhash       The seedhash of the current block number, used in the
- *                           naming of the file as can be seen from the spec at:
- *                           https://github.com/ethereum/wiki/wiki/Ethash-DAG
- * @param[out] output_file   If there was no failure then this will point to an open
- *                           file descriptor. User is responsible for closing it.
- *                           In the case of memo match then the file is open on read
- *                           mode, while on the case of mismatch a new file is created
- *                           on write mode
- * @param[in] file_size      The size that the DAG file should have on disk
- * @param[out] force_create  If true then there is no check to see if the file
- *                           already exists
- * @return                   For possible return values @see enum ethash_io_rc
- */
-enum ethash_io_rc ethash_io_prepare(
-	char const* dirname,
-	ethash_h256_t const seedhash,
-	FILE** output_file,
-	uint64_t file_size,
-	bool force_create
-);
 
 /**
  * An fopen wrapper for no-warnings crossplatform fopen.
@@ -181,31 +154,6 @@ char* ethash_io_create_filename(
 	char const* filename,
 	size_t filename_length
 );
-
-/**
- * Gets the default directory name for the DAG depending on the system
- *
- * The spec defining this directory is here: https://github.com/ethereum/wiki/wiki/Ethash-DAG
- *
- * @param[out] strbuf          A string buffer of sufficient size to keep the
- *                             null termninated string of the directory name
- * @param[in]  buffsize        Size of @a strbuf in bytes
- * @return                     true for success and false otherwise
- */
-bool ethash_get_default_dirname(char* strbuf, size_t buffsize);
-
-static inline bool ethash_io_mutable_name(
-	uint32_t revision,
-	ethash_h256_t const* seed_hash,
-	char* output
-)
-{
-    uint64_t hash = *((uint64_t*)seed_hash);
-#if LITTLE_ENDIAN == BYTE_ORDER
-    hash = ethash_swap_u64(hash);
-#endif
-    return snprintf(output, DAG_MUTABLE_NAME_MAX_SIZE, "full-R%u-%016" PRIx64, revision, hash) >= 0;
-}
 
 #ifdef __cplusplus
 }

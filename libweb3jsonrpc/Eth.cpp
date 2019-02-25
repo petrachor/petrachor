@@ -638,10 +638,6 @@ Json::Value Eth::eth_getWork()
 	try
 	{
 		Json::Value ret(Json::arrayValue);
-		auto r = asEthashClient(client())->getEthashWork();
-		ret.append(toJS(get<0>(r)));
-		ret.append(toJS(get<1>(r)));
-		ret.append(toJS(get<2>(r)));
 		return ret;
 	}
 	catch (...)

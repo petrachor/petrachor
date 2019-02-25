@@ -21,6 +21,12 @@
 #
 # (c) 2014-2016 cpp-ethereum contributors.
 #------------------------------------------------------------------------------
+add_definitions(-DPUBLICCHAIN=$ENV{PUBLICCHAIN})
+if(PUBLICCHAIN)
+    add_definitions(-DNETWORKP2PPORT=40404 )
+else()
+    add_definitions(-DNETWORKP2PPORT=41414 )
+endif()
 
 cmake_minimum_required(VERSION 3.5.1)
 
@@ -106,6 +112,7 @@ include(ProjectCryptopp)
 include(ProjectJsonRpcCpp)
 include(ProjectSecp256k1)
 include(ProjectSnark)
+include(ProjectPairing)
 
 find_package(Threads)
 
@@ -134,18 +141,18 @@ if (EVMJIT)
     add_subdirectory(evmjit)
 endif()
 
-add_subdirectory(eth)
+add_subdirectory(petrichor)
 
 if (TOOLS)
-    add_subdirectory(ethkey)
+    add_subdirectory(petrichor-key)
     add_subdirectory(ethvm)
     add_subdirectory(rlp)
 endif()
 
-if (TESTS)
-    enable_testing()
-    add_subdirectory(test)
-endif()
+#if (TESTS)
+#    enable_testing()
+#    add_subdirectory(test)
+#endif()
 
 # TODO: Split out json_spirit, libscrypt and sec256k1.
 add_subdirectory(utils)

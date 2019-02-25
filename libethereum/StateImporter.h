@@ -46,6 +46,7 @@ public:
 	virtual h256 importCode(bytesConstRef _code) = 0;
 
 	virtual void commitStateDatabase() = 0;
+    virtual OverlayDB const& getStateDatabase() const = 0;
 
 	virtual h256 stateRoot() const = 0;
 

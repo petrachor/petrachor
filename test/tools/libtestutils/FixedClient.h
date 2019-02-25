@@ -48,6 +48,7 @@ public:
 	virtual eth::Block preSeal() const override { ReadGuard l(x_stateDB); return m_block; }
 	virtual eth::Block postSeal() const override { ReadGuard l(x_stateDB); return m_block; }
 	virtual void setAuthor(Address const& _us) override { WriteGuard l(x_stateDB); m_block.setAuthor(_us); }
+    virtual Address author() const override { return m_block.author(); }
 	virtual void prepareForTransaction() override {}
 
 private:

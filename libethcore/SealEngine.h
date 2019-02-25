@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <libdevcore/Guards.h>
 #include <libdevcore/RLP.h>
+#include <libdevcrypto/Common.h>
 #include "BlockHeader.h"
 #include "Common.h"
 
@@ -34,6 +35,8 @@ namespace dev
 {
 namespace eth
 {
+
+typedef std::function<u256(Address const& address, BlockNumber const& _blockNumber)> BalanceRetriever;
 
 class BlockHeader;
 struct ChainOperationParams;
@@ -54,21 +57,24 @@ public:
 	virtual StringHashMap jsInfo(BlockHeader const&) const { return StringHashMap(); }
 
 	/// Don't forget to call Super::verify when subclassing & overriding.
-	virtual void verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent = BlockHeader(), bytesConstRef _block = bytesConstRef()) const;
+	virtual void verify(Strictness _s, BlockHeader const& _bi, BalanceRetriever balanceRetriever, BlockHeader const& _parent = BlockHeader(), bytesConstRef _block = bytesConstRef()) const;
 	/// Additional verification for transactions in blocks.
 	virtual void verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const& _startGasUsed) const;
 	/// Don't forget to call Super::populateFromParent when subclassing & overriding.
-	virtual void populateFromParent(BlockHeader& _bi, BlockHeader const& _parent) const;
+    virtual void populateFromParent(BlockHeader& _bi, BlockHeader const& _parent);
 
 	bytes option(std::string const& _name) const { Guard l(x_options); return m_options.count(_name) ? m_options.at(_name) : bytes(); }
 	bool setOption(std::string const& _name, bytes const& _value) { Guard l(x_options); try { if (onOptionChanging(_name, _value)) { m_options[_name] = _value; return true; } } catch (...) {} return false; }
+
+    virtual void setKeyPairs(std::vector<KeyPair<dev::BLS>> _keyPairs) = 0;
+   // virtual void setBalanceRetriever(BalanceRetriever _balanceRetriever) = 0;
 
 	virtual strings sealers() const { return { "default" }; }
 	virtual std::string sealer() const { return "default"; }
 	virtual void setSealer(std::string const&) {}
 
 	virtual bool shouldSeal(Interface*) { return true; }
-	virtual void generateSeal(BlockHeader const& _bi) = 0;
+    virtual void generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever) = 0;
 	virtual void onSealGenerated(std::function<void(bytes const& s)> const& _f) = 0;
 	virtual void cancelGeneration() {}
 
@@ -98,7 +104,7 @@ private:
 class SealEngineBase: public SealEngineFace
 {
 public:
-	void generateSeal(BlockHeader const& _bi) override
+    void generateSeal(BlockHeader _bi, BlockHeader const& , BalanceRetriever ) override
 	{
 		RLPStream ret;
 		_bi.streamRLP(ret);
@@ -109,8 +115,13 @@ public:
 	EVMSchedule const& evmSchedule(u256 const& _blockNumber) const override;
 	u256 blockReward(u256 const& _blockNumber) const override;
 
+    void setKeyPairs(std::vector<KeyPair<dev::BLS>> _keyPairs) override { m_keyPairs = _keyPairs; }
+  //  void setBalanceRetriever(BalanceRetriever _balanceRetriever) override { m_balanceRetriever = _balanceRetriever; }
+
 protected:
 	std::function<void(bytes const& s)> m_onSealGenerated;
+    std::vector<KeyPair<dev::BLS>> m_keyPairs;
+ //   BalanceRetriever m_balanceRetriever;
 };
 
 using SealEngineFactory = std::function<SealEngineFace*()>;

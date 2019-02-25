@@ -53,12 +53,10 @@ BOOST_FIXTURE_TEST_SUITE(rlpx, RLPXTestFixture)
 
 BOOST_AUTO_TEST_CASE(test_secrets_cpp_vectors)
 {
-	KeyPair init(Secret(sha3("initiator")));
-	KeyPair initR(Secret(sha3("initiator-random")));
+    Keys init(Keys::Secret(sha3("initiator"))), initR(Keys::Secret(sha3("initiator-random")));
 	h256 initNonce(sha3("initiator-nonce"));
 	
-	KeyPair recv(Secret(sha3("remote-recv")));
-	KeyPair recvR(Secret(sha3("remote-recv-random")));
+    Keys recv(Keys::Secret(sha3("remote-recv"))), recvR(Keys::Secret(sha3("remote-recv-random")));
 	h256 recvNonce(sha3("remote-recv-nonce"));
 	
 	bytes authCipher(fromHex(""));
@@ -80,9 +78,9 @@ BOOST_AUTO_TEST_CASE(test_secrets_cpp_vectors)
 	bytesRef keyMaterial(&keyMaterialBytes);
 	
 	// shared-secret = sha3(ecdhe-shared-secret || sha3(nonce || initiator-nonce))
-	Secret ephemeralShared;
+    Keys::Secret ephemeralShared;
 	BOOST_CHECK(crypto::ecdh::agree(initR.secret(), recvR.pub(), ephemeralShared));
-	Secret expected(fromHex("20d82c1092f351dc217bd66fa183e801234af14ead40423b6ee25112201c6e5a"));
+    Keys::Secret expected(fromHex("20d82c1092f351dc217bd66fa183e801234af14ead40423b6ee25112201c6e5a"));
 	BOOST_REQUIRE(expected == ephemeralShared);
 	
 	ephemeralShared.ref().copyTo(keyMaterial.cropped(0, h256::size));
@@ -188,12 +186,12 @@ BOOST_AUTO_TEST_CASE(test_secrets_cpp_vectors)
 
 BOOST_AUTO_TEST_CASE(test_secrets_from_go)
 {
-	KeyPair init(Secret(fromHex("0x5e173f6ac3c669587538e7727cf19b782a4f2fda07c1eaa662c593e5e85e3051")));
-	KeyPair initR(Secret(fromHex("0x19c2185f4f40634926ebed3af09070ca9e029f2edd5fae6253074896205f5f6c")));
+    Keys init(Keys::Secret(fromHex("0x5e173f6ac3c669587538e7727cf19b782a4f2fda07c1eaa662c593e5e85e3051")));
+    Keys initR(Keys::Secret(fromHex("0x19c2185f4f40634926ebed3af09070ca9e029f2edd5fae6253074896205f5f6c")));
 	h256 initNonce(fromHex("0xcd26fecb93657d1cd9e9eaf4f8be720b56dd1d39f190c4e1c6b7ec66f077bb11"));
 
-	KeyPair recv(Secret(fromHex("0xc45f950382d542169ea207959ee0220ec1491755abe405cd7498d6b16adb6df8")));
-	KeyPair recvR(Secret(fromHex("0xd25688cf0ab10afa1a0e2dba7853ed5f1e5bf1c631757ed4e103b593ff3f5620")));
+    Keys recv(Keys::Secret(fromHex("0xc45f950382d542169ea207959ee0220ec1491755abe405cd7498d6b16adb6df8")));
+    Keys recvR(Keys::Secret(fromHex("0xd25688cf0ab10afa1a0e2dba7853ed5f1e5bf1c631757ed4e103b593ff3f5620")));
 	h256 recvNonce(fromHex("0xf37ec61d84cea03dcc5e8385db93248584e8af4b4d1c832d8c7453c0089687a7"));
 
 	bytes authCipher(fromHex("0x04a0274c5951e32132e7f088c9bdfdc76c9d91f0dc6078e848f8e3361193dbdc43b94351ea3d89e4ff33ddcefbc80070498824857f499656c4f79bbd97b6c51a514251d69fd1785ef8764bd1d262a883f780964cce6a14ff206daf1206aa073a2d35ce2697ebf3514225bef186631b2fd2316a4b7bcdefec8d75a1025ba2c5404a34e7795e1dd4bc01c6113ece07b0df13b69d3ba654a36e35e69ff9d482d88d2f0228e7d96fe11dccbb465a1831c7d4ad3a026924b182fc2bdfe016a6944312021da5cc459713b13b86a686cf34d6fe6615020e4acf26bf0d5b7579ba813e7723eb95b3cef9942f01a58bd61baee7c9bdd438956b426a4ffe238e61746a8c93d5e10680617c82e48d706ac4953f5e1c4c4f7d013c87d34a06626f498f34576dc017fdd3d581e83cfd26cf125b6d2bda1f1d56"));
@@ -223,9 +221,9 @@ BOOST_AUTO_TEST_CASE(test_secrets_from_go)
 	bytesRef keyMaterial(&keyMaterialBytes);
 	
 	// shared-secret = sha3(ecdhe-shared-secret || sha3(nonce || initiator-nonce))
-	Secret ephemeralShared;
+    Keys::Secret ephemeralShared;
 	BOOST_CHECK(crypto::ecdh::agree(initR.secret(), recvR.pub(), ephemeralShared));
-	Secret expected(fromHex("0xe3f407f83fc012470c26a93fdff534100f2c6f736439ce0ca90e9914f7d1c381"));
+    Keys::Secret expected(fromHex("0xe3f407f83fc012470c26a93fdff534100f2c6f736439ce0ca90e9914f7d1c381"));
 	BOOST_REQUIRE(expected == ephemeralShared);
 	
 	ephemeralShared.ref().copyTo(keyMaterial.cropped(0, h256::size));
@@ -424,22 +422,22 @@ BOOST_AUTO_TEST_CASE(ecies_interop_test_primitives)
 	kdfTest2 = crypto::ecies::kdf(kdfInput2, bytes(), 32);
 	BOOST_REQUIRE(kdfTest2 == kdfExpect2);
 	
-	KeyPair k(Secret(fromHex("0x332143e9629eedff7d142d741f896258f5a1bfab54dab2121d3ec5000093d74b")));
-	Public p(fromHex("0xf0d2b97981bd0d415a843b5dfe8ab77a30300daab3658c578f2340308a2da1a07f0821367332598b6aa4e180a41e92f4ebbae3518da847f0b1c0bbfe20bcf4e1"));
-	Secret agreeExpected(fromHex("0xee1418607c2fcfb57fda40380e885a707f49000a5dda056d828b7d9bd1f29a08"));
-	Secret agreeTest;
+    Keys k(Keys::Secret(fromHex("0x332143e9629eedff7d142d741f896258f5a1bfab54dab2121d3ec5000093d74b")));
+    Keys::Public p(fromHex("0xf0d2b97981bd0d415a843b5dfe8ab77a30300daab3658c578f2340308a2da1a07f0821367332598b6aa4e180a41e92f4ebbae3518da847f0b1c0bbfe20bcf4e1"));
+    Keys::Secret agreeExpected(fromHex("0xee1418607c2fcfb57fda40380e885a707f49000a5dda056d828b7d9bd1f29a08"));
+    Keys::Secret agreeTest;
 	BOOST_CHECK(crypto::ecdh::agree(k.secret(), p, agreeTest));
 	BOOST_REQUIRE(agreeExpected == agreeTest);
 	
-	KeyPair kmK(Secret(fromHex("0x57baf2c62005ddec64c357d96183ebc90bf9100583280e848aa31d683cad73cb")));
+    Keys kmK(Keys::Secret(fromHex("0x57baf2c62005ddec64c357d96183ebc90bf9100583280e848aa31d683cad73cb")));
 	bytes kmCipher(fromHex("0x04ff2c874d0a47917c84eea0b2a4141ca95233720b5c70f81a8415bae1dc7b746b61df7558811c1d6054333907333ef9bb0cc2fbf8b34abb9730d14e0140f4553f4b15d705120af46cf653a1dc5b95b312cf8444714f95a4f7a0425b67fc064d18f4d0a528761565ca02d97faffdac23de10"));
 	bytes kmPlain = kmCipher;
 	bytes kmExpected(asBytes("a"));
 	BOOST_REQUIRE(s_secp256k1->decryptECIES(kmK.secret(), kmPlain));
 	BOOST_REQUIRE(kmExpected == kmPlain);
 	
-	KeyPair kenc(Secret(fromHex("0x472413e97f1fd58d84e28a559479e6b6902d2e8a0cee672ef38a3a35d263886b")));
-	Public penc(Public(fromHex("0x7a2aa2951282279dc1171549a7112b07c38c0d97c0fe2c0ae6c4588ba15be74a04efc4f7da443f6d61f68a9279bc82b73e0cc8d090048e9f87e838ae65dd8d4c")));
+    Keys kenc(Keys::Secret(fromHex("0x472413e97f1fd58d84e28a559479e6b6902d2e8a0cee672ef38a3a35d263886b")));
+    Keys::Public penc(Keys::Public(fromHex("0x7a2aa2951282279dc1171549a7112b07c38c0d97c0fe2c0ae6c4588ba15be74a04efc4f7da443f6d61f68a9279bc82b73e0cc8d090048e9f87e838ae65dd8d4c")));
 	BOOST_REQUIRE(penc == kenc.pub());
 	
 	bytes cipher1(fromHex("0x046f647e1bd8a5cd1446d31513bac233e18bdc28ec0e59d46de453137a72599533f1e97c98154343420d5f16e171e5107999a7c7f1a6e26f57bcb0d2280655d08fb148d36f1d4b28642d3bb4a136f0e33e3dd2e3cffe4b45a03fb7c5b5ea5e65617250fdc89e1a315563c20504b9d3a72555"));
@@ -463,10 +461,10 @@ BOOST_AUTO_TEST_CASE(ecies_interop_test_primitives)
 
 BOOST_AUTO_TEST_CASE(segmentedPacketFlush)
 {
-	auto localEph = KeyPair::create();
-	Secret localNonce = crypto::Nonce::get();
-	auto remoteEph = KeyPair::create();
-	Secret remoteNonce = crypto::Nonce::get();
+    auto localEph = Keys::create();
+    Keys::Secret localNonce = crypto::Nonce::get();
+    auto remoteEph = Keys::create();
+    Keys::Secret remoteNonce = crypto::Nonce::get();
 	bytes ackCipher{0};
 	bytes authCipher{1};
 	RLPXFrameCoder encoder(true, remoteEph.pub(), remoteNonce.makeInsecure(), localEph, localNonce.makeInsecure(), &ackCipher, &authCipher);
@@ -537,10 +535,10 @@ BOOST_AUTO_TEST_CASE(segmentedPacketFlush)
 
 BOOST_AUTO_TEST_CASE(coalescedPacketsPadded)
 {
-	auto localEph = KeyPair::create();
-	Secret localNonce = crypto::Nonce::get();
-	auto remoteEph = KeyPair::create();
-	Secret remoteNonce = crypto::Nonce::get();
+    auto localEph = Keys::create();
+    Keys::Secret localNonce = crypto::Nonce::get();
+    auto remoteEph = Keys::create();
+    Keys::Secret remoteNonce = crypto::Nonce::get();
 	bytes ackCipher{0};
 	bytes authCipher{1};
 	RLPXFrameCoder encoder(true, remoteEph.pub(), remoteNonce.makeInsecure(), localEph, localNonce.makeInsecure(), &ackCipher, &authCipher);
@@ -595,10 +593,10 @@ BOOST_AUTO_TEST_CASE(coalescedPacketsPadded)
 
 BOOST_AUTO_TEST_CASE(singleFramePacketFlush)
 {
-	auto localEph = KeyPair::create();
-	Secret localNonce = crypto::Nonce::get();
-	auto remoteEph = KeyPair::create();
-	Secret remoteNonce = crypto::Nonce::get();
+    auto localEph =Keys::create();
+    Keys::Secret localNonce = crypto::Nonce::get();
+    auto remoteEph = Keys::create();
+    Keys::Secret remoteNonce = crypto::Nonce::get();
 	bytes ackCipher{0};
 	bytes authCipher{1};
 	RLPXFrameCoder encoder(true, remoteEph.pub(), remoteNonce.makeInsecure(), localEph, localNonce.makeInsecure(), &ackCipher, &authCipher);
@@ -643,10 +641,10 @@ BOOST_AUTO_TEST_CASE(multiProtocol)
 {
 	/// Test writing four 32 byte RLPStream packets with different protocol ID.
 
-	auto localEph = KeyPair::create();
-	auto remoteEph = KeyPair::create();
-	Secret localNonce = crypto::Nonce::get();
-	Secret remoteNonce = crypto::Nonce::get();
+    auto localEph = Keys::create();
+    auto remoteEph = Keys::create();
+    Keys::Secret localNonce = crypto::Nonce::get();
+    Keys::Secret remoteNonce = crypto::Nonce::get();
 	bytes ackCipher{0};
 	bytes authCipher{1};
 	RLPXFrameCoder encoder(true, remoteEph.pub(), remoteNonce.makeInsecure(), localEph, localNonce.makeInsecure(), &ackCipher, &authCipher);
@@ -737,10 +735,10 @@ BOOST_AUTO_TEST_CASE(multiProtocol)
 
 BOOST_AUTO_TEST_CASE(oddSizedMessages)
 {
-	auto localEph = KeyPair::create();
-	Secret localNonce = crypto::Nonce::get();
-	auto remoteEph = KeyPair::create();
-	Secret remoteNonce = crypto::Nonce::get();
+    auto localEph = Keys::create();
+    Keys::Secret localNonce = crypto::Nonce::get();
+    auto remoteEph = Keys::create();
+    Keys::Secret remoteNonce = crypto::Nonce::get();
 	bytes ackCipher{0};
 	bytes authCipher{1};
 	RLPXFrameCoder encoder(true, remoteEph.pub(), remoteNonce.makeInsecure(), localEph, localNonce.makeInsecure(), &ackCipher, &authCipher);
@@ -813,10 +811,10 @@ bytes generatePseudorandomPacket(h256 const& _h)
 
 BOOST_AUTO_TEST_CASE(pseudorandom)
 {
-	auto localEph = KeyPair::create();
-	auto remoteEph = KeyPair::create();
-	Secret localNonce = crypto::Nonce::get();
-	Secret remoteNonce = crypto::Nonce::get();
+    auto localEph = Keys::create();
+    auto remoteEph = Keys::create();
+    Keys::Secret localNonce = crypto::Nonce::get();
+    Keys::Secret remoteNonce = crypto::Nonce::get();
 	bytes ackCipher{0};
 	bytes authCipher{1};
 	RLPXFrameCoder encoder(true, remoteEph.pub(), remoteNonce.makeInsecure(), localEph, localNonce.makeInsecure(), &ackCipher, &authCipher);
@@ -878,10 +876,8 @@ BOOST_AUTO_TEST_CASE(pseudorandom)
 
 BOOST_AUTO_TEST_CASE(randomizedMultiProtocol)
 {
-	auto localEph = KeyPair::create();
-	auto remoteEph = KeyPair::create();
-	Secret localNonce = crypto::Nonce::get();
-	Secret remoteNonce = crypto::Nonce::get();
+    auto localEph = Keys::create(), remoteEph = Keys::create();
+    Keys::Secret localNonce = crypto::Nonce::get(), remoteNonce = crypto::Nonce::get();
 	bytes ackCipher{0};
 	bytes authCipher{1};
 	RLPXFrameCoder encoder(true, remoteEph.pub(), remoteNonce.makeInsecure(), localEph, localNonce.makeInsecure(), &ackCipher, &authCipher);

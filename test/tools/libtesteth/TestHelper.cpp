@@ -19,7 +19,7 @@
  */
 
 #include <include/BuildInfo.h>
-#include <libethashseal/EthashCPUMiner.h>
+//#include <libethashseal/EthashCPUMiner.h>
 #include <test/tools/libtesteth/TestHelper.h>
 #include <test/tools/libtesteth/TestOutputHelper.h>
 #include <test/tools/libtesteth/Options.h>
@@ -67,16 +67,16 @@ void connectClients(Client& c1, Client& c2)
 
 void mine(Block& s, BlockChain const& _bc, SealEngineFace* _sealer)
 {
-	EthashCPUMiner::setNumInstances(1);
+//	EthashCPUMiner::setNumInstances(1);
 	s.commitToSeal(_bc, s.info().extraData());
 	Notified<bytes> sealed;
 	_sealer->onSealGenerated([&](bytes const& sealedHeader){ sealed = sealedHeader; });
-	_sealer->generateSeal(s.info());
+    _sealer->generateSeal(s.info(), s.previousInfo());
 	sealed.waitNot({});
 	_sealer->onSealGenerated([](bytes const&){});
 	s.sealBlock(sealed);
 }
-
+/*
 void mine(BlockHeader& _bi, SealEngineFace* _sealer, bool _verify)
 {
 	Notified<bytes> sealed;
@@ -89,7 +89,7 @@ void mine(BlockHeader& _bi, SealEngineFace* _sealer, bool _verify)
 	if (_verify) //sometimes it is needed to mine incorrect blockheaders for testing
 		_sealer->verify(JustSeal, _bi);
 }
-
+*/
 }
 
 namespace test
@@ -514,10 +514,10 @@ dev::eth::BlockHeader constructHeader(
 	return BlockHeader(rlpStream.out(), HeaderData);
 }
 
-void updateEthashSeal(dev::eth::BlockHeader& _header, h256 const& _mixHash, h64 const& _nonce)
+void updateEthashSeal(dev::eth::BlockHeader&, h256 const&, h64 const&)
 {
-	Ethash::setNonce(_header, _nonce);
-	Ethash::setMixHash(_header, _mixHash);
+//	Ethash::setNonce(_header, _nonce);
+//	Ethash::setMixHash(_header, _mixHash);
 }
 
 namespace

@@ -45,9 +45,9 @@ static const unsigned Undefined = (unsigned)-1;
 struct FilterKey
 {
 	FilterKey() {}
-	FilterKey(unsigned _tI, Secret const& _k): topicIndex(_tI), key(_k) {}
+	FilterKey(unsigned _tI, CommKeys::Secret const& _k): topicIndex(_tI), key(_k) {}
 	unsigned topicIndex = Undefined;
-	Secret key;
+	CommKeys::Secret key;
 };
 
 enum IncludeNonce
@@ -66,7 +66,7 @@ public:
 
 	void streamRLP(RLPStream& _s, IncludeNonce _withNonce = WithNonce) const { _s.appendList(_withNonce ? 5 : 4) << m_expiry << m_ttl << m_topic << m_data; if (_withNonce) _s << m_nonce; }
 	h256 sha3(IncludeNonce _withNonce = WithNonce) const { RLPStream s; streamRLP(s, _withNonce); return dev::sha3(s.out()); }
-	Message open(Topics const& _t, Secret const& _s = Secret()) const;
+	Message open(Topics const& _t, WhisperKey::Secret const& _s = WhisperKey::Secret()) const;
 	unsigned workProved() const;
 	void proveWork(unsigned _ms);
 
@@ -101,36 +101,36 @@ class Message
 {
 public:
 	Message() {}
-	Message(Envelope const& _e, Topics const& _t, Secret const& _s = Secret());
+	Message(Envelope const& _e, Topics const& _t, WhisperKey::Secret const& _s = WhisperKey::Secret());
 	Message(bytes const& _payload): m_payload(_payload) {}
 	Message(bytesConstRef _payload): m_payload(_payload.toBytes()) {}
 	Message(bytes&& _payload) { std::swap(_payload, m_payload); }
 
-	Public from() const { return m_from; }
-	Public to() const { return m_to; }
+	WhisperKey::Public from() const { return m_from; }
+	WhisperKey::Public to() const { return m_to; }
 	bytes const& payload() const { return m_payload; }
 
-	void setFrom(Public _from) { m_from = _from; }
-	void setTo(Public _to) { m_to = _to; }
+	void setFrom(WhisperKey::Public _from) { m_from = _from; }
+	void setTo(WhisperKey::Public _to) { m_to = _to; }
 	void setPayload(bytes const& _payload) { m_payload = _payload; }
 	void setPayload(bytes&& _payload) { swap(m_payload, _payload); }
 
 	operator bool() const { return !!m_payload.size() || m_from || m_to; }
 
 	/// Turn this message into a ditributable Envelope.
-	Envelope seal(Secret const& _from, Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) const;
+	Envelope seal(WhisperKey::Secret const& _from, Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) const;
 	// Overloads for skipping _from or specifying _to.
-	Envelope seal(Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) const { return seal(Secret(), _topics, _ttl, _workToProve); }
-	Envelope sealTo(Public _to, Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) { m_to = _to; return seal(Secret(), _topics, _ttl, _workToProve); }
-	Envelope sealTo(Secret const& _from, Public _to, Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) { m_to = _to; return seal(_from, _topics, _ttl, _workToProve); }
+	Envelope seal(Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) const { return seal(WhisperKey::Secret(), _topics, _ttl, _workToProve); }
+	Envelope sealTo(WhisperKey::Public _to, Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) { m_to = _to; return seal(WhisperKey::Secret(), _topics, _ttl, _workToProve); }
+	Envelope sealTo(WhisperKey::Secret const& _from, WhisperKey::Public _to, Topics const& _topics, unsigned _ttl = 50, unsigned _workToProve = 50) { m_to = _to; return seal(_from, _topics, _ttl, _workToProve); }
 
 private:
 	bool populate(bytes const& _data);
 	bool openBroadcastEnvelope(Envelope const& _e, Topics const& _t, bytes& o_b);
-	Secret generateGamma(Secret const& _key, h256 const& _salt) const { return sha3(_key ^ _salt); }
+	WhisperKey::Secret generateGamma(WhisperKey::Secret const& _key, h256 const& _salt) const { return sha3(_key ^ _salt); }
 
-	Public m_from;
-	Public m_to;
+	WhisperKey::Public m_from;
+	WhisperKey::Public m_to;
 	bytes m_payload;
 };
 

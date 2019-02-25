@@ -27,7 +27,7 @@ using namespace dev;
 using namespace dev::p2p;
 using namespace dev::shh;
 
-Message::Message(Envelope const& _e, Topics const& _t, Secret const& _s)
+Message::Message(Envelope const& _e, Topics const& _t, WhisperKey::Secret const& _s)
 {
 	try
 	{
@@ -41,7 +41,7 @@ Message::Message(Envelope const& _e, Topics const& _t, Secret const& _s)
 
 		if (populate(b))
 			if (_s)
-				m_to = KeyPair(_s).pub();
+                m_to = WhisperKey::Pair(_s).pub();
 	}
 	catch (...)	// Invalid secret? TODO: replace ... with InvalidSecret
 	{
@@ -52,7 +52,7 @@ bool Message::openBroadcastEnvelope(Envelope const& _e, Topics const& _fk, bytes
 {
 	// retrieve the key using the known topic and topicIndex.
 	unsigned topicIndex = 0;
-	Secret topicSecret;
+	WhisperKey::Secret topicSecret;
 
 	// determine topicSecret/topicIndex from knowledge of the collapsed topics (which give the order) and our full-size filter topic.
 	AbridgedTopics knownTopic = abridge(_fk);
@@ -60,7 +60,7 @@ bool Message::openBroadcastEnvelope(Envelope const& _e, Topics const& _fk, bytes
 		for (unsigned i = 0; i < _e.topic().size(); ++i)
 			if (_e.topic()[i] == knownTopic[ti])
 			{
-				topicSecret = Secret(_fk[ti]);
+				topicSecret = CommKeys::Secret(_fk[ti]);
 				topicIndex = i;
 				break;
 			}
@@ -69,9 +69,9 @@ bool Message::openBroadcastEnvelope(Envelope const& _e, Topics const& _fk, bytes
 		return false;
 
 	unsigned index = topicIndex * 2;
-	Secret encryptedKey(bytesConstRef(&(_e.data())).cropped(h256::size * index, h256::size));
+	WhisperKey::Secret encryptedKey(bytesConstRef(&(_e.data())).cropped(h256::size * index, h256::size));
 	h256 salt = h256(bytesConstRef(&(_e.data())).cropped(h256::size * ++index, h256::size));
-	Secret key = Secret(generateGamma(topicSecret, salt).makeInsecure() ^ encryptedKey.makeInsecure());
+	WhisperKey::Secret key = WhisperKey::Secret(generateGamma(topicSecret, salt).makeInsecure() ^ encryptedKey.makeInsecure());
 	bytesConstRef cipherText = bytesConstRef(&(_e.data())).cropped(h256::size * 2 * _e.topic().size());
 	return decryptSym(key, cipherText, o_b);
 }
@@ -82,22 +82,22 @@ bool Message::populate(bytes const& _data)
 		return false;
 
 	byte flags = _data[0];
-	if (!!(flags & ContainsSignature) && _data.size() >= sizeof(Signature) + 1)	// has a signature
+    if (!!(flags & ContainsSignature) && _data.size() >= sizeof(WhisperKey::SignatureStruct) + 1)	// has a signature
 	{
-		bytesConstRef payload = bytesConstRef(&_data).cropped(1, _data.size() - sizeof(Signature) - 1);
-		h256 h = sha3(payload);
-		Signature const& sig = *(Signature const*)&(_data[1 + payload.size()]);
-		m_from = recover(sig, h);
+        bytesConstRef payload = bytesConstRef(&_data).cropped(1, _data.size() - sizeof(WhisperKey::SignatureStruct) - 1);
+		//h256 h = sha3(payload);
+        WhisperKey::SignatureStruct const& sig = *(WhisperKey::SignatureStruct const*)&(_data[1 + payload.size()]);
+        m_from = sig.publicKey;
 		if (!m_from)
 			return false;
-		m_payload = payload.toBytes();
+        m_payload = payload.toBytes();
 	}
 	else
 		m_payload = bytesConstRef(&_data).cropped(1).toBytes();
 	return true;
 }
 
-Envelope Message::seal(Secret const& _from, Topics const& _fullTopics, unsigned _ttl, unsigned _workToProve) const
+Envelope Message::seal(WhisperKey::Secret const& _from, Topics const& _fullTopics, unsigned _ttl, unsigned _workToProve) const
 {
 	AbridgedTopics topics = abridge(_fullTopics);
 	Envelope ret(utcTime() + _ttl, _ttl, topics);
@@ -108,30 +108,10 @@ Envelope Message::seal(Secret const& _from, Topics const& _fullTopics, unsigned 
 
 	if (_from) // needs a signature
 	{
-		input.resize(1 + m_payload.size() + sizeof(Signature));
+        input.resize(1 + m_payload.size() + sizeof(WhisperKey::SignatureStruct));
 		input[0] |= ContainsSignature;
-		*(Signature*)&(input[1 + m_payload.size()]) = sign(_from, sha3(m_payload));
-		// If this fails, the something is wrong with the sign-recover round-trip.
-		assert(recover(*(Signature*)&(input[1 + m_payload.size()]), sha3(m_payload)) == KeyPair(_from).pub());
-	}
-
-	if (m_to)
-		encrypt(m_to, &input, ret.m_data);
-	else
-	{
-		// this message is for broadcast (could be read by anyone who knows at least one of the topics)
-		// create the shared secret for encrypting the payload, then encrypt the shared secret with each topic
-		Secret s = Secret::random();
-		for (h256 const& t: _fullTopics)
-		{
-			h256 salt = h256::random();
-			ret.m_data += (generateGamma(Secret(t), salt).makeInsecure() ^ s.makeInsecure()).ref().toBytes();
-			ret.m_data += salt.asBytes();
-		}
-
-		bytes d;
-		encryptSym(s, &input, d);
-		ret.m_data += d;
+        auto ss = WhisperKey::SignatureStruct(sign<WhisperKey::Type>(_from, sha3(m_payload)), toPublic<WhisperKey::Type>(_from));
+        *(WhisperKey::SignatureStruct*)&(input[1 + m_payload.size()]) = ss;
 	}
 
 	ret.proveWork(_workToProve);
@@ -147,7 +127,7 @@ Envelope::Envelope(RLP const& _m)
 	m_nonce = _m[4].toInt<u256>();
 }
 
-Message Envelope::open(Topics const& _t, Secret const& _s) const
+Message Envelope::open(Topics const& _t, WhisperKey::Secret const& _s) const
 {
 	return Message(*this, _t, _s);
 }

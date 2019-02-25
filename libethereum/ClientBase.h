@@ -81,7 +81,7 @@ public:
 
 	/// Submits the given transaction.
 	/// @returns the new transaction's hash.
-	virtual std::pair<h256, Address> submitTransaction(TransactionSkeleton const& _t, Secret const& _secret) override;
+	virtual std::pair<h256, Address> submitTransaction(TransactionSkeleton const& _t, AccountKeys::Secret const& _secret) override;
 	using Interface::submitTransaction;
 
 	/// Makes the given call. Nothing is recorded into the state.
@@ -154,7 +154,7 @@ public:
 	virtual u256 gasBidPrice() const override { return DefaultGasPrice; }
 
 	/// Get the block author
-	virtual Address author() const override;
+   // virtual Public authorPublicKey() const override;
 
 	virtual bool isKnown(h256 const& _hash) const override;
 	virtual bool isKnown(BlockNumber _block) const override;

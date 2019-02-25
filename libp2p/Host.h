@@ -145,7 +145,7 @@ public:
 	/// without restoring the network.
 	Host(
 		std::string const& _clientVersion,
-		KeyPair const& _alias,
+        KeyPair<ECDSA> const& _alias,
 		NetworkPreferences const& _n = NetworkPreferences()
 	);
 
@@ -153,7 +153,7 @@ public:
 	virtual ~Host();
 
 	/// Default hosts for current version of client.
-	static std::unordered_map<Public, std::string> pocHosts();
+    static std::unordered_map<ECDSA::Public, std::string> pocHosts();
 
 	/// Register a peer-capability; all new peer connections will have this capability.
 	template <class T> std::shared_ptr<T> registerCapability(std::shared_ptr<T> const& _t) { _t->m_host = this; m_capabilities[std::make_pair(T::staticName(), T::staticVersion())] = _t; return _t; }
@@ -223,7 +223,7 @@ public:
 	bool haveNetwork() const { Guard l(x_runTimer); return m_run && !!m_nodeTable; }
 	
 	/// Validates and starts peer session, taking ownership of _io. Disconnects and returns false upon error.
-	void startPeerSession(Public const& _id, RLP const& _hello, std::unique_ptr<RLPXFrameCoder>&& _io, std::shared_ptr<RLPXSocket> const& _s);
+    void startPeerSession(ECDSA::Public const& _id, RLP const& _hello, std::unique_ptr<RLPXFrameCoder>&& _io, std::shared_ptr<RLPXSocket> const& _s);
 
 	/// Get session by id
 	std::shared_ptr<SessionFace> peerSession(NodeID const& _id) { RecursiveGuard l(x_sessions); return m_sessions.count(_id) ? m_sessions[_id].lock() : std::shared_ptr<SessionFace>(); }
@@ -282,7 +282,7 @@ private:
 	virtual void doneWorking();
 
 	/// Get or create host identifier (KeyPair).
-	static KeyPair networkAlias(bytesConstRef _b);
+    static KeyPair<ECDSA> networkAlias(bytesConstRef _b);
 
 	bytes m_restoreNetwork;										///< Set by constructor and used to set Host key and restore network peers & nodes.
 
@@ -308,7 +308,7 @@ private:
 	Mutex x_pendingNodeConns;
 
 	bi::tcp::endpoint m_tcpPublic;											///< Our public listening endpoint.
-	KeyPair m_alias;															///< Alias for network communication. Network address is k*G. k is key material. TODO: Replace KeyPair.
+    KeyPair<ECDSA> m_alias;															///< Alias for network communication. Network address is k*G. k is key material. TODO: Replace KeyPair.
 	std::shared_ptr<NodeTable> m_nodeTable;									///< Node table (uses kademlia-like discovery).
 
 	/// Shared storage of Peer objects. Peers are created or destroyed on demand by the Host. Active sessions maintain a shared_ptr to a Peer;

@@ -50,11 +50,13 @@ std::string const& dev::eth::genesisInfo(Network _n)
 	switch (_n)
 	{
 	//Client genesis
-	case Network::MainNetwork: return c_genesisInfoMainNetwork;
-	case Network::Ropsten: return c_genesisInfoRopsten;
+    case Network::MainNetwork: return c_genesisInfoMainNetwork;
+    case Network::EthereumYNetwork: return c_genesisInfoMainNetwork;
+    case Network::Ropsten: return c_genesisInfoRopsten;
 
 	//Test genesis
-	case Network::MainNetworkTest: return c_genesisInfoMainNetworkTest;
+    case Network::EthereumYNetworkTest: return c_genesisInfoMainNetworkTest;
+    case Network::MainNetworkTest: return c_genesisInfoMainNetworkTest;
 	case Network::MainNetworkNoProofTest: return c_genesisInfoMainNetworkNoProofTest;
 	case Network::FrontierNoProofTest: return c_genesisInfoFrontierNoProofTest;
 	case Network::FrontierTest: return c_genesisInfoFrontierTest;

@@ -68,9 +68,14 @@ Client::Client(
 	TransactionQueue::Limits const& _l
 ):
 	ClientBase(_l),
-	Worker("eth", 0),
+    Worker("petrichor", 20),
 	m_bc(_params, _dbPath, _forceAction, [](unsigned d, unsigned t){ std::cerr << "REVISING BLOCKCHAIN: Processed " << d << " of " << t << "...\r"; }),
 	m_gp(_gpForAdoption ? _gpForAdoption : make_shared<TrivialGasPricer>()),
+    // Cannot be opened until after blockchain is open, since BlockChain may upgrade the database.
+	// TODO: consider returning the upgrade mechanism here. will delaying the opening of the blockchain database
+	// until after the construction.
+	m_stateDB(State::openDB(_dbPath, bc().genesisHash(), _forceAction)),
+    m_bq(),
 	m_preSeal(chainParams().accountStartNonce),
 	m_postSeal(chainParams().accountStartNonce),
 	m_working(chainParams().accountStartNonce)
@@ -88,10 +93,6 @@ void Client::init(p2p::Host* _extNet, fs::path const& _dbPath, WithExisting _for
 {
 	DEV_TIMED_FUNCTION_ABOVE(500);
 
-	// Cannot be opened until after blockchain is open, since BlockChain may upgrade the database.
-	// TODO: consider returning the upgrade mechanism here. will delaying the opening of the blockchain database
-	// until after the construction.
-	m_stateDB = State::openDB(_dbPath, bc().genesisHash(), _forceAction);
 	// LAZY. TODO: move genesis state construction/commiting to stateDB openning and have this just take the root from the genesis block.
 	m_preSeal = bc().genesisBlock(m_stateDB);
 	m_postSeal = m_preSeal;
@@ -136,7 +137,7 @@ ImportResult Client::queueBlock(bytes const& _block, bool _isSafe)
 tuple<ImportRoute, bool, unsigned> Client::syncQueue(unsigned _max)
 {
 	stopWorking();
-	return bc().sync(m_bq, m_stateDB, _max);
+    return bc().sync(m_bq, m_stateDB, _max);
 }
 
 void Client::onBadBlock(Exception& _ex) const
@@ -254,7 +255,7 @@ void Client::reopenChain(ChainParams const& _p, WithExisting _we)
 		WriteGuard l2(x_preSeal);
 		WriteGuard l3(x_working);
 
-		auto author = m_preSeal.author();	// backup and restore author.
+        auto author = m_preSeal.author();	// backup and restore author.
 		m_preSeal = Block(chainParams().accountStartNonce);
 		m_postSeal = Block(chainParams().accountStartNonce);
 		m_working = Block(chainParams().accountStartNonce);
@@ -264,7 +265,8 @@ void Client::reopenChain(ChainParams const& _p, WithExisting _we)
 		m_stateDB = State::openDB(Defaults::dbPath(), bc().genesisHash(), _we);
 
 		m_preSeal = bc().genesisBlock(m_stateDB);
-		m_preSeal.setAuthor(author);
+        m_preSeal.resetCurrent();
+        m_preSeal.setAuthor(author);
 		m_postSeal = m_preSeal;
 		m_working = Block(chainParams().accountStartNonce);
 	}
@@ -561,18 +563,24 @@ void Client::onPostStateChanged()
 	m_remoteWorking = false;
 }
 
+void Client::startSealing(std::vector<KeyPair<dev::BLS>> keyPairs) {
+    sealEngine()->setKeyPairs(keyPairs);
+    startSealing();
+}
+
 void Client::startSealing()
 {
 	if (m_wouldSeal == true)
 		return;
-	clog(ClientNote) << "Mining Beneficiary: " << author();
-	if (author())
+    clog(ClientNote) << "Mining Beneficiary address: " << author();
+
+    if (author())
 	{
 		m_wouldSeal = true;
 		m_signalled.notify_all();
 	}
-	else
-		clog(ClientNote) << "You need to set an author in order to seal!";
+    else
+        clog(ClientNote) << "You need to set an author in order to seal!";
 }
 
 void Client::rejigSealing()
@@ -591,13 +599,16 @@ void Client::rejigSealing()
 					clog(ClientNote) << "Tried to seal sealed block...";
 					return;
 				}
+                m_working.setAuthor(author());
 				m_working.commitToSeal(bc(), m_extraData);
 			}
+            BlockHeader parent;
 			DEV_READ_GUARDED(x_working)
 			{
-				DEV_WRITE_GUARDED(x_postSeal)
+                DEV_WRITE_GUARDED(x_postSeal)
 					m_postSeal = m_working;
 				m_sealingInfo = m_working.info();
+                parent = m_working.previousInfo();
 			}
 
 			if (wouldSeal())
@@ -607,7 +618,7 @@ void Client::rejigSealing()
 						clog(ClientNote) << "Submitting block failed...";
 				});
 				ctrace << "Generating seal on" << m_sealingInfo.hash(WithoutSeal) << "#" << m_sealingInfo.number();
-				sealEngine()->generateSeal(m_sealingInfo);
+                sealEngine()->generateSeal(m_sealingInfo, parent, [=](Address _a, BlockNumber _block) { return balanceAt(_a, _block); });
 			}
 		}
 		else
@@ -773,7 +784,11 @@ SyncStatus Client::syncStatus() const
 
 bool Client::submitSealed(bytes const& _header)
 {
-	bytes newBlock;
+    BlockHeader h(_header, HeaderData);
+    clog << "Submit sealed " << h.number();
+    m_working.info().setTimestamp(h.timestamp());
+    m_working.info().setDifficulty(h.difficulty());
+    bytes newBlock;
 	{
 		UpgradableGuard l(x_working);
 		{

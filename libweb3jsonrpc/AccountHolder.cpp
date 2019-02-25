@@ -129,7 +129,7 @@ TransactionNotification SimpleAccountHolder::authenticate(dev::eth::TransactionS
 		return ret;
 	if (isRealAccount(_t.from))
 	{
-		if (Secret s = m_keyManager.secret(_t.from, [&](){ return m_getPassword(_t.from); }))
+		if (typename AccountKeys::Secret s = m_keyManager.secret(_t.from, [&](){ return m_getPassword(_t.from); }))
 		{
 			ret.r = TransactionRepercussion::Success;
 			tie(ret.hash, ret.created) = m_client()->submitTransaction(_t, s);

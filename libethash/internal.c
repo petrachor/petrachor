@@ -26,7 +26,6 @@
 #include <errno.h>
 #include <math.h>
 #include "mmap.h"
-#include "ethash.h"
 #include "fnv.h"
 #include "endian.h"
 #include "internal.h"

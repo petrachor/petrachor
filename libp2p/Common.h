@@ -59,7 +59,8 @@ class Node;
 extern const NodeIPEndpoint UnspecifiedNodeIPEndpoint;
 extern const Node UnspecifiedNode;
 
-using NodeID = h512;
+typedef KeyType<ECDSA> Keys;
+typedef Keys::Public NodeID;
 
 bool isPrivateAddress(bi::address const& _addressToCheck);
 bool isPrivateAddress(std::string const& _addressToCheck);
@@ -244,11 +245,11 @@ class Node
 public:
 	Node() = default;
 	Node(Node const&) = default;
-	Node(Public _publicKey, NodeIPEndpoint const& _ip, PeerType _peerType = PeerType::Optional): id(_publicKey), endpoint(_ip), peerType(_peerType) {}
+    Node(ECDSA::Public _publicKey, NodeIPEndpoint const& _ip, PeerType _peerType = PeerType::Optional): id(_publicKey), endpoint(_ip), peerType(_peerType) {}
 	Node(NodeSpec const& _s, PeerType _peerType = PeerType::Optional);
 
 	virtual NodeID const& address() const { return id; }
-	virtual Public const& publicKey() const { return id; }
+    virtual NodeID const& publicKey() const { return id; }
 	
 	virtual operator bool() const { return (bool)id; }
 

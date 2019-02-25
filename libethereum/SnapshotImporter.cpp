@@ -236,11 +236,8 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
 			header.setTimestamp(abridgedBlock[6].toInt<u256>(RLP::VeryStrict));
 			header.setExtraData(abridgedBlock[7].toBytes(RLP::VeryStrict));
 
-			Ethash::setMixHash(header, abridgedBlock[10].toHash<h256>(RLP::VeryStrict));
-			Ethash::setNonce(header, abridgedBlock[11].toHash<Nonce>(RLP::VeryStrict));
-
 			totalDifficulty += difficulty;
-			m_blockChainImporter.importBlock(header, transactions, uncles, receipts, totalDifficulty);
+			m_blockChainImporter.importBlock(header, m_stateImporter.getStateDatabase(), transactions, uncles, receipts, totalDifficulty);
 
 			parentHash = header.hash();
 		}

@@ -43,9 +43,7 @@ json_spirit::mObject fillJsonWithTransaction(Transaction const& _txn)
 	txObject["data"] = _txn.data().size() ? toHexPrefixed(_txn.data()) : "";
 	txObject["gasLimit"] = toCompactHexPrefixed(_txn.gas(), 1);
 	txObject["gasPrice"] = toCompactHexPrefixed(_txn.gasPrice(), 1);
-	txObject["r"] = toCompactHexPrefixed(_txn.signature().r, 1);
-	txObject["s"] = toCompactHexPrefixed(_txn.signature().s, 1);
-	txObject["v"] = toCompactHexPrefixed(_txn.signature().v + 27, 1);
+    txObject["publicKey"] = _txn.signature().publicKey.hex();
 	txObject["to"] = _txn.isCreation() ? "" : toHexPrefixed(_txn.receiveAddress());
 	txObject["value"] = toCompactHexPrefixed(_txn.value(), 1);
 	txObject = ImportTest::makeAllFieldsHex(txObject);

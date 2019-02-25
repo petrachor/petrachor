@@ -29,6 +29,8 @@ namespace dev
 
 class RLP;
 
+class OverlayDB;
+
 namespace eth
 {
 
@@ -40,7 +42,7 @@ class BlockChainImporterFace
 public:
 	virtual ~BlockChainImporterFace() = default;
 
-	virtual void importBlock(BlockHeader const& _header, RLP _transactions, RLP _uncles, RLP _receipts, u256 const& _totalDifficulty) = 0;
+	virtual void importBlock(BlockHeader const& _header, OverlayDB const& _db, RLP _transactions, RLP _uncles, RLP _receipts, u256 const& _totalDifficulty) = 0;
 
 	virtual void setChainStartBlockNumber(u256 const& _number) = 0;
 };

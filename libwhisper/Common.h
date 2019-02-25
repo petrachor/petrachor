@@ -34,6 +34,8 @@ namespace dev
 namespace shh
 {
 
+typedef KeyType<BLS> WhisperKey;
+
 /* this makes these symbols ambiguous on VS2013
 using h256 = dev::h256;
 using h256s = dev::h256s;

@@ -20,6 +20,7 @@
  * @date 2015
  */
 
+#include <libdevcrypto/Common.h>
 #include "ClientBase.h"
 #include <algorithm>
 #include "BlockChain.h"
@@ -37,12 +38,12 @@ const char* WorkChannel::name() { return EthOrange "⚒" EthWhite "  "; }
 
 static const int64_t c_maxGasEstimate = 50000000;
 
-pair<h256, Address> ClientBase::submitTransaction(TransactionSkeleton const& _t, Secret const& _secret)
+pair<h256, Address> ClientBase::submitTransaction(TransactionSkeleton const& _t, AccountKeys::Secret const& _secret)
 {
 	prepareForTransaction();
 	
 	TransactionSkeleton ts(_t);
-	ts.from = toAddress(_secret);
+    ts.from = dev::toAddress<dev::BLS>(_secret);
 	if (_t.nonce == Invalid256)
 		ts.nonce = max<u256>(postSeal().transactionsFrom(ts.from), m_tq.maxNonce(ts.from));
 	if (ts.gasPrice == Invalid256)
@@ -496,10 +497,10 @@ u256 ClientBase::gasLimitRemaining() const
 	return postSeal().gasLimitRemaining();
 }
 
-Address ClientBase::author() const
+/*Address ClientBase::author() const
 {
 	return preSeal().author();
-}
+}*/
 
 h256 ClientBase::hashFromNumber(BlockNumber _number) const
 {

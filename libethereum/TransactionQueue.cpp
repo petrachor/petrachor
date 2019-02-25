@@ -94,8 +94,7 @@ ImportResult TransactionQueue::import(Transaction const& _transaction, IfDropped
 			return ir;
 
 		{
-			_transaction.safeSender(); // Perform EC recovery outside of the write lock
-			UpgradeGuard ul(l);
+            UpgradeGuard ul(l);
 			ret = manageImport_WITH_LOCK(h, _transaction);
 		}
 	}
@@ -354,7 +353,7 @@ void TransactionQueue::clear()
 	m_futureSize = 0;
 }
 
-void TransactionQueue::enqueue(RLP const& _data, h512 const& _nodeId)
+void TransactionQueue::enqueue(RLP const& _data, ECDSA::Public const& _nodeId)
 {
 	bool queued = false;
 	{

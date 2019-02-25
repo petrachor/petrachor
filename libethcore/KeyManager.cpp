@@ -146,7 +146,7 @@ bool KeyManager::load(string const& _pass)
 	}
 }
 
-Secret KeyManager::secret(Address const& _address, function<string()> const& _pass, bool _usePasswordCache) const
+AccountKeys::Secret KeyManager::secret(Address const& _address, function<string()> const& _pass, bool _usePasswordCache) const
 {
 	if (m_addrLookup.count(_address))
 		return secret(m_addrLookup.at(_address), _pass, _usePasswordCache);
@@ -154,7 +154,7 @@ Secret KeyManager::secret(Address const& _address, function<string()> const& _pa
 		return brain(_pass());
 }
 
-Secret KeyManager::secret(h128 const& _uuid, function<string()> const& _pass, bool _usePasswordCache) const
+AccountKeys::Secret KeyManager::secret(h128 const& _uuid, function<string()> const& _pass, bool _usePasswordCache) const
 {
 	if (_usePasswordCache)
 		return Secret(m_store.secret(_uuid, [&](){ return getPassword(_uuid, _pass); }, _usePasswordCache));
@@ -212,7 +212,7 @@ Address KeyManager::address(h128 const& _uuid) const
 
 h128 KeyManager::import(Secret const& _s, string const& _accountName, string const& _pass, string const& _passwordHint)
 {
-	Address addr = KeyPair(_s).address();
+    Address addr = KeyPair<BLS>(_s).address();
 	auto passHash = hashPassword(_pass);
 	cachePassword(_pass);
 	m_passwordHint[passHash] = _passwordHint;
@@ -224,19 +224,19 @@ h128 KeyManager::import(Secret const& _s, string const& _accountName, string con
 	return uuid;
 }
 
-Secret KeyManager::brain(string const& _seed)
+AccountKeys::Secret KeyManager::brain(string const& _seed)
 {
 	h256 r = sha3(_seed);
 	for (auto i = 0; i < 16384; ++i)
 		r = sha3(r);
 	Secret ret(r);
 	r.ref().cleanse();
-	while (toAddress(ret)[0])
+    while (toAddress<BLS>(ret)[0])
 		ret = sha3(ret);
 	return ret;
 }
 
-Secret KeyManager::subkey(Secret const& _s, unsigned _index)
+AccountKeys::Secret KeyManager::subkey(AccountKeys::Secret const& _s, unsigned _index)
 {
 	RLPStream out(2);
 	out << _s.ref();
@@ -248,7 +248,7 @@ Secret KeyManager::subkey(Secret const& _s, unsigned _index)
 
 Address KeyManager::importBrain(string const& _seed, string const& _accountName, string const& _passwordHint)
 {
-	Address addr = toAddress(brain(_seed));
+    Address addr = toAddress<BLS>(brain(_seed));
 	m_keyInfo[addr].accountName = _accountName;
 	m_keyInfo[addr].passwordHint = _passwordHint;
 	write();
@@ -267,7 +267,7 @@ void KeyManager::importExisting(h128 const& _uuid, string const& _info, string c
 	bytesSec key = m_store.secret(_uuid, [&](){ return _pass; });
 	if (key.empty())
 		return;
-	Address a = KeyPair(Secret(key)).address();
+    Address a = KeyPair<BLS>(Secret(key)).address();
 	auto passHash = hashPassword(_pass);
 	if (!m_cachedPasswords.count(passHash))
 		cachePassword(_pass);
@@ -293,36 +293,6 @@ void KeyManager::kill(Address const& _a)
 	m_keyInfo.erase(_a);
 	m_store.kill(id);
 	write(m_keysFile);
-}
-
-KeyPair KeyManager::presaleSecret(std::string const& _json, function<string(bool)> const& _password)
-{
-	js::mValue val;
-	json_spirit::read_string(_json, val);
-	auto obj = val.get_obj();
-	string p = _password(true);
-	if (obj["encseed"].type() == js::str_type)
-	{
-		auto encseed = fromHex(obj["encseed"].get_str());
-		while (true)
-		{
-			KeyPair k = KeyPair::fromEncryptedSeed(&encseed, p);
-			if (obj["ethaddr"].type() == js::str_type)
-			{
-				Address a(obj["ethaddr"].get_str());
-				Address b = k.address();
-				if (a != b)
-				{
-					if ((p = _password(false)).empty())
-						BOOST_THROW_EXCEPTION(PasswordUnknown());
-					continue;
-				}
-			}
-			return k;
-		}
-	}
-	else
-		BOOST_THROW_EXCEPTION(Exception() << errinfo_comment("encseed type is not js::str_type"));
 }
 
 Addresses KeyManager::accounts() const
@@ -438,19 +408,19 @@ void KeyManager::write(SecureFixedHash<16> const& _key, fs::path const& _keysFil
 	cachePassword(defaultPassword());
 }
 
-KeyPair KeyManager::newKeyPair(KeyManager::NewKeyType _type)
+KeyPair<BLS> KeyManager::newKeyPair(KeyManager::NewKeyType _type)
 {
-	KeyPair p = KeyPair::create();
+    KeyPair<BLS> p = KeyPair<BLS>::create();
 	bool keepGoing = true;
 	unsigned done = 0;
 	auto f = [&]() {
-		KeyPair lp = KeyPair::create();
+        KeyPair<BLS> lp = KeyPair<BLS>::create();
 		while (keepGoing)
 		{
 			done++;
 			if (done % 1000 == 0)
 				cnote << "Tried" << done << "keys";
-			lp = KeyPair::create();
+            lp = KeyPair<BLS>::create();
 			auto a = lp.address();
 			if (_type == NewKeyType::NoVanity ||
 				(_type == NewKeyType::DirectICAP && !a[0]) ||

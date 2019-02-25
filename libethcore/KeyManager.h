@@ -33,6 +33,7 @@ namespace dev
 {
 namespace eth
 {
+
 class PasswordUnknown: public Exception {};
 
 struct KeyInfo
@@ -74,6 +75,7 @@ enum class SemanticPassword
 class KeyManager
 {
 public:
+	typedef AccountKeys::Secret Secret;
 	enum class NewKeyType { DirectICAP = 0, NoVanity, FirstTwo, FirstTwoNextTwo, FirstThree, FirstFour };
 
 	KeyManager(boost::filesystem::path const& _keysFile = defaultPath(), boost::filesystem::path const& _secretsPath = SecretStore::defaultPath());
@@ -135,10 +137,7 @@ public:
 	void kill(h128 const& _id) { kill(address(_id)); }
 	void kill(Address const& _a);
 
-	static boost::filesystem::path defaultPath() { return getDataDir("ethereum") / boost::filesystem::path("keys.info"); }
-
-	/// Extracts the secret key from the presale wallet.
-	static KeyPair presaleSecret(std::string const& _json, std::function<std::string(bool)> const& _password);
+    static boost::filesystem::path defaultPath() { return getDataDir(defaultDataDir) / boost::filesystem::path("keys.info"); }
 
 	/// @returns the brainwallet secret for the given seed.
 	static Secret brain(std::string const& _seed);
@@ -147,7 +146,7 @@ public:
 	static Secret subkey(Secret const& _s, unsigned _index);
 
 	/// @returns new random keypair with given vanity
-	static  KeyPair newKeyPair(NewKeyType _type);
+    static  KeyPair<BLS> newKeyPair(NewKeyType _type);
 private:
 	std::string getPassword(h128 const& _uuid, std::function<std::string()> const& _pass = DontKnowThrow) const;
 	std::string getPassword(h256 const& _passHash, std::function<std::string()> const& _pass = DontKnowThrow) const;

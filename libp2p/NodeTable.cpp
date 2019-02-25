@@ -38,9 +38,9 @@ const char* NodeTableAllDetail::name() { return "=P="; }
 const char* NodeTableEgress::name() { return ">>P"; }
 const char* NodeTableIngress::name() { return "<<P"; }
 
-NodeEntry::NodeEntry(NodeID const& _src, Public const& _pubk, NodeIPEndpoint const& _gw): Node(_pubk, _gw), distance(NodeTable::distance(_src, _pubk)) {}
+NodeEntry::NodeEntry(NodeID const& _src, ECDSA::Public const& _pubk, NodeIPEndpoint const& _gw): Node(_pubk, _gw), distance(NodeTable::distance(_src, _pubk)) {}
 
-NodeTable::NodeTable(ba::io_service& _io, KeyPair const& _alias, NodeIPEndpoint const& _endpoint, bool _enabled):
+NodeTable::NodeTable(ba::io_service& _io, KeyPair<ECDSA> const& _alias, NodeIPEndpoint const& _endpoint, bool _enabled):
 	m_node(Node(_alias.pub(), _endpoint)),
 	m_secret(_alias.secret()),
 	m_socket(make_shared<NodeSocket>(_io, *reinterpret_cast<UDPSocketEvents*>(this), (bi::udp::endpoint)m_node.endpoint)),
@@ -323,7 +323,7 @@ void NodeTable::evict(shared_ptr<NodeEntry> _leastSeen, shared_ptr<NodeEntry> _n
 	ping(_leastSeen.get());
 }
 
-void NodeTable::noteActiveNode(Public const& _pubk, bi::udp::endpoint const& _endpoint)
+void NodeTable::noteActiveNode(ECDSA::Public const& _pubk, bi::udp::endpoint const& _endpoint)
 {
 	if (_pubk == m_node.address() || !NodeIPEndpoint(_endpoint.address(), _endpoint.port(), _endpoint.port()).isAllowed())
 		return;
@@ -589,15 +589,15 @@ unique_ptr<DiscoveryDatagram> DiscoveryDatagram::interpretUDP(bi::udp::endpoint 
 {
 	unique_ptr<DiscoveryDatagram> decoded;
 	// h256 + Signature + type + RLP (smallest possible packet is empty neighbours packet which is 3 bytes)
-	if (_packet.size() < h256::size + Signature::size + 1 + 3)
+    if (_packet.size() < h256::size + Keys::Signature::size + 1 + 3)
 	{
 		clog(NodeTableWarn) << "Invalid packet (too small) from " << _from.address().to_string() << ":" << _from.port();
 		return decoded;
 	}
 	bytesConstRef hashedBytes(_packet.cropped(h256::size, _packet.size() - h256::size));
-	bytesConstRef signedBytes(hashedBytes.cropped(Signature::size, hashedBytes.size() - Signature::size));
-	bytesConstRef signatureBytes(_packet.cropped(h256::size, Signature::size));
-	bytesConstRef bodyBytes(_packet.cropped(h256::size + Signature::size + 1));
+    bytesConstRef signedBytes(hashedBytes.cropped(Keys::Signature::size, hashedBytes.size() - Keys::Signature::size));
+    bytesConstRef signatureBytes(_packet.cropped(h256::size, Keys::Signature::size));
+    bytesConstRef bodyBytes(_packet.cropped(h256::size + Keys::Signature::size + 1));
 
 	h256 echo(sha3(hashedBytes));
 	if (!_packet.cropped(0, h256::size).contentsEqual(echo.asBytes()))
@@ -605,7 +605,7 @@ unique_ptr<DiscoveryDatagram> DiscoveryDatagram::interpretUDP(bi::udp::endpoint 
 		clog(NodeTableWarn) << "Invalid packet (bad hash) from " << _from.address().to_string() << ":" << _from.port();
 		return decoded;
 	}
-	Public sourceid(dev::recover(*(Signature const*)signatureBytes.data(), sha3(signedBytes)));
+    Keys::Public sourceid(dev::recover(*(Keys::Signature const*)signatureBytes.data(), sha3(signedBytes)));
 	if (!sourceid)
 	{
 		clog(NodeTableWarn) << "Invalid packet (bad signature) from " << _from.address().to_string() << ":" << _from.port();

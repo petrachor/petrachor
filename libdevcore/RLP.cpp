@@ -26,6 +26,23 @@ using namespace dev;
 bytes dev::RLPNull = rlp("");
 bytes dev::RLPEmptyList = rlpList();
 
+RLPList::RLPList(RLP const& _rlp, size_t expectedItemCount) : rlp(_rlp) {
+    if (!rlp.isList()) BOOST_THROW_EXCEPTION(RLPIsNotList());
+    if (rlp.itemCount() != expectedItemCount) BOOST_THROW_EXCEPTION(RLPListUnexpectedItemCount());
+}
+
+RLP RLPList::pop() { return rlp[ix++]; }
+
+namespace dev {
+template <> 
+RLPList& operator>>(RLPList& i, bytes& data) { 
+    RLP const& r = i.pop();
+    if (!r.isData()) BOOST_THROW_EXCEPTION(RLPIsNotData());                                    
+    data = r.toBytes(); 
+    return i; 
+}
+}
+
 RLP::RLP(bytesConstRef _d, Strictness _s):
 	m_data(_d)
 {

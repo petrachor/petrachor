@@ -59,6 +59,11 @@ EthashClient::EthashClient(
 	asEthashClient(*this);
 }
 
+EthashClient::~EthashClient()
+{
+	terminate();
+}
+
 Ethash* EthashClient::ethash() const
 {
 	return dynamic_cast<Ethash*>(Client::sealEngine());
@@ -66,13 +71,11 @@ Ethash* EthashClient::ethash() const
 
 bool EthashClient::isMining() const
 {
-	return ethash()->farm().isMining();
+    return ethash()->isMining();
 }
 
 WorkingProgress EthashClient::miningProgress() const
 {
-	if (isMining())
-		return ethash()->farm().miningProgress();
 	return WorkingProgress();
 }
 
@@ -84,30 +87,9 @@ u256 EthashClient::hashrate() const
 	return r;
 }
 
-std::tuple<h256, h256, h256> EthashClient::getEthashWork()
+bool EthashClient::submitEthashWork(h256 const&, h64 const&)
 {
-	// lock the work so a later submission isn't invalidated by processing a transaction elsewhere.
-	// this will be reset as soon as a new block arrives, allowing more transactions to be processed.
-	bool oldShould = shouldServeWork();
-	m_lastGetWork = chrono::system_clock::now();
-
-	if (!sealEngine()->shouldSeal(this))
-		return std::tuple<h256, h256, h256>();
-
-	// if this request has made us bother to serve work, prep it now.
-	if (!oldShould && shouldServeWork())
-		onPostStateChanged();
-	else
-		// otherwise, set this to true so that it gets prepped next time.
-		m_remoteWorking = true;
-	ethash()->manuallySetWork(m_sealingInfo);
-	return std::tuple<h256, h256, h256>(m_sealingInfo.hash(WithoutSeal), Ethash::seedHash(m_sealingInfo), Ethash::boundary(m_sealingInfo));
-}
-
-bool EthashClient::submitEthashWork(h256 const& _mixHash, h64 const& _nonce)
-{
-	ethash()->manuallySubmitWork(_mixHash, _nonce);
-	return true;
+    return false;
 }
 
 void EthashClient::setShouldPrecomputeDAG(bool _precompute)
@@ -119,14 +101,14 @@ void EthashClient::setShouldPrecomputeDAG(bool _precompute)
 
 void EthashClient::submitExternalHashrate(u256 const& _rate, h256 const& _id)
 {
-	WriteGuard(x_externalRates);
+	WriteGuard writeGuard(x_externalRates);
 	m_externalRates[_id] = make_pair(_rate, chrono::steady_clock::now());
 }
 
 u256 EthashClient::externalHashrate() const
 {
 	u256 ret = 0;
-	WriteGuard(x_externalRates);
+	WriteGuard writeGuard(x_externalRates);
 	for (auto i = m_externalRates.begin(); i != m_externalRates.end();)
 		if (chrono::steady_clock::now() - i->second.second > chrono::seconds(5))
 			i = m_externalRates.erase(i);

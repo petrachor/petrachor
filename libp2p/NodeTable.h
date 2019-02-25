@@ -39,7 +39,7 @@ namespace p2p
  */
 struct NodeEntry: public Node
 {
-	NodeEntry(NodeID const& _src, Public const& _pubk, NodeIPEndpoint const& _gw);
+    NodeEntry(NodeID const& _src, ECDSA::Public const& _pubk, NodeIPEndpoint const& _gw);
 	unsigned const distance;	///< Node's distance (xor of _src as integer).
 	bool pending = true;		///< Node will be ignored until Pong is received
 };
@@ -142,7 +142,7 @@ public:
 	enum DiscoverType { Random = 0 };
 	
 	/// Constructor requiring host for I/O, credentials, and IP Address and port to listen on.
-	NodeTable(ba::io_service& _io, KeyPair const& _alias, NodeIPEndpoint const& _endpoint, bool _enabled = true);
+    NodeTable(ba::io_service& _io, KeyPair<ECDSA> const& _alias, NodeIPEndpoint const& _endpoint, bool _enabled = true);
 	~NodeTable();
 
 	/// Returns distance based on xor metric two node ids. Used by NodeEntry and NodeTable.
@@ -226,7 +226,7 @@ private:
 	void evict(std::shared_ptr<NodeEntry> _leastSeen, std::shared_ptr<NodeEntry> _new);
 
 	/// Called whenever activity is received from a node in order to maintain node table.
-	void noteActiveNode(Public const& _pubk, bi::udp::endpoint const& _endpoint);
+    void noteActiveNode(ECDSA::Public const& _pubk, bi::udp::endpoint const& _endpoint);
 
 	/// Used to drop node when timeout occurs or when evict() result is to keep previous node.
 	void dropNode(std::shared_ptr<NodeEntry> _n);
@@ -255,7 +255,7 @@ private:
 	std::unique_ptr<NodeTableEventHandler> m_nodeEventHandler;		///< Event handler for node events.
 
 	Node m_node;													///< This node. LOCK x_state if endpoint access or mutation is required. Do not modify id.
-	Secret m_secret;												///< This nodes secret key.
+	CommKeys::Secret m_secret;												///< This nodes secret key.
 
 	mutable Mutex x_nodes;											///< LOCK x_state first if both locks are required. Mutable for thread-safe copy in nodes() const.
 	std::unordered_map<NodeID, std::shared_ptr<NodeEntry>> m_nodes;	///< Known Node Endpoints

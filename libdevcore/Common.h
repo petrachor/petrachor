@@ -49,6 +49,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_bin_float.hpp>
 #pragma warning(pop)
 #pragma GCC diagnostic pop
 #include "vector_ref.h"
