@@ -78,20 +78,20 @@ static std::atomic<bool> g_silence = {false};
 void help()
 {
 	cout
-		<< "Usage eth [OPTIONS]\n"
+		<< "Usage petrichor [OPTIONS]\n"
 		<< "Options:\n\n"
 		<< "Wallet usage:\n";
 	AccountManager::streamAccountHelp(cout);
 	AccountManager::streamWalletHelp(cout);
 	cout
 		<< "\nClient mode (default):\n"
-		<< "    --mainnet  Use the main network protocol.\n"
-		<< "    --ropsten  Use the Ropsten testnet.\n"
-		<< "    --private <name>  Use a private chain.\n"
-		<< "    --test  Testing mode: Disable PoW and provide test rpc interface.\n"
-		<< "    --config <file>  Configure specialised blockchain using given JSON information.\n"
-		<< "    --oppose-dao-fork  Ignore DAO hard fork (default is to participate).\n\n"
-		<< "    -o,--mode <full/peer>  Start a full node or a peer node (default: full).\n\n"
+//		<< "    --mainnet  Use the main network protocol.\n"
+//		<< "    --ropsten  Use the Ropsten testnet.\n"
+//		<< "    --private <name>  Use a private chain.\n"
+//		<< "    --test  Testing mode: Disable PoW and provide test rpc interface.\n"
+//		<< "    --config <file>  Configure specialised blockchain using given JSON information.\n"
+//		<< "    --oppose-dao-fork  Ignore DAO hard fork (default is to participate).\n\n"
+//		<< "    -o,--mode <full/peer>  Start a full node or a peer node (default: full).\n\n"
 		<< "    -j,--json-rpc  Enable JSON-RPC server (default: off).\n"
 		<< "    --ipc  Enable IPC server (default: on).\n"
 		<< "    --ipcpath Set .ipc socket path (default: data directory)\n"
@@ -110,13 +110,13 @@ void help()
 		<< "Client transacting:\n"
 		<< "    --ask <wei>  Set the minimum ask gas price under which no transaction will be mined (default " << toString(DefaultGasPrice) << " ).\n"
 		<< "    --bid <wei>  Set the bid gas price to pay for transactions (default " << toString(DefaultGasPrice) << " ).\n"
-		<< "    --unsafe-transactions  Allow all transactions to proceed without verification. EXTREMELY UNSAFE.\n"
+		<< "    --unsafe-transactions  Allow all transactions to proceed without verification. EXTREMELY UNSAFE.\n\n"
 		<< "Client mining:\n"
 		<< "    -a,--address <addr>  Set the author (mining payout) address to given address (default: auto).\n"
-		<< "    -m,--mining <on/off/number>  Enable mining, optionally for a specified number of blocks (default: off).\n"
-		<< "    -f,--force-mining  Mine even when there are no transactions to mine (default: off).\n"
-		<< "    -C,--cpu  When mining, use the CPU.\n"
-		<< "    -t, --mining-threads <n>  Limit number of CPU/GPU miners to n (default: use everything available on selected platform).\n\n"
+		<< "    -m,--mining <on/off/number>  Enable mining, optionally for a specified number of blocks (default: off).\n\n"
+//		<< "    -f,--force-mining  Mine even when there are no transactions to mine (default: off).\n"
+//		<< "    -C,--cpu  When mining, use the CPU.\n"
+//		<< "    -t, --mining-threads <n>  Limit number of CPU/GPU miners to n (default: use everything available on selected platform).\n\n"
 		<< "Client networking:\n"
 		<< "    --client-name <name>  Add a name to your client's version string (default: blank).\n"
 		<< "    --bootstrap  Connect to the default Ethereum peer servers (default unless --no-discovery used).\n"
@@ -144,12 +144,12 @@ void help()
 		<< "    --hermit  Equivalent to --no-discovery --pin.\n"
 		<< "    --sociable  Force discovery and no pinning.\n\n";
 	cout
-		<< "Import/export modes:\n"
-		<< "    --from <n>  Export only from block n; n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
-		<< "    --to <n>  Export only to block n (inclusive); n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
-		<< "    --only <n>  Equivalent to --export-from n --export-to n.\n"
-		<< "    --dont-check  Prevent checking some block aspects. Faster importing, but to apply only when the data is known to be valid.\n\n"
-		<< "    --import-snapshot <path>  Import blockchain and state data from the Parity Warp Sync snapshot." << endl
+//		<< "Import/export modes:\n"
+//		<< "    --from <n>  Export only from block n; n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
+//		<< "    --to <n>  Export only to block n (inclusive); n may be a decimal, a '0x' prefixed hash, or 'latest'.\n"
+//		<< "    --only <n>  Equivalent to --export-from n --export-to n.\n"
+//		<< "    --dont-check  Prevent checking some block aspects. Faster importing, but to apply only when the data is known to be valid.\n\n"
+//		<< "    --import-snapshot <path>  Import blockchain and state data from the Parity Warp Sync snapshot." << endl
 		<< "General Options:\n"
 		<< "    -d,--db-path,--datadir <path>  Load database from path (default: " << getDataDir() << ").\n"
 #if ETH_EVMJIT
@@ -157,9 +157,9 @@ void help()
 #endif // ETH_EVMJIT
 		<< "    -v,--verbosity <0 - 9>  Set the log verbosity from 0 to 9 (default: 8).\n"
 		<< "    -V,--version  Show the version and exit.\n"
-		<< "    -h,--help  Show this help message and exit.\n\n"
-		<< "Experimental / Proof of Concept:\n"
-		<< "    --shh  Enable Whisper.\n\n";
+		<< "    -h,--help  Show this help message and exit.\n\n";
+//		<< "Experimental / Proof of Concept:\n"
+//		<< "    --shh  Enable Whisper.\n\n";
 		exit(0);
 }
 
@@ -167,8 +167,8 @@ inline std::string credits()
 {
     std::ostringstream out;
     out
-        << "cpp-ethereum " << dev::Version << endl
-        << "  By cpp-ethereum contributors, (c) 2013-2016." << endl
+        << "petrichor " << dev::Version << endl
+        << "  By petrichor contributors, (c) 2017-2019." << endl
         << "  See the README for contributors and credits." << endl;
     return out.str();
 }
@@ -184,8 +184,8 @@ string ethCredits(bool _interactive = false)
 
 void version()
 {
-	cout << "eth version " << dev::Version << "\n";
-	cout << "eth network protocol version: " << dev::eth::c_protocolVersion << "\n";
+	cout << "petrichor version " << dev::Version << "\n";
+	cout << "petrichor network protocol version: " << dev::eth::c_protocolVersion << "\n";
 	cout << "Client database version: " << dev::eth::c_databaseVersion << "\n";
 	cout << "Build: " << DEV_QUOTED(ETH_BUILD_PLATFORM) << "/" << DEV_QUOTED(ETH_BUILD_TYPE) << "\n";
 	exit(0);
@@ -877,7 +877,7 @@ int main(int argc, char** argv)
 		chainParams = ChainParams(genesisInfo(eth::Network::MainNetwork), genesisStateRoot(eth::Network::MainNetwork));
 
 	if (g_logVerbosity > 0)
-		cout << EthGrayBold "cpp-ethereum, a C++ Ethereum client" EthReset << "\n";
+		cout << EthGrayBold "Petrichor C++ Client" EthReset << "\n";
 
 	fs::path secretsPath;
 	if (testingMode)
