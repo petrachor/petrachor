@@ -45,11 +45,11 @@ R"E(
 	"genesis": {
 		"nonce": "0x0000000000000042",
                 "difficulty": "0x65A4DA25D3016C00000", //10 min target interval, 50% staking, 100 PTA supply
-                "stakeModifier": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
+                "stakeModifier": "0x536f6d65204e6577732053746f72792048657265212032382f30322f32303139",
 		"author": "0x0000000000000000000000000000000000000000",
                 "timestamp": "5C743439",
 		"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-                "extraData":     "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
+                "extraData":     "0x536f6d65204e6577732053746f72792048657265212032382f30322f32303139",
 		"gasLimit": "0x781388"
 	},
 	"accounts": {
