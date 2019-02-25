@@ -141,10 +141,10 @@ if (EVMJIT)
     add_subdirectory(evmjit)
 endif()
 
-add_subdirectory(eth)
+add_subdirectory(petrichor)
 
 if (TOOLS)
-    add_subdirectory(ethkey)
+    add_subdirectory(petrichor-key)
     add_subdirectory(ethvm)
     add_subdirectory(rlp)
 endif()
