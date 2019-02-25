@@ -29,7 +29,7 @@
 namespace dev
 {
 
-const std::string defaultDataDir = "b12";
+const std::string defaultDataDir = "petrichor";
 
 /// Sets the data dir for the default prefix.
 void setDataDir(boost::filesystem::path const& _dir);
