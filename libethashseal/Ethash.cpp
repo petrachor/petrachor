@@ -158,7 +158,7 @@ u256 Ethash::calculateDifficulty(BlockHeader const& _bi, bigint const& parentTim
 		throw GenesisBlockCannotBeCalculated();
 
     bigint const timestampDiff = bigint(_bi.timestamp()) - bigint(parentTimeStamp);
-    bigint const adjFactor = max<bigint>((chainParams().targetBlockInterval - timestampDiff), -99);
+    bigint const adjFactor = max<bigint>((chainParams().targetBlockInterval - timestampDiff), -99*128);
     bigint target = parentDifficulty + (parentDifficulty * adjFactor) / chainParams().difficultyBoundDivisor;
     //clog << "Parent timestamp: " << parentTimeStamp << " bi.timestamp " << _bi.timestamp() << " timestampDiff: " << timestampDiff << " parent diff: " << parentDifficulty << " target: " << target << "\n";
     return u256(min<bigint>(max<bigint>(chainParams().minimumDifficulty, target), std::numeric_limits<u256>::max()));
