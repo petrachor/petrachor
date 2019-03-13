@@ -33,6 +33,7 @@
 #include <libscrypt/libscrypt.h>
 #include <libdevcore/SHA3.h>
 #include <libdevcore/RLP.h>
+#include <libdevcore/FileSystem.h>
 #include "AES.h"
 #include "CryptoPP.h"
 #include "Exceptions.h"
@@ -285,7 +286,7 @@ bool dev::verify(ECDSA::Public const& _p, ECDSA::Signature const& _s, h256 const
 
 bool dev::verify(BLS::Public const& _publicKey, BLS::Signature const& _signature, h256 const& _hash) { return verify<BLS>(_publicKey, _signature, _hash); }
 
-bytes to8ByteHash(bytes from) {
+bytes to8ByteHash(bytes from) { return sha3(from).asBytes();
     bytes x = sha3(from).asBytes();
     for (size_t q = sizeof(h64); q < x.size(); ++q) { x[q % sizeof(h64)] ^= x[q]; }
     x.resize(sizeof(h64));
@@ -293,9 +294,8 @@ bytes to8ByteHash(bytes from) {
 }
 
     BLS12_381::G1 hashToElement(BLS::Public const& publicKey, h256 const& hash) {
-        bytes pkH = to8ByteHash(publicKey.asBytes());
-        bytes h = to8ByteHash(hash.asBytes());
-        return BLS12_381::G1::mapToElement(ref(pkH), ref(h));
+        bytes h = sha3(dev::asBytes(dev::getDefaultDataDirName()) + publicKey.asBytes() + hash.asBytes()).asBytes();
+        return BLS12_381::G1::mapToElement(ref(h));
     }
 
     template <>

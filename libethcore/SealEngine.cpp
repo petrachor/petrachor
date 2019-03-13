@@ -41,7 +41,7 @@ void SealEngineFace::populateFromParent(BlockHeader& _bi, BlockHeader const& _pa
 
 void SealEngineFace::verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const&) const
 {
-	if ((_ir & ImportRequirements::TransactionSignatures) && _header.number() < chainParams().EIP158ForkBlock && _t.isReplayProtected())
+    if ((_ir & ImportRequirements::TransactionSignatures) && _header.number() < chainParams().EIP158ForkBlock)
 		BOOST_THROW_EXCEPTION(InvalidSignature());
 
 	if ((_ir & ImportRequirements::TransactionSignatures) && _header.number() < chainParams().constantinopleForkBlock && _t.hasZeroSignature())
@@ -71,8 +71,18 @@ EVMSchedule const& SealEngineBase::evmSchedule(u256 const& _blockNumber) const
 	return chainParams().scheduleForBlockNumber(_blockNumber);
 }
 
-u256 SealEngineBase::blockReward(u256 const& _blockNumber) const
+u256 SealEngineBase::blockReward(unsigned long long const& _blockNumber) const
 {
-	EVMSchedule const& schedule{evmSchedule(_blockNumber)};
-	return chainParams().blockReward(schedule);
+    u256 intReward = 0;
+    if (_blockNumber > 0) {
+        bigfloat initialSupply = chainParams().initialSupply.convert_to<bigfloat>();
+        bigfloat f = chainParams().inflationFactorPerBlockFemtoPercent.convert_to<bigfloat>()/bigfloat("1E+17");
+        bigfloat supply = initialSupply * pow(f, _blockNumber - 1);
+        bigfloat reward = (supply * f) - supply;
+
+        intReward = reward.convert_to<u256>();
+//        std::cout << "Ifpbfp " << chainParams().inflationFactorPerBlockFemtoPercent << " BlockReward digits: " << std::numeric_limits<bigfloat>::digits << " " << std::numeric_limits<bigfloat>::max_digits10 << std::setprecision(std::numeric_limits<bigfloat>::max_digits10)
+//             << " initialSupply = " << initialSupply << " ifpb = " << f << " supply at block " << (_blockNumber - 1) << " = " << supply << " supply * f = " << (supply * f) << " reward = " << reward << std::endl << std::flush;
+    }
+    return intReward;
 }

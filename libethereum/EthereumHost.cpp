@@ -376,7 +376,7 @@ private:
 
 EthereumHost::EthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue& _tq, BlockQueue& _bq, u256 _networkId):
 	HostCapability<EthereumPeer>(),
-	Worker		("ethsync"),
+	Worker		("sync"),
 	m_chain		(_ch),
 	m_db(_db),
 	m_tq		(_tq),

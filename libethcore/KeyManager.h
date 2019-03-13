@@ -137,7 +137,7 @@ public:
 	void kill(h128 const& _id) { kill(address(_id)); }
 	void kill(Address const& _a);
 
-    static boost::filesystem::path defaultPath() { return getDataDir(defaultDataDir) / boost::filesystem::path("keys.info"); }
+    static boost::filesystem::path defaultPath() { return getDataDir() / boost::filesystem::path("keys.info"); }
 
 	/// @returns the brainwallet secret for the given seed.
 	static Secret brain(std::string const& _seed);

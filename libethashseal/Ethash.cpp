@@ -128,11 +128,6 @@ void Ethash::verifyTransaction(ImportRequirements::value _ir, TransactionBase co
 {
 	SealEngineFace::verifyTransaction(_ir, _t, _header, _startGasUsed);
 
-	if (_ir & ImportRequirements::TransactionSignatures)
-	{
-        int chainID = chainParams().chainID;
-        _t.checkChainId(chainID);
-	}
 	if (_ir & ImportRequirements::TransactionBasic && _t.baseGasRequired(evmSchedule(_header.number())) > _t.gas())
 		BOOST_THROW_EXCEPTION(OutOfGasIntrinsic() << RequirementError((bigint)(_t.baseGasRequired(evmSchedule(_header.number()))), (bigint)_t.gas()));
 

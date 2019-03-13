@@ -628,7 +628,7 @@ u256 Block::enact(VerifiedBlockRef const& _block, BlockChain const& _bc)
 
 	assert(_bc.sealEngine());
 	DEV_TIMED_ABOVE("applyRewards", 500)
-		applyRewards(rewarded, _bc.sealEngine()->blockReward(m_currentBlock.number()));
+        applyRewards(rewarded, _bc.sealEngine()->blockReward((unsigned long long) m_currentBlock.number()));
 
 	// Commit all cached state changes to the state trie.
 	bool removeEmptyAccounts = m_currentBlock.number() >= _bc.chainParams().EIP158ForkBlock; // TODO: use EVMSchedule
@@ -789,7 +789,7 @@ void Block::commitToSeal(BlockChain const& _bc, bytes const& _extraData)
 
 	// Apply rewards last of all.
 	assert(_bc.sealEngine());
-	applyRewards(uncleBlockHeaders, _bc.sealEngine()->blockReward(m_currentBlock.number()));
+    applyRewards(uncleBlockHeaders, _bc.sealEngine()->blockReward((unsigned long long) m_currentBlock.number()));
 
 	// Commit any and all changes to the trie that are in the cache, then update the state root accordingly.
 	bool removeEmptyAccounts = m_currentBlock.number() >= _bc.chainParams().EIP158ForkBlock; // TODO: use EVMSchedule

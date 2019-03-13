@@ -1,12 +1,12 @@
 set(prefix "${CMAKE_BINARY_DIR}/deps")
 set(PAIRING_LIBRARY "${prefix}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}pairing${CMAKE_STATIC_LIBRARY_SUFFIX}")
 set(PAIRING_INCLUDE_DIR "${prefix}/include")
-set(LIBRARY_DIR "${prefix}/lib64/")
+set(LIBRARY_DIR "${prefix}/${CMAKE_INSTALL_LIBDIR}/")
 
 ExternalProject_Add(pairing
     PREFIX "${prefix}"
-    URL file:///home/x/pairing-ariel.tar.gz
-		URL_HASH SHA256=92ce810501b10ff46577b1be6065b8412f2e0c463c510a97ca37d51bf0577e03
+    URL https://github.com/petrichor-dev/pairing-ariel/archive/ef052cf4fde9f6bb3a53a2114f7f8f76c13ba218.tar.gz
+		URL_HASH SHA256=18c02869af73a3269c71b4bd96dc13391c5ecd1a218e08f17bd6845d926aea86
     BUILD_BYPRODUCTS "${PAIRING_LIBRARY}"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_INSTALL_DIR=<INSTALL_DIR>
     -DCMAKE_LIB_TARGET_LOCATION=${LIBRARY_DIR}

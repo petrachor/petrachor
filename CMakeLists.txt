@@ -28,7 +28,7 @@ else()
     add_definitions(-DNETWORKP2PPORT=41414 )
 endif()
 
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.9.3)
 
 if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     # The default toolchain file configures compilers and build environment.
@@ -84,7 +84,7 @@ if(HUNTER_ENABLED)
 endif()
 
 # project name and version should be set after cmake_policy CMP0048
-project(cpp-ethereum VERSION "1.3.0")
+project(petrichor VERSION "1.0")
 
 if (NOT EXISTS ${CMAKE_SOURCE_DIR}/evmjit/.git)
     message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init")

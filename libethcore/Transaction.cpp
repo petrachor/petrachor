@@ -49,15 +49,12 @@ TransactionBase::TransactionBase(bytesConstRef _rlpData, CheckTransaction _check
 	try
 	{
         //clog << rlp.itemCount() << "\n";
-        RLPList s(rlp, 8);
+        RLPList s(rlp, 7);
         s >> m_nonce >> m_gasPrice >> m_gas;
         RLP const& recvAField = s.pop();
 		m_type = recvAField.isEmpty() ? ContractCreation : MessageCall;
 		m_receiveAddress = recvAField.isEmpty() ? Address() : recvAField.toHash<Address>(RLP::VeryStrict);
-        bytes chainIdBytes;
-        s >> m_value >> m_data >> chainIdBytes;
-        m_chainId = (char) chainIdBytes[0];
-        s >> m_vrs;
+        s >> m_value >> m_data >> m_vrs;
         if (_checkSig >= CheckTransaction::Cheap && !m_vrs->isValid())
             BOOST_THROW_EXCEPTION(InvalidSignature());
 	}
@@ -84,21 +81,18 @@ void TransactionBase::sign(AccountKeys::Secret const& _priv)
 		m_vrs = sigStruct;
 }
 
-void TransactionBase::streamRLP(RLPStream& _s, IncludeSignature _sig, bool _forEip155hash) const
+void TransactionBase::streamRLP(RLPStream& _s, IncludeSignature _sig) const
 {
 	if (m_type == NullTransaction)
 		return;
 
-	_s.appendList((_sig || _forEip155hash ? 1 : 0) + 7);
+    _s.appendList((_sig ? 1 : 0) + 6);
 	_s << m_nonce << m_gasPrice << m_gas;
 	if (m_type == MessageCall)
 		_s << m_receiveAddress;
 	else
 		_s << "";
     _s << m_value << m_data;
-    bytes chainIdBytes(1);
-    chainIdBytes[0] = m_chainId;
-    _s << chainIdBytes;
 
     if (_sig)
 	{
@@ -115,12 +109,6 @@ void TransactionBase::checkLowS() const
 		BOOST_THROW_EXCEPTION(TransactionIsUnsigned());
 
     if (m_vrs->lowS())
-		BOOST_THROW_EXCEPTION(InvalidSignature());
-}
-
-void TransactionBase::checkChainId(int chainId) const
-{
-	if (m_chainId != chainId && m_chainId != -4)
 		BOOST_THROW_EXCEPTION(InvalidSignature());
 }
 
@@ -142,7 +130,7 @@ h256 TransactionBase::sha3(IncludeSignature _sig) const
 		return m_hashWith;
 
 	RLPStream s;
-	streamRLP(s, _sig, m_chainId > 0 && _sig == WithoutSignature);
+    streamRLP(s, _sig);
 
 	auto ret = dev::sha3(s.out());
 	if (_sig == WithSignature)

@@ -61,32 +61,31 @@ ChainParams ChainParams::loadConfig(string const& _json, h256 const& _stateRoot)
 	cp.sealEngineName = obj["sealEngine"].get_str();
 	// params
 	js::mObject params = obj["params"].get_obj();
-	cp.accountStartNonce = u256(fromBigEndian<u256>(fromHex(params["accountStartNonce"].get_str())));
-	cp.maximumExtraDataSize = u256(fromBigEndian<u256>(fromHex(params["maximumExtraDataSize"].get_str())));
-	cp.tieBreakingGas = params.count("tieBreakingGas") ? params["tieBreakingGas"].get_bool() : true;
-	cp.setBlockReward(u256(fromBigEndian<u256>(fromHex(params["blockReward"].get_str()))));
+    cp.tieBreakingGas = params.count("tieBreakingGas") ? params["tieBreakingGas"].get_bool() : true;
 
-	auto setOptionalU256Parameter = [&params](u256 &_destination, string const& _name)
+    auto setU256Parameter = [&params](u256 &_destination, string const& _name, bool optional = true)
 	{
-		if (params.count(_name))
+        if (params.count(_name) || !optional)
 			_destination = u256(fromBigEndian<u256>(fromHex(params.at(_name).get_str())));
 	};
-	setOptionalU256Parameter(cp.minGasLimit, "minGasLimit");
-	setOptionalU256Parameter(cp.maxGasLimit, "maxGasLimit");
-	setOptionalU256Parameter(cp.gasLimitBoundDivisor, "gasLimitBoundDivisor");
-	setOptionalU256Parameter(cp.homesteadForkBlock, "homesteadForkBlock");
-	setOptionalU256Parameter(cp.EIP150ForkBlock, "EIP150ForkBlock");
-	setOptionalU256Parameter(cp.EIP158ForkBlock, "EIP158ForkBlock");
-	setOptionalU256Parameter(cp.byzantiumForkBlock, "byzantiumForkBlock");
-	setOptionalU256Parameter(cp.constantinopleForkBlock, "constantinopleForkBlock");
-	setOptionalU256Parameter(cp.daoHardforkBlock, "daoHardforkBlock");
-    setOptionalU256Parameter(cp.minimumDifficulty, "minimumDifficulty");
-    setOptionalU256Parameter(cp.targetBlockInterval, "targetBlockInterval");
-    setOptionalU256Parameter(cp.difficultyBoundDivisor, "difficultyBoundDivisor");
-	setOptionalU256Parameter(cp.durationLimit, "durationLimit");
+    setU256Parameter(cp.accountStartNonce, "accountStartNonce", false);
+    setU256Parameter(cp.maximumExtraDataSize, "maximumExtraDataSize", false);
+    setU256Parameter(cp.minGasLimit, "minGasLimit");
+    setU256Parameter(cp.maxGasLimit, "maxGasLimit");
+    setU256Parameter(cp.gasLimitBoundDivisor, "gasLimitBoundDivisor");
+    setU256Parameter(cp.homesteadForkBlock, "homesteadForkBlock");
+    setU256Parameter(cp.EIP150ForkBlock, "EIP150ForkBlock");
+    setU256Parameter(cp.EIP158ForkBlock, "EIP158ForkBlock");
+    setU256Parameter(cp.byzantiumForkBlock, "byzantiumForkBlock");
+    setU256Parameter(cp.constantinopleForkBlock, "constantinopleForkBlock");
+    setU256Parameter(cp.daoHardforkBlock, "daoHardforkBlock");
+    setU256Parameter(cp.minimumDifficulty, "minimumDifficulty");
+    setU256Parameter(cp.targetBlockInterval, "targetBlockInterval", false);
+    setU256Parameter(cp.difficultyBoundDivisor, "difficultyBoundDivisor");
+    setU256Parameter(cp.durationLimit, "durationLimit");
+    setU256Parameter(cp.initialSupply, "initialSupply", false);
+    setU256Parameter(cp.inflationFactorPerBlockFemtoPercent, "inflationFactorPerBlockFemtoPercent", false);
 
-	if (params.count("chainID"))
-		cp.chainID = int(u256(fromBigEndian<u256>(fromHex(params.at("chainID").get_str()))));
 	if (params.count("networkID"))
 		cp.networkID = int(u256(fromBigEndian<u256>(fromHex(params.at("networkID").get_str()))));
 	cp.allowFutureBlocks = params.count("allowFutureBlocks");

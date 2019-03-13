@@ -6,6 +6,7 @@
 #include <libdevcore/RLP.h>
 #include <libdevcore/Exceptions.h>
 #include <libdevcore/FixedHash.h>
+#include <libdevcore/Log.h>
 
 namespace dev {
     using H48 = FixedHash<48>;
@@ -48,7 +49,7 @@ namespace dev {
         public:
             static G1 getOne();
             static G1 getZero();
-            static G1 mapToElement(bytesConstRef seed, bytesConstRef data);
+            static G1 mapToElement(bytesConstRef data);
             static G1 publicFromPrivateKey(Scalar privateKey) { return getOne().mul(privateKey); }
 
             G1() : H48() {}
@@ -70,11 +71,12 @@ namespace dev {
 
         class G2 : public H96 {
         public:
+            static const Scalar bls12381Modulus;
+
             static G2 getOne();
             static G2 getZero();
-            static G2 mapToElement(bytesConstRef seed, bytesConstRef data);
-            static G2 publicFromPrivateKey(Scalar privateKey) { return getOne().mul(privateKey); }
-
+            static G2 mapToElement(bytesConstRef data);
+            static G2 publicFromPrivateKey(Scalar privateKey);
             explicit G2(std::string const& _s, ConstructFromStringType _t = FromHex, ConstructFromHashType _ht = FailIfDifferent): H96(_s, _t, _ht) {}
 
             G2() : H96() {}

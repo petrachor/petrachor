@@ -82,21 +82,8 @@ using Nonce = h64;
 
 using BlockNumber = unsigned;
 
-static const u256 initialMoneySupply = 6*ether;
-static const unsigned long long blocksPerYear = (5000*365);
-static const double moneySupplyGrowthFactorBlock = pow((103/100.0), 1.0/blocksPerYear);
-
-using bigfloat = boost::multiprecision::number<boost::multiprecision::backends::cpp_bin_float<309, boost::multiprecision::backends::digit_base_2, void, boost::int16_t, -1022, 1023>>;
+using bigfloat = boost::multiprecision::cpp_bin_float_100;
 using bigfloat_double = boost::multiprecision::cpp_bin_float_double;
-
-static const std::function<u256(BlockNumber blockNumber)> getMoneySupplyAtBlock = [](BlockNumber blockNumber) {
-    double factor = pow(moneySupplyGrowthFactorBlock, blockNumber);
-    bigfloat result = initialMoneySupply.convert_to<bigfloat>() * bigfloat(factor);
-    return result.convert_to<u256>();
-};
-static const std::function<u256(BlockNumber blockNumber)> getBlockRewardForBlock = [](BlockNumber blockNumber) {
-    return getMoneySupplyAtBlock(blockNumber + 1) - getMoneySupplyAtBlock(blockNumber);
-};
 
 static const BlockNumber LatestBlock = (BlockNumber)-2;
 static const BlockNumber PendingBlock = (BlockNumber)-1;

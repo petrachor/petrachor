@@ -80,12 +80,7 @@ public:
 
 	/// @throws TransactionIsUnsigned if signature was not initialized
 	/// @throws InvalidSValue if the signature has an invalid S value.
-	void checkLowS() const;
-
-	/// @throws InvalidSValue if the chain id is neither -4 nor equal to @a chainId
-	/// Note that "-4" is the chain ID of the pre-155 rules, which should also be considered valid
-	/// after EIP155
-	void checkChainId(int chainId = -4) const;
+    void checkLowS() const;
 
 	/// @returns true if transaction is non-null.
 	explicit operator bool() const { return m_type != NullTransaction; }
@@ -95,7 +90,7 @@ public:
 
 	/// Serialises this transaction to an RLPStream.
 	/// @throws TransactionIsUnsigned if including signature was requested but it was not initialized
-	void streamRLP(RLPStream& _s, IncludeSignature _sig = WithSignature, bool _forEip155hash = false) const;
+    void streamRLP(RLPStream& _s, IncludeSignature _sig = WithSignature) const;
 
 	/// @returns the RLP serialisation of this transaction.
 	bytes rlp(IncludeSignature _sig = WithSignature) const { RLPStream s; streamRLP(s, _sig); return s.out(); }
@@ -137,9 +132,6 @@ public:
 	/// @returns true if the transaction was signed with zero signature
     bool hasZeroSignature() const { return m_vrs && m_vrs->isZero(); }
 
-	/// @returns true if the transaction uses EIP155 replay protection
-	bool isReplayProtected() const { return m_chainId != -4; }
-
 	/// @returns the signature of the transaction (the signature has the sender encoded in it)
 	/// @throws TransactionIsUnsigned if signature was not initialized
 	AccountKeys::SignatureStruct const& signature() const;
@@ -174,7 +166,6 @@ protected:
 	u256 m_gas;							///< The total gas to convert, paid for from sender's account. Any unused gas gets refunded once the contract is ended.
 	bytes m_data;						///< The data associated with the transaction, or the initialiser if it's a creation transaction.
     boost::optional<AccountKeys::SignatureStruct> m_vrs;	///< The signature of the transaction.  Encodes the sender.
-	int m_chainId = -4;					///< EIP155 value for calculating transaction hash https://github.com/ethereum/EIPs/issues/155
 
 	mutable h256 m_hashWith;			///< Cached hash of transaction with signature.
     mutable Address m_forcedSender;

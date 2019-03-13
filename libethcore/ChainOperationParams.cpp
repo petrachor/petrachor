@@ -42,7 +42,6 @@ PrecompiledContract::PrecompiledContract(
 {}
 
 ChainOperationParams::ChainOperationParams():
-	m_blockReward("0x4563918244F40000"),
 	minGasLimit(0x1388),
 	maxGasLimit("0x7fffffffffffffff"),
 	gasLimitBoundDivisor(0x0400),
@@ -59,17 +58,4 @@ EVMSchedule const& ChainOperationParams::scheduleForBlockNumber(u256 const& _blo
 	if (_blockNumber >= constantinopleForkBlock)
 		return ConstantinopleSchedule;
     else return ByzantiumSchedule;
-}
-
-u256 ChainOperationParams::blockReward(EVMSchedule const& _schedule) const
-{
-	if (_schedule.blockRewardOverwrite)
-		return *_schedule.blockRewardOverwrite;
-	else
-		return m_blockReward;
-}
-
-void ChainOperationParams::setBlockReward(u256 const& _newBlockReward)
-{
-	m_blockReward = _newBlockReward;
 }

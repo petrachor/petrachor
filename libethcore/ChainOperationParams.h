@@ -74,11 +74,8 @@ struct ChainOperationParams
 
 	/// General chain params.
 private:
-	u256 m_blockReward;
 public:
 	EVMSchedule const& scheduleForBlockNumber(u256 const& _blockNumber) const;
-	u256 blockReward(EVMSchedule const& _schedule) const;
-	void setBlockReward(u256 const& _newBlockReward);
 	u256 maximumExtraDataSize = 1024;
 	u256 accountStartNonce = 0;
 	bool tieBreakingGas = true;
@@ -91,13 +88,14 @@ public:
 	u256 byzantiumForkBlock;
 	u256 constantinopleForkBlock;
 	u256 daoHardforkBlock;
-	int chainID = 0; // Distinguishes different chains (mainnet, Ropsten, etc).
+    //int chainID = 0; // Distinguishes different chains (mainnet, Ropsten, etc). --> Removed, change datadir name to distinguish
 	int networkID = 0; // Distinguishes different sub protocols.
 
 	u256 minimumDifficulty;
 	u256 difficultyBoundDivisor;
 	u256 durationLimit;
     u256 targetBlockInterval = 9;
+    u256 initialSupply, inflationFactorPerBlockFemtoPercent;
 	bool allowFutureBlocks = false;
 	u256 registrar;
 
