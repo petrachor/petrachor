@@ -36,7 +36,7 @@ R"E(
 		"minimumDifficulty": "0x19d971e4fe8401e740000000",
 		"initialSupply": "0x33b2e3c9fd0803ce8000000",
 		"inflationFactorPerBlockFemtoPercent": "0x163459f9ed6f880",
-                "difficultyBoundDivisor": "0x0800",
+                "difficultyBoundDivisor": "0x040000",
 		"targetBlockInterval": "0x708",
                 "durationLimit": "0x0d",
                 "EIP150ForkBlock": "0x00",
