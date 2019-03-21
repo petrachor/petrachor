@@ -5,89 +5,35 @@ This repository contains the [Petrichor](https://petrichor-dev.com) C++ Client.
 
 ## Getting Started
 
-The easiest way to get started using Petrichor is by following the **[Installation Instructions](https://https://github.com/petrichor-dev/petrichor/wiki/Installation-Instructions)**.
+**[Installation Instructions](https://https://github.com/petrichor-dev/petrichor/wiki/Installation-Instructions)**.
 
 
-## Building from source
+## About Petrichor
 
-### Get the source code
+Petrichor uses the Ariel PoS protocol, which is our custom implementation of the original iChing Proof-of-Stake consensus, a secure and eco-friendly Satoshi-style protocol. iChing is a natural mimic of Bitcoin consensus; as a result, scalability solutions for Bitcoin can be immediately used in Petrichor. By applying this blockchain protocol to a fork of the Ethereum source code, we deliver a powerful new dApp platform combining the energy-efficiency of PoS with the power and versatility of Ethereum.
 
-Git and GitHub is used to maintain the source code. Clone the repository by:
+**Proof of Stake**
 
-```shell
-git clone --recursive https://github.com/petrichor-dev/petrichor.git
-cd petrichor
-```
+Keeping in the spirit of naming consensi after ghosts, Ariel incarnates an academic protocol that was proven to satisfy important formal chain properties including common prefix, chain quality, chain growth, and chain soundness.
 
-The `--recursive` option is important. It orders git to clone additional 
-submodules which are required to build the project.
-If you missed it you can correct your mistake with command 
-`git submodule update --init`.
+**BLS Signature Scheme**
 
-### Install CMake
+The Boneh-Lynn-Shacham unique signature scheme is used for the core random beacon of Ariel. By also securing accounts with BLS, we pave the road towards interesting future extensions, such as multisignatures, threshold signatures and aggregate signatures.
 
-CMake is used to control the build configuration of the project. Quite recent 
-version of CMake is required 
-(at the time of writing [3.9.3 is the minimum](CMakeLists.txt#L25)).
-We recommend installing CMake by downloading and unpacking the binary 
-distribution  of the latest version available on the 
-[**CMake download page**](https://cmake.org/download/).
+**BLS12-381 Elliptic Curve**
 
-The CMake package available in your operating system can also be installed
-and used if it meets the minimum version requirement.
+The elliptic curve used by our signature scheme is BLS12-381, a Barreto-Lynn-Scott curve. This curve was introduced in Sapling, the latest upgrade to the ZCash protocol, with the aim to improve efficiency and security while reducing memory intensivity.
 
 
-### Install dependencies (Linux, macOS)
-
-The following *libraries* are required to be installed in the system in their
-development variant:
-
-- leveldb
-- microhttpd
-
-They usually can be installed using system-specific package manager.
-Examples for some systems:
-
-Operating system | Installation command
----------------- | --------------------
-Debian-based     | `sudo apt-get install libleveldb-dev libmicrohttpd-dev`
-RedHat-based     | `dnf install leveldb-devel libmicrohttpd-devel`
-macOS            | `brew install leveldb libmicrohttpd`
-
-
-### Install dependencies (Windows)
-
-We provide prebuilt dependencies required to build the project. Download them
-with the [scripts/install_deps.bat](scripts/install_deps.bat) script.
-
-```shell
-scripts/install_deps.bat
-```
-
-
-### Build
-
-Configure the project build with the following command. It will create the 
-`build` directory with the configuration.
-
-```shell
-mkdir build; cd build  # Create a build directory.
-cmake ..               # Configure the project.
-cmake --build .        # Build all default targets.
-```
-
-On **Windows** Visual Studio 2015 is required. You should generate Visual Studio 
-solution file (.sln) for 64-bit architecture by adding 
-`-G "Visual Studio 14 2015 Win64"` argument to the CMake configure command.
-After configuration is completed the `cpp-ethereum.sln` can be found in the
-`build` directory.
-
-```shell
-cmake .. -G "Visual Studio 14 2015 Win64"
-```
+## References
+* [Short signatures from the Weil pairing](https://www.iacr.org/archive/asiacrypt2001/22480516.pdf)
+* [BLS Multi-Signatures With Public-Key Aggregation](https://crypto.stanford.edu/~dabo/pubs/papers/BLSmultisig.html)
+* [A Scalable Proof-of-Stake Blockchain in the Open Setting](https://eprint.iacr.org/2017/656.pdf)
 
 
 ## Documentation
+
+[Wiki](https://github.com/petrichor-dev/petrichor/wiki)
 
 
 
