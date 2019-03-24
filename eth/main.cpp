@@ -103,7 +103,7 @@ void help()
 		<< "    -K,--kill  Kill the blockchain first.\n"
 		<< "    -R,--rebuild  Rebuild the blockchain from the existing database.\n"
 		<< "    --rescue  Attempt to rescue a corrupt database.\n\n"
-		<< "    --import-presale <file>  Import a pre-sale key; you'll need to specify the password to this key.\n"
+//		<< "    --import-presale <file>  Import a pre-sale key; you'll need to specify the password to this key.\n"
 		<< "    -s,--import-secret <secret>  Import a secret key into the key store.\n"
 		<< "    --master <password>  Give the master password for the key store. Use --master \"\" to show a prompt.\n"
 		<< "    --password <password>  Give a password for a private key.\n\n"
