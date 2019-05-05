@@ -1,6 +1,6 @@
-# Petrichor C++ client
+# Petrachor C++ client
 
-This repository contains the [Petrichor](https://petrichor-dev.com) C++ Client.
+This repository contains the [Petrachor](https://petrachor.com) C++ Client.
 
 
 ## Getting Started
@@ -8,9 +8,9 @@ This repository contains the [Petrichor](https://petrichor-dev.com) C++ Client.
 **[Installation Instructions](https://https://github.com/petrichor-dev/petrichor/wiki/Installation-Instructions)**.
 
 
-## About Petrichor
+## About Petrachor
 
-Petrichor uses the Ariel PoS protocol, which is our custom implementation of the original iChing Proof-of-Stake consensus, a secure and eco-friendly Satoshi-style protocol. iChing is a natural mimic of Bitcoin consensus; as a result, scalability solutions for Bitcoin can be immediately used in Petrichor. By applying this blockchain protocol to a fork of the Ethereum source code, we deliver a powerful new dApp platform combining the energy-efficiency of PoS with the power and versatility of Ethereum.
+Petrachor uses the Ariel PoS protocol, which is our custom implementation of the original iChing Proof-of-Stake consensus, a secure and eco-friendly Satoshi-style protocol. iChing is a natural mimic of Bitcoin consensus; as a result, scalability solutions for Bitcoin can be immediately used in Petrachor. By applying this blockchain protocol to a fork of the Ethereum source code, we deliver a powerful new dApp platform combining the energy-efficiency of PoS with the power and versatility of Ethereum.
 
 **Proof of Stake**
 
