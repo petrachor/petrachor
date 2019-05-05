@@ -5,7 +5,7 @@ This repository contains the [Petrachor](https://petrachor.com) C++ Client.
 
 ## Getting Started
 
-**[Installation Instructions](https://https://github.com/petrichor-dev/petrichor/wiki/Installation-Instructions)**.
+**[Installation Instructions](https://https://github.com/petrachor/petrachor/wiki/Installation-Instructions)**.
 
 
 ## About Petrachor
@@ -33,7 +33,7 @@ The elliptic curve used by our signature scheme is BLS12-381, a Barreto-Lynn-Sco
 
 ## Documentation
 
-[Wiki](https://github.com/petrichor-dev/petrichor/wiki)
+[Wiki](https://github.com/petrachor/petrachor/wiki)
 
 
 
