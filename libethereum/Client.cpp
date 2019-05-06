@@ -68,7 +68,7 @@ Client::Client(
 	TransactionQueue::Limits const& _l
 ):
 	ClientBase(_l),
-    Worker("petrichor", 20),
+    Worker("petrachor", 20),
 	m_bc(_params, _dbPath, _forceAction, [](unsigned d, unsigned t){ std::cerr << "REVISING BLOCKCHAIN: Processed " << d << " of " << t << "...\r"; }),
 	m_gp(_gpForAdoption ? _gpForAdoption : make_shared<TrivialGasPricer>()),
     // Cannot be opened until after blockchain is open, since BlockChain may upgrade the database.

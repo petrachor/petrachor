@@ -40,7 +40,7 @@ endif()
 set(ETH_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "The path to the cmake directory")
 list(APPEND CMAKE_MODULE_PATH ${ETH_CMAKE_DIR})
 
-set(CPP_ETHEREUM_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path to the root directory for cpp-ethereum")
+set(CPP_ETHEREUM_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path to the root directory for petrachor")
 
 # set cmake_policies
 include(EthPolicy)
@@ -84,7 +84,7 @@ if(HUNTER_ENABLED)
 endif()
 
 # project name and version should be set after cmake_policy CMP0048
-project(petrichor VERSION "1.0")
+project(petrachor VERSION "1.0")
 
 if (NOT EXISTS ${CMAKE_SOURCE_DIR}/evmjit/.git)
     message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init")
@@ -141,10 +141,10 @@ if (EVMJIT)
     add_subdirectory(evmjit)
 endif()
 
-add_subdirectory(petrichor)
+add_subdirectory(petrachor)
 
 if (TOOLS)
-    add_subdirectory(petrichor-key)
+    add_subdirectory(petrachor-key)
     add_subdirectory(ethvm)
     add_subdirectory(rlp)
 endif()

@@ -78,7 +78,7 @@ static std::atomic<bool> g_silence = {false};
 void help()
 {
 	cout
-		<< "Usage petrichor [OPTIONS]\n"
+		<< "Usage petrachor [OPTIONS]\n"
 		<< "Options:\n\n"
 		<< "Wallet usage:\n";
 	AccountManager::streamAccountHelp(cout);
@@ -167,9 +167,9 @@ inline std::string credits()
 {
     std::ostringstream out;
     out
-        << "petrichor " << dev::Version << endl
+        << "petrachor " << dev::Version << endl
         << "  By cpp-ethereum contributors, (c) 2013-2016." << endl
-        << "  By petrichor contributors, (c) 2017-2019." << endl
+        << "  By petrachor contributors, (c) 2017-2019." << endl
         << "  See the README for contributors and credits." << endl;
     return out.str();
 }
@@ -185,8 +185,8 @@ string ethCredits(bool _interactive = false)
 
 void version()
 {
-	cout << "petrichor version " << dev::Version << "\n";
-	cout << "petrichor network protocol version: " << dev::eth::c_protocolVersion << "\n";
+	cout << "petrachor version " << dev::Version << "\n";
+	cout << "petrachor network protocol version: " << dev::eth::c_protocolVersion << "\n";
 	cout << "Client database version: " << dev::eth::c_databaseVersion << "\n";
 	cout << "Build: " << DEV_QUOTED(ETH_BUILD_PLATFORM) << "/" << DEV_QUOTED(ETH_BUILD_TYPE) << "\n";
 	exit(0);
@@ -878,7 +878,7 @@ int main(int argc, char** argv)
 		chainParams = ChainParams(genesisInfo(eth::Network::MainNetwork), genesisStateRoot(eth::Network::MainNetwork));
 
 	if (g_logVerbosity > 0)
-		cout << EthGrayBold "Petrichor C++ Client" EthReset << "\n";
+		cout << EthGrayBold "Petrachor C++ Client" EthReset << "\n";
 
 	fs::path secretsPath;
 	if (testingMode)

@@ -5,10 +5,10 @@ set(
     MinerAux.h
 )
 
-add_executable(petrichor ${sources})
+add_executable(petrachor ${sources})
 target_link_libraries(
-    petrichor
+    petrachor
     PRIVATE ethereum ethashseal evm web3jsonrpc webthree devcore
 )
 
-install(TARGETS petrichor DESTINATION bin)
+install(TARGETS petrachor DESTINATION bin)
