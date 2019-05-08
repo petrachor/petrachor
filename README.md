@@ -5,7 +5,7 @@ This repository contains the [Petrachor](https://petrachor.com) C++ Client.
 
 ## Getting Started
 
-**[Installation Instructions](https://https://github.com/petrachor/petrachor/wiki/Installation-Instructions)**.
+**[Installation Instructions](https://github.com/petrachor/petrachor/wiki/Installation-Instructions)**.
 
 
 ## About Petrachor
