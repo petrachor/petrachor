@@ -208,7 +208,7 @@ bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, Bala
 
 void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever)
 {
-    clog << " generate seal for " << _bi.number() << " m_parent.nubmer: " << parent.number() << "\n";
+    clog << " generate seal for " << _bi.number() << " m_parent.number: " << parent.number() << "\n";
     if (!m_generating) {
         Guard l(m_submitLock);
         if (sealThread.joinable()) sealThread.join();
