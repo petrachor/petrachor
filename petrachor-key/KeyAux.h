@@ -669,7 +669,7 @@ public:
 			<< "    --secrets-path <path>  Specify Web3 secret-store path (default: " << SecretStore::defaultPath() << ")" << endl
 			<< endl
 			<< "Wallet operating modes:" << endl
-			<< "    createwallet  Create an Ethereum master wallet." << endl
+			<< "    createwallet  Create a Petrachor master wallet." << endl
 			<< "    list  List all keys available in wallet." << endl
 			<< "    new <name>  Create a new key with given name and add it in the wallet." << endl
 			<< "    import [<uuid>|<file>|<secret-hex>] <name>  Import keys from given source and place in wallet." << endl
@@ -686,7 +686,7 @@ public:
 			<< "    importbrain <name>  Import your own brain wallet." << endl
 			<< "Brainwallets are specified as: brain((#<HD-index>):<brain-phrase>), e.g. brain:PASSWORD." << endl
 			<< "Wallet configuration:" << endl
-			<< "    --wallet-path <path>  Specify Ethereum wallet path (default: " << KeyManager::defaultPath() << ")" << endl
+			<< "    --wallet-path <path>  Specify Petrachor wallet path (default: " << KeyManager::defaultPath() << ")" << endl
 			<< "    -m, --master <passphrase>  Specify wallet (master) passphrase." << endl
 			<< endl
 			<< "Transaction operating modes:" << endl
