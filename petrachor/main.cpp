@@ -119,8 +119,8 @@ void help()
 //		<< "    -t, --mining-threads <n>  Limit number of CPU/GPU miners to n (default: use everything available on selected platform).\n\n"
 		<< "Client networking:\n"
 		<< "    --client-name <name>  Add a name to your client's version string (default: blank).\n"
-		<< "    --bootstrap  Connect to the default Ethereum peer servers (default unless --no-discovery used).\n"
-		<< "    --no-bootstrap  Do not connect to the default Ethereum peer servers (default only when --no-discovery is used).\n"
+		<< "    --bootstrap  Connect to the default Petrachor peer servers (default unless --no-discovery used).\n"
+		<< "    --no-bootstrap  Do not connect to the default Petrachor peer servers (default only when --no-discovery is used).\n"
 		<< "    -x,--peers <number>  Attempt to connect to a given number of peers (default: 11).\n"
 		<< "    --peer-stretch <number>  Give the accepted connection multiplier (default: 7).\n"
 
