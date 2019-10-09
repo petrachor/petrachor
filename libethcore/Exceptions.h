@@ -81,6 +81,7 @@ DEV_SIMPLE_EXCEPTION(TransactionReceiptVersionError);
 DEV_SIMPLE_EXCEPTION(BlockNotFound);
 DEV_SIMPLE_EXCEPTION(UnknownParent);
 DEV_SIMPLE_EXCEPTION(AddressAlreadyUsed);
+DEV_SIMPLE_EXCEPTION(ZeroAddressNotAllowedHere);
 
 DEV_SIMPLE_EXCEPTION(DatabaseAlreadyOpen);
 DEV_SIMPLE_EXCEPTION(DAGCreationFailure);
