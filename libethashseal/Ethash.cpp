@@ -209,20 +209,33 @@ bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, Bala
 void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever)
 {
     clog << " generate seal for " << _bi.number() << " m_parent.number: " << parent.number() << "\n";
-    if (!m_generating) {
+//    if (!m_generating) {
+      if (!m_generating || (m_sealing.hash(WithoutSeal) != _bi.hash(WithoutSeal))) {
+        if (m_generating) m_generating = false;
+
         Guard l(m_submitLock);
         if (sealThread.joinable()) sealThread.join();
         m_sealing = _bi;
         m_generating = true;
         sealThread = std::thread([balanceRetriever, parent, this](){
             u256 timestamp = minimalTimeStamp(parent);
-      //      clog << "Minimal timestamp: " << timestamp << "\n";
+            clog << "Minimal timestamp: " << timestamp << "\n";
             std::map<Address, u256> balanceMap;
-            for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
+//            for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
+	    u256 totalBalance;
+	    for (auto kp: m_keyPairs) {
+		u256 agedBalance = getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever);
+	        balanceMap.insert(std::make_pair(kp.address(), agedBalance));
+	        totalBalance += agedBalance;
+//	        clog << "Aged balance for " << kp.address().hex() << " = " << agedBalance << std::endl;
+	    }
+	    clog << "Total staking balance = " << totalBalance << std::endl << std::flush;
+
+	    timestamp = utcTime();
 
             while (m_generating) {
-                u256 currentTime;
-                while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(20));
+//                u256 currentTime;
+//                while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(20));
                 if (!m_generating) break;
 
                 m_sealing.setTimestamp(timestamp);
@@ -230,7 +243,7 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                 for (auto kp: m_keyPairs) {
                     u256 balance = balanceMap.find(kp.address())->second;
                     if (balance != (u256) 0) {
-//                        clog << "[parent ts: " << parent.timestamp() << " ts: " << timestamp << " delta:" << (timestamp - parent.timestamp()) << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
+                        clog << "[parent ts: " << parent.timestamp() << " ts: " << timestamp << " delta:" << (timestamp - parent.timestamp()) << "]" << std::endl;
                         const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
                         if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
                             std::unique_lock<Mutex> l(m_submitLock);
@@ -253,7 +266,7 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                         };
                     }
                 }
-                timestamp += 1;
+                m_generating = false;
           //      if (m_generating && lastPaused) this_thread::sleep_for(chrono::milliseconds(500));
             }
             return true;
