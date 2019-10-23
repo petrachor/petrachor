@@ -18,6 +18,14 @@
  * @author Gav Wood <i@gavwood.com>
  * @date 2014
  */
+/**
+ *  This is where Proof of Stake is carried out.
+ *  The Algorithm is a mixture of Proof of Work and Proof of Stake
+ *  If verification passes it would send the block to the network
+ *  It uses public key that avoid no-node user getting involved.
+ * 
+ * 
+ */
 
 #include "Ethash.h"
 #include <libethereum/Interface.h>
@@ -33,22 +41,63 @@ void Ethash::init()
 	ETH_REGISTER_SEAL_ENGINE(Ethash);
 }
 
+/**
+ *  computerChildStakeModifier is a Ethash member function.
+ *  It hashes its parameters using dev::sha3 function.
+ *  
+ *  @param parentStakeModifier(const reference): Its type is StakeModifier.
+ *  @param minerPubKey(const reference): Its type is StakeKeys::Public.
+ *  @param minterStakeSig(const reference): Its type is StakeKeys::Signature.
+ *  @returns StakeModifier which is a hash.
+ */
 StakeModifier Ethash::computeChildStakeModifier(StakeModifier const& parentStakeModifier, StakeKeys::Public const& minerPubKey, StakeKeys::Signature const& minterStakeSig) {
     return dev::sha3(parentStakeModifier.asBytes() + minerPubKey.asBytes() + minterStakeSig.asBytes());
 }
 
+/**
+ *  computeStatkeMessage is a Ethash member function. 
+ *  It hashes its parameters using dev::sha3 function.
+ * 
+ *  @param stakeModifier(const reference): Its type is StakeModifier.
+ *  @param timestamp: Its type is u256.
+ *  @returns StakeMessage which is a hash.
+ */
 StakeMessage Ethash::computeStakeMessage(StakeModifier const& stakeModifier, u256 timestamp) {
     return dev::sha3(stakeModifier.asBytes() + h256(timestamp));
 }
 
+/**
+ *  computeStakeSignature is a Ethash member function. 
+ *  It signs Stake message using its secret key.
+ * 
+ *  @param message(const reference): Its type is StakeMessage.
+ *  @param sealerSecretKey(const reference): Its type is StakeKeys::Secret.
+ *  @returns StakeKeys::Signature.
+ */
 StakeKeys::Signature Ethash::computeStakeSignature(StakeMessage const& message, StakeKeys::Secret const& sealerSecretKey) {
     return sign<dev::BLS>(sealerSecretKey, message);
 }
 
+/**
+ *  verifyStakeSignature is a Ethash member function. 
+ *  It verifies Stake message.
+ * 
+ *  @param publicKey(const reference): Its type is StakeKeys::Public.
+ *  @param signature(const reference): Its type is StakeKeys::Signature.
+ *  @param message(const reference): Its type is StakeMessage.
+ *  @returns bool which indicates if verification passed or not.
+ */
 bool Ethash::verifyStakeSignature(StakeKeys::Public const& publicKey, StakeKeys::Signature const& signature, StakeMessage const& message) {
     return ::verify<BLS>(publicKey, signature, message);
 }
 
+/**
+ *  computeStakeSignatureHash is a Ethash member function.
+ *  It is a wrapper over dev::sha3. 
+ * 
+ *  @param stakeSignature(const reference): Its type is StakeKeys::Signature.
+ *  @returns StakeSignatureHash which is sha3 hash.
+ */
 StakeSignatureHash Ethash::computeStakeSignatureHash(StakeKeys::Signature const& stakeSignature) {
     return dev::sha3(stakeSignature);
 }
@@ -58,12 +107,28 @@ strings Ethash::sealers() const
 	return {"cpu"};
 }
 
+/**
+ *  jsInfo is a Ethash member function. 
+ *  
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.
+ *  @returns StringHashMap. 
+ */
 StringHashMap Ethash::jsInfo(BlockHeader const& _bi) const
 {
     return { { "stakeModifier", toJS(stakeModifier(_bi)) }, { "publicKey", toJS(publicKey(_bi)) }, { "stakeSignature", toJS(stakeSignature(_bi)) }, { "blockSignature", toJS(blockSignature(_bi)) },
          { "difficulty", toJS(_bi.difficulty()) } };
 }
 
+/**
+ *  verify is a Ethash member function. 
+ * 
+ *  @param _s: Its type is Strictness.  
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.
+ *  @param balanceRetriever: Its type is BalanceRetriever. This is a function object.
+ *  @param _parent(const reference): Its type is BlockHeader. This is the tip of the blockchain.
+ *  @param _block: Its type is bytesConstRef.
+ *  @returns void.
+ */
 void Ethash::verify(Strictness _s, BlockHeader const& _bi, BalanceRetriever balanceRetriever, BlockHeader const& _parent, bytesConstRef _block) const
 {
 	SealEngineFace::verify(_s, _bi, balanceRetriever, _parent, _block);
@@ -108,22 +173,25 @@ void Ethash::verify(Strictness _s, BlockHeader const& _bi, BalanceRetriever bala
 	}
 
 	// check it hashes according to proof of work or that it's the genesis block.
-    if (_s == CheckEverything && _bi.parentHash() && !verifySeal(_bi, _parent, balanceRetriever))
+    if ((_s == CheckEverything || _s == QuickNonce) && _bi.parentHash() && !verifySeal(_bi, _parent, balanceRetriever))
 	{
 		InvalidBlockNonce ex;
 		ex << errinfo_hash256(_bi.hash(WithoutSeal));
 		ex << errinfo_difficulty(_bi.difficulty());
 		BOOST_THROW_EXCEPTION(ex);
 	}
-	else if (_s == QuickNonce && _bi.parentHash() && !verifySeal(_bi, _parent, balanceRetriever))
-	{
-		InvalidBlockNonce ex;
-		ex << errinfo_hash256(_bi.hash(WithoutSeal));
-		ex << errinfo_difficulty(_bi.difficulty());
-		BOOST_THROW_EXCEPTION(ex);
-    }
+
 }
 
+/**
+ *  verifyTransaction is a Ethash member function. 
+ * 
+ *  @param _ir: Its type is ImportRequirements::value.
+ *  @param _t(const reference): Its type is TransactionBase. 
+ *  @param _header(const reference): Its type is BlockHeader.
+ *  @param _startGasUsed(const reference): Its type is u256.
+ *  @returns void.
+ */
 void Ethash::verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const& _startGasUsed) const
 {
 	SealEngineFace::verifyTransaction(_ir, _t, _header, _startGasUsed);
@@ -136,6 +204,13 @@ void Ethash::verifyTransaction(ImportRequirements::value _ir, TransactionBase co
 		BOOST_THROW_EXCEPTION(BlockGasLimitReached() << RequirementError((bigint)(_header.gasLimit() - _startGasUsed), (bigint)_t.gas()));
 }
 
+/**
+ *  childGasLimit is a Etash member function. 
+ * 
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.
+ *  @param _gasFloorTarget(const reference): Its type is u256.
+ *  @returns const u256 type.
+ */
 u256 Ethash::childGasLimit(BlockHeader const& _bi, u256 const& _gasFloorTarget) const
 {
 	u256 gasFloorTarget = _gasFloorTarget == Invalid256 ? 3141562 : _gasFloorTarget;
@@ -147,11 +222,25 @@ u256 Ethash::childGasLimit(BlockHeader const& _bi, u256 const& _gasFloorTarget) 
 		return max<u256>(gasFloorTarget, gasLimit - gasLimit / boundDivisor + 1 + (_bi.gasUsed() * 6 / 5) / boundDivisor);
 }
 
+/**
+ *  calculateDifficulty is a Ethash member function. 
+ * 
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.
+ *  @param _parent(const reference): Its type is BlockHeader. This is the tip of the blockchain.  
+ */
 u256 Ethash::calculateDifficulty(BlockHeader const& _bi, BlockHeader const& parent) const {
     //clog << "Parent.number: " << parent.number() << " ";
     return calculateDifficulty(_bi, parent.timestamp(), parent.difficulty());
 }
 
+/**
+ *  calculateDifficulty is a Ethash member function. 
+ * 
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.
+ *  @param parentTimeStamp(const reference): Its type is bigint.  
+ *  @param parentDifficulty(const reference): Its type is bigint.  
+ *  @returns const u256 type.
+ */
 u256 Ethash::calculateDifficulty(BlockHeader const& _bi, bigint const& parentTimeStamp, bigint const& parentDifficulty) const
 {
 	if (!_bi.number())
@@ -164,22 +253,49 @@ u256 Ethash::calculateDifficulty(BlockHeader const& _bi, bigint const& parentTim
     return u256(min<bigint>(max<bigint>(chainParams().minimumDifficulty, target), std::numeric_limits<u256>::max()));
 }
 
+/**
+ *  populateFromParent is a member function. 
+ * 
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.   
+ *  @param _parent(const reference): Its type is BlockHeader. This is the tip of the blockchain. 
+ */
 void Ethash::populateFromParent(BlockHeader& _bi, BlockHeader const& _parent)
 {
 	SealEngineFace::populateFromParent(_bi, _parent);
     _bi.setGasLimit(childGasLimit(_parent));
 }
 
+/**
+ *  boundary is a Ethash member function. 
+ * 
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.
+ *  @param balance(const reference): Its type is u256.   
+ *  @returns const h256.
+ */
 h256 Ethash::boundary(BlockHeader const& _bi, u256 const& balance) const {
     auto d = _bi.difficulty();
    // clog << "balance: " << balance << "\n";
     return d ? (h256)u256(((bigint(1) << 256)/ d) * balance) : h256();
 }
 
+/**
+ *  getAgedBalance is a Ethash member function. 
+ * 
+ *  @param a: Its type is Address.
+ *  @param balanceRetriever: Its type is BalanceRetriever. This is a function object.   
+ */
 u256 Ethash::getAgedBalance(Address a, BlockNumber bn, BalanceRetriever balanceRetriever) const {
     return balanceRetriever(a, (bn > 255) ? (bn - 255) : (BlockNumber) 0);
 }
 
+/**
+ *  verifySeal is a Ethash member function. 
+ * 
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.  
+ *  @param _parent(const reference): Its type is BlockHeader. This is the tip of the blockchain.
+ *  @param balanceRetriever: Its type is BalanceRetriever. This is a function object. 
+ *  @returns const bool that tell if Seal verification passed or not. 
+ */
 bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, BalanceRetriever balanceRetriever) const
 {
     const StakeKeys::Signature stakeSig = stakeSignature(_bi);
@@ -206,31 +322,42 @@ bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, Bala
     }
 }
 
+/**
+ *  generateSeal is a Ethash member function. 
+ *  It  generates and send Seal to the network if it is properly verified.
+ *  
+ *  @param _bi(const reference): Its type is BlockHeader. This is the block under consideration.  
+ *  @param _parent(const reference): Its type is BlockHeader. This is the tip of the blockchain.
+ *  @param balanceRetriever: Its type is BalanceRetriever. This is a function object. 
+ *  @returns void. 
+ */
 void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever)
 {
     clog << " generate seal for " << _bi.number() << " m_parent.number: " << parent.number() << "\n";
-    if (!m_generating) {
+    if (!m_generating || !m_sealing || (m_sealing.hash(WithoutSeal) != _bi.hash(WithoutSeal))) {
         Guard l(m_submitLock);
         if (sealThread.joinable()) sealThread.join();
         m_sealing = _bi;
         m_generating = true;
         sealThread = std::thread([balanceRetriever, parent, this](){
             u256 timestamp = minimalTimeStamp(parent);
-      //      clog << "Minimal timestamp: " << timestamp << "\n";
-            std::map<Address, u256> balanceMap;
-            for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
-
-            while (m_generating) {
+            //      clog << "Minimal timestamp: " << timestamp << "\n";
+            //std::map<Address, u256> balanceMap;
+            //for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
+            //This While loop is confusing...it has no clear exit.
+            if(m_generating) {
                 u256 currentTime;
-                while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(20));
-                if (!m_generating) break;
+                //while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(20));
+                //if (!m_generating) break;
 
-                m_sealing.setTimestamp(timestamp);
+                currentTime = utcTime();
+                m_sealing.setTimestamp(currentTime);
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
                 for (auto kp: m_keyPairs) {
-                    u256 balance = balanceMap.find(kp.address())->second;
+                    //u256 balance = balanceMap.find(kp.address())->second;
+                    u256 balance = getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever);
                     if (balance != (u256) 0) {
-//                        clog << "[parent ts: " << parent.timestamp() << " ts: " << timestamp << " delta:" << (timestamp - parent.timestamp()) << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
+                        //     clog << "[parent ts: " << parent.timestamp() << " ts: " << timestamp << " delta:" << (timestamp - parent.timestamp()) << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
                         const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
                         if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
                             std::unique_lock<Mutex> l(m_submitLock);
@@ -239,9 +366,9 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                             setStakeSignature(m_sealing, r);
                             setBlockSignature(m_sealing, sign<BLS>(kp.secret(), m_sealing.hash(WithoutSeal)));
 
-                            if (m_onSealGenerated)
+                            if (m_onSealGenerated && verifySeal(m_sealing, parent, balanceRetriever))
                             {
-                                assert(verifySeal(m_sealing, parent, balanceRetriever));
+                                //assert(verifySeal(m_sealing, parent, balanceRetriever));
 
                                 RLPStream ret;
                                 m_sealing.streamRLP(ret);
@@ -249,18 +376,24 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                                 m_onSealGenerated(ret.out());
                             }
                             m_generating  = false;
-                            return true;
-                        };
+                            return;
+                        }
                     }
                 }
-                timestamp += 1;
+                //timestamp += 1;
           //      if (m_generating && lastPaused) this_thread::sleep_for(chrono::milliseconds(500));
             }
-            return true;
+            return;
         });
     }
 }
 
+/**
+ *  shouldSeal is a Ethash member function. 
+ *  It does nothing.
+ * 
+ *  @returns bool valu true.
+ */
 bool Ethash::shouldSeal(Interface*)
 {
 	return true;
