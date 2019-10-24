@@ -350,13 +350,16 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                 //while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(20));
                 //if (!m_generating) break;
 
-                currentTime = utcTime();
-                m_sealing.setTimestamp(currentTime);
-                m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
+                //currentTime = utcTime();
+                //m_sealing.setTimestamp(currentTime);
+                //m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
                 for (auto kp: m_keyPairs) {
                     //u256 balance = balanceMap.find(kp.address())->second;
                     u256 balance = getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever);
                     if (balance != (u256) 0) {
+                        currentTime = utcTime();
+                        m_sealing.setTimestamp(currentTime);
+                        m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
                         //     clog << "[parent ts: " << parent.timestamp() << " ts: " << timestamp << " delta:" << (timestamp - parent.timestamp()) << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
                         const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
                         if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
