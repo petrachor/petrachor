@@ -331,6 +331,7 @@ bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, Bala
  *  @param balanceRetriever: Its type is BalanceRetriever. This is a function object. 
  *  @returns void. 
  */
+/*
 void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever)
 {
     clog << " generate seal for " << _bi.number() << " m_parent.number: " << parent.number() << "\n";
@@ -388,6 +389,62 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
             }
             return;
         });
+    }
+}
+*/
+
+void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever)
+{
+    clog << " generate seal for " << _bi.number() << " m_parent.number: " << parent.number() << "\n";
+    if (!m_generating || !m_sealing || (m_sealing.hash(WithoutSeal) != _bi.hash(WithoutSeal))) {
+        Guard l(m_submitLock);
+        //if (sealThread.joinable()) sealThread.join();
+        m_sealing = _bi;
+        m_generating = true;
+        u256 tempBalance = (u256)0;
+        u256 balance;
+        KeyPair<BLS> keyPair = KeyPair<BLS>::create(); 
+        // This is hacky, no need of key in the first place.
+        for (auto kp: m_keyPairs) {
+            balance = getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever);
+            if (balance > tempBalance) {
+                tempBalance = balance;
+                keyPair = kp;
+            }
+        }
+        balance = tempBalance;
+        auto kp = keyPair;
+        if (balance != (u256) 0) {
+            auto f = [&](){
+                //u256 timestamp = minimalTimeStamp(parent);
+                u256 timestamp = max<u256>(utcTime(), minimalTimeStamp(parent));
+                m_sealing.setTimestamp(timestamp);
+                m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
+                clog << "[parent ts: " << parent.timestamp() << " ts: " << timestamp << " delta:" << (timestamp - parent.timestamp()) << " kp: " << m_keyPairs.size() << " p: " << parent.number() << " d: " << calculateDifficulty(m_sealing, parent) << " b: " << boundary(m_sealing, balance).hex() << "]";
+                const StakeKeys::Signature r = computeStakeSignature(computeStakeMessage(stakeModifier(parent), timestamp), kp.secret());
+                if (computeStakeSignatureHash(r) <= boundary(m_sealing, balance)) {
+                    std::unique_lock<Mutex> l(m_submitLock);
+                    setStakeModifier(m_sealing, computeChildStakeModifier(stakeModifier(parent), kp.pub(), r));
+                    setPublicKey(m_sealing, kp.pub());
+                    setStakeSignature(m_sealing, r);
+                    setBlockSignature(m_sealing, sign<BLS>(kp.secret(), m_sealing.hash(WithoutSeal)));
+
+                    if (m_onSealGenerated && verifySeal(m_sealing, parent, balanceRetriever))
+                    {
+                        //assert(verifySeal(m_sealing, parent, balanceRetriever));
+                        RLPStream ret;
+                        m_sealing.streamRLP(ret);
+                        l.unlock();
+                        m_onSealGenerated(ret.out());
+                    }
+                    m_generating  = false;
+                    return;
+                }                
+            };
+            std::thread sealThread(f);
+            f();
+        }
+        return;
     }
 }
 
