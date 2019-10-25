@@ -209,34 +209,19 @@ bool Ethash::verifySeal(BlockHeader const& _bi, BlockHeader const& _parent, Bala
 void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRetriever balanceRetriever)
 {
     clog << " generate seal for " << _bi.number() << " m_parent.number: " << parent.number() << "\n";
-//    if (!m_generating) {
       if (!m_generating || (m_sealing.hash(WithoutSeal) != _bi.hash(WithoutSeal))) {
-        if (m_generating) m_generating = false;
 
         Guard l(m_submitLock);
         if (sealThread.joinable()) sealThread.join();
         m_sealing = _bi;
         m_generating = true;
         sealThread = std::thread([balanceRetriever, parent, this](){
-            u256 timestamp = minimalTimeStamp(parent);
-            clog << "Minimal timestamp: " << timestamp << "\n";
+
+            u256 timestamp = utcTime();
+
             std::map<Address, u256> balanceMap;
-//            for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
-	    u256 totalBalance;
-	    for (auto kp: m_keyPairs) {
-		u256 agedBalance = getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever);
-	        balanceMap.insert(std::make_pair(kp.address(), agedBalance));
-	        totalBalance += agedBalance;
-//	        clog << "Aged balance for " << kp.address().hex() << " = " << agedBalance << std::endl;
-	    }
-	    clog << "Total staking balance = " << totalBalance << std::endl << std::flush;
+            for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
 
-	    timestamp = utcTime();
-
-            while (m_generating) {
-//                u256 currentTime;
-//                while (m_generating && (timestamp > (currentTime = utcTime()))) this_thread::sleep_for(chrono::milliseconds(20));
-                if (!m_generating) break;
 
                 m_sealing.setTimestamp(timestamp);
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
@@ -261,14 +246,11 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                                 l.unlock();
                                 m_onSealGenerated(ret.out());
                             }
-                            m_generating  = false;
+                            m_generating = false;
                             return true;
                         };
                     }
                 }
-                m_generating = false;
-          //      if (m_generating && lastPaused) this_thread::sleep_for(chrono::milliseconds(500));
-            }
             return true;
         });
     }
@@ -278,3 +260,4 @@ bool Ethash::shouldSeal(Interface*)
 {
 	return true;
 }
+
