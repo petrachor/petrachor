@@ -414,7 +414,7 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
     balance = tempBalance;
     auto kp = keyPair;
     if (balance != (u256) 0) {
-        auto f = [&](){
+        std::thread sealThread([&](){
             //u256 timestamp = minimalTimeStamp(parent);
             u256 timestamp = max<u256>(utcTime(), minimalTimeStamp(parent));
             while (minimalTimeStamp(parent) > utcTime()) this_thread::sleep_for(chrono::milliseconds(20));
@@ -441,9 +441,7 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                 //m_generating  = false;
                 return;
             }                
-        };
-        std::thread sealThread(f);
-        f();
+        });
     }
     return;
 
