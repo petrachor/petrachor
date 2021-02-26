@@ -217,11 +217,12 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
         m_generating = true;
         sealThread = std::thread([balanceRetriever, parent, this](){
 
-            u256 timestamp = utcTime();
-
             std::map<Address, u256> balanceMap;
             for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
 
+            u256 currentTime = utcTime();
+
+            for (u256 timestamp = currentTime; timestamp > (currentTime - 2); timestamp--){
 
                 m_sealing.setTimestamp(timestamp);
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));
@@ -240,7 +241,6 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                             if (m_onSealGenerated)
                             {
                                 assert(verifySeal(m_sealing, parent, balanceRetriever));
-
                                 RLPStream ret;
                                 m_sealing.streamRLP(ret);
                                 l.unlock();
@@ -248,9 +248,10 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
                             }
                             m_generating = false;
                             return true;
-                        };
+                        }
                     }
                 }
+            }
             return true;
         });
     }
@@ -260,4 +261,3 @@ bool Ethash::shouldSeal(Interface*)
 {
 	return true;
 }
-
