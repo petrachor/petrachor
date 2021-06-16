@@ -23,6 +23,7 @@
 #include <libdevcore/Log.h>
 #include <libethcore/Common.h>
 #include <libevm/VMFace.h>
+#include <libdevcore/Log.h>
 #include "Transaction.h"
 
 namespace Json
@@ -60,14 +61,21 @@ public:
 	};
 
 	StandardTrace();
-	void operator()(uint64_t _steps, uint64_t _PC, Instruction _inst, bigint _newMemSize, bigint _gasCost, bigint _gas, VM* _vm, ExtVMFace const* _extVM);
-
+	void operator()(uint64_t _steps, uint64_t _PC, Instruction _inst, bigint _newMemSize,
+	                bigint _gasCost, bigint _gas, VMFace const* _vm, ExtVMFace const* _extVM);
+	
 	void setShowMnemonics() { m_showMnemonics = true; }
 	void setOptions(DebugOptions _options) { m_options = _options; }
 
 	std::string json(bool _styled = false) const;
-
-	OnOpFunc onOp() { return [=](uint64_t _steps, uint64_t _PC, Instruction _inst, bigint _newMemSize, bigint _gasCost, bigint _gas, VM* _vm, ExtVMFace const* _extVM) { (*this)(_steps, _PC, _inst, _newMemSize, _gasCost, _gas, _vm, _extVM); }; }
+	
+	OnOpFunc onOp()
+	{
+		return [=](uint64_t _steps, uint64_t _PC, Instruction _inst, bigint _newMemSize,
+		           bigint _gasCost, bigint _gas, VMFace const* _vm, ExtVMFace const* _extVM) {
+			(*this)(_steps, _PC, _inst, _newMemSize, _gasCost, _gas, _vm, _extVM);
+		};
+	}
 
 private:
 	bool m_showMnemonics = false;
@@ -166,7 +174,7 @@ public:
 	bool go(OnOpFunc const& _onOp = OnOpFunc());
 
 	/// Operation function for providing a simple trace of the VM execution.
-	static OnOpFunc simpleTrace();
+	OnOpFunc simpleTrace();
 
 	/// Operation function for providing a simple trace of the VM execution.
 	static OnOpFunc standardTrace(std::ostream& o_output);
@@ -184,10 +192,18 @@ public:
 
 	/// Revert all changes made to the state by this execution.
 	void revert();
-
+	
+	/// @returns The exception that has happened during the execution if any.
+	TransactionException getException() const noexcept { return m_excepted; }
+	
 private:
 	/// @returns false iff go() must be called (and thus a VM execution in required).
-	bool executeCreate(Address const& _txSender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _code, Address const& _originAddress);
+	bool createWithAddressFromNonceAndSender(Address const& _sender, u256 const& _endowment,
+	                                         u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin,
+	                                         u256 const& _version);
+	
+	/// @returns false iff go() must be called (and thus a VM execution in required).
+	bool executeCreate(Address const& _txSender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _code, Address const& _originAddress, u256 const& _version);
 
 	State& m_s;							///< The state to which this operation/transaction is applied.
 	// TODO: consider changign to EnvInfo const& to avoid LastHashes copy at every CALL/CREATE
@@ -211,6 +227,10 @@ private:
 	bool m_isCreation = false;
 	Address m_newAddress;
 	size_t m_savepoint = 0;
+
+	Logger m_execLogger{createLogger(VerbosityDebug, "exec")};
+	Logger m_detailsLogger{createLogger(VerbosityTrace, "exec")};
+	Logger m_vmTraceLogger{createLogger(VerbosityTrace, "vmtrace")};
 };
 
 }

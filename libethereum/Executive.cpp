@@ -18,11 +18,11 @@
 
 #include "Executive.h"
 
-#include <boost/timer.hpp>
+#include <boost/timer/timer.hpp>
 #include <json/json.h>
 #include <libdevcore/CommonIO.h>
 #include <libevm/VMFactory.h>
-#include <libevm/VM.h>
+#include <libevm/LegacyVM.h>
 #include <libethcore/CommonJS.h>
 #include "Interface.h"
 #include "State.h"
@@ -32,6 +32,32 @@
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
+
+namespace
+{
+	Address const c_RipemdPrecompiledAddress{0x03};
+	
+	std::string dumpStackAndMemory(LegacyVM const& _vm)
+	{
+		ostringstream o;
+		o << "\n    STACK\n";
+		for (auto i : _vm.stack())
+			o << (h256)i << "\n";
+		o << "    MEMORY\n"
+		  << ((_vm.memory().size() > 1000) ? " mem size greater than 1000 bytes " :
+		      memDump(_vm.memory()));
+		return o.str();
+	};
+	
+	std::string dumpStorage(ExtVM const& _ext)
+	{
+		ostringstream o;
+		o << "    STORAGE\n";
+		for (auto const& i : _ext.state().storage(_ext.myAddress))
+			o << showbase << hex << i.second.first << ": " << i.second.second << "\n";
+		return o.str();
+	};
+}  // namespace
 
 const char* VMTraceChannel::name() { return "EVM"; }
 const char* ExecutiveWarnChannel::name() { return WarnChannel::name(); }
@@ -61,19 +87,19 @@ bool changesStorage(Instruction _inst)
 	return _inst == Instruction::SSTORE;
 }
 
-void StandardTrace::operator()(uint64_t _steps, uint64_t PC, Instruction inst, bigint newMemSize, bigint gasCost, bigint gas, VM* voidVM, ExtVMFace const* voidExt)
+void StandardTrace::operator()(uint64_t _steps, uint64_t PC, Instruction inst, bigint newMemSize, bigint gasCost, bigint gas, VMFace const* _vm, ExtVMFace const* voidExt)
 {
 	(void)_steps;
-
+	
 	ExtVM const& ext = dynamic_cast<ExtVM const&>(*voidExt);
-	VM& vm = *voidVM;
+	auto vm = dynamic_cast<LegacyVM const*>(_vm);
 
 	Json::Value r(Json::objectValue);
 
 	Json::Value stack(Json::arrayValue);
 	if (!m_options.disableStack)
 	{
-		for (auto const& i: vm.stack())
+		for (auto const& i: vm->stack())
 			stack.append(toCompactHexPrefixed(i, 1));
 		r["stack"] = stack;
 	}
@@ -109,9 +135,9 @@ void StandardTrace::operator()(uint64_t _steps, uint64_t PC, Instruction inst, b
 	Json::Value memJson(Json::arrayValue);
 	if (!m_options.disableMemory && (changesMemory(lastInst) || newContext))
 	{
-		for (unsigned i = 0; i < vm.memory().size(); i += 32)
+		for (unsigned i = 0; i < vm->memory().size(); i += 32)
 		{
-			bytesConstRef memRef(vm.memory().data() + i, 32);
+			bytesConstRef memRef(vm->memory().data() + i, 32);
 			memJson.append(toHex(memRef));
 		}
 		r["memory"] = memJson;
@@ -144,7 +170,7 @@ string StandardTrace::json(bool _styled) const
 
 Executive::Executive(Block& _s, BlockChain const& _bc, unsigned _level):
 	m_s(_s.mutableState()),
-	m_envInfo(_s.info(), _bc.lastBlockHashes(), 0),
+	m_envInfo(_s.info(), _bc.lastBlockHashes(), 0, _bc.chainID()),
 	m_depth(_level),
 	m_sealEngine(*_bc.sealEngine())
 {
@@ -152,7 +178,7 @@ Executive::Executive(Block& _s, BlockChain const& _bc, unsigned _level):
 
 Executive::Executive(Block& _s, LastBlockHashesFace const& _lh, unsigned _level):
 	m_s(_s.mutableState()),
-	m_envInfo(_s.info(), _lh, 0),
+	m_envInfo(_s.info(), _lh, 0, _s.sealEngine()->chainParams().chainID),
 	m_depth(_level),
 	m_sealEngine(*_s.sealEngine())
 {
@@ -160,7 +186,8 @@ Executive::Executive(Block& _s, LastBlockHashesFace const& _lh, unsigned _level)
 
 Executive::Executive(State& io_s, Block const& _block, unsigned _txIndex, BlockChain const& _bc, unsigned _level):
 	m_s(createIntermediateState(io_s, _block, _txIndex, _bc)),
-	m_envInfo(_block.info(), _bc.lastBlockHashes(), _txIndex ? _block.receipt(_txIndex - 1).gasUsed() : 0),
+	m_envInfo(_block.info(), _bc.lastBlockHashes(),
+	          _txIndex ? _block.receipt(_txIndex - 1).cumulativeGasUsed() : 0, _bc.chainID()),
 	m_depth(_level),
 	m_sealEngine(*_bc.sealEngine())
 {
@@ -299,7 +326,10 @@ bool Executive::call(CallParameters const& _p, u256 const& _gasPrice, Address co
 		{
 			bytes const& c = m_s.code(_p.codeAddress);
 			h256 codeHash = m_s.codeHash(_p.codeAddress);
-			m_ext = make_shared<ExtVM>(m_s, m_envInfo, m_sealEngine, _p.receiveAddress, _p.senderAddress, _origin, _p.apparentValue, _gasPrice, _p.data, &c, codeHash, m_depth, _p.staticCall);
+			auto const version = m_s.version(_p.codeAddress);
+			m_ext = make_shared<ExtVM>(m_s, m_envInfo, m_sealEngine, _p.receiveAddress,
+			                           _p.senderAddress, _origin, _p.apparentValue, _gasPrice, _p.data, &c, codeHash,
+			                           version, m_depth, false, _p.staticCall);
 		}
 	}
 
@@ -314,76 +344,95 @@ bool Executive::create(Address const& _txSender, u256 const& _endowment, u256 co
 	return createOpcode(_txSender, _endowment, _gasPrice, _gas, _init, _origin);
 }
 
-bool Executive::createOpcode(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin)
+bool Executive::createWithAddressFromNonceAndSender(Address const& _sender, u256 const& _endowment,
+                                                    u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin,
+                                                    u256 const& _version)
 {
 	u256 nonce = m_s.getNonce(_sender);
 	m_newAddress = right160(sha3(rlpList(_sender, nonce)));
-	return executeCreate(_sender, _endowment, _gasPrice, _gas, _init, _origin);
+	return executeCreate(_sender, _endowment, _gasPrice, _gas, _init, _origin, _version);
+}
+
+bool Executive::createOpcode(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin)
+{
+	// Contract will be created with the version equal to parent's version
+	return createWithAddressFromNonceAndSender(
+		_sender, _endowment, _gasPrice, _gas, _init, _origin, m_s.version(_sender));
 }
 
 bool Executive::create2Opcode(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin, u256 const& _salt)
 {
-	m_newAddress = right160(sha3(_sender.asBytes() + toBigEndian(_salt) + sha3(_init).asBytes()));
-	return executeCreate(_sender, _endowment, _gasPrice, _gas, _init, _origin);
+	m_newAddress = right160(sha3(bytes{0xff} +_sender.asBytes() + toBigEndian(_salt) + sha3(_init)));
+	// Contract will be created with the version equal to parent's version
+	return executeCreate(
+		_sender, _endowment, _gasPrice, _gas, _init, _origin, m_s.version(_sender));
 }
 
-bool Executive::executeCreate(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin)
+bool Executive::executeCreate(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin, u256 const& _version)
 {
-	if (_sender != MaxAddress || m_envInfo.number() < m_sealEngine.chainParams().constantinopleForkBlock) // EIP86
+	if (_sender != MaxAddress ||
+	    m_envInfo.number() < m_sealEngine.chainParams().experimentalForkBlock)  // EIP86
 		m_s.incNonce(_sender);
-
+	
 	m_savepoint = m_s.savepoint();
-
+	
 	m_isCreation = true;
-
+	
 	// We can allow for the reverted state (i.e. that with which m_ext is constructed) to contain the m_orig.address, since
 	// we delete it explicitly if we decide we need to revert.
-
+	
 	m_gas = _gas;
 	bool accountAlreadyExist = (m_s.addressHasCode(m_newAddress) || m_s.getNonce(m_newAddress) > 0);
 	if (accountAlreadyExist)
 	{
-		clog(StateSafeExceptions) << "Address already used: " << m_newAddress;
+		LOG(m_detailsLogger) << "Address already used: " << m_newAddress;
 		m_gas = 0;
 		m_excepted = TransactionException::AddressAlreadyUsed;
 		revert();
 		m_ext = {}; // cancel the _init execution if there are any scheduled.
 		return !m_ext;
 	}
-
+	
 	// Transfer ether before deploying the code. This will also create new
 	// account if it does not exist yet.
 	m_s.transferBalance(_sender, m_newAddress, _endowment);
-
+	
 	u256 newNonce = m_s.requireAccountStartNonce();
 	if (m_envInfo.number() >= m_sealEngine.chainParams().EIP158ForkBlock)
 		newNonce += 1;
 	m_s.setNonce(m_newAddress, newNonce);
-
+	
+	m_s.clearStorage(m_newAddress);
+	
 	// Schedule _init execution if not empty.
 	if (!_init.empty())
-		m_ext = make_shared<ExtVM>(m_s, m_envInfo, m_sealEngine, m_newAddress, _sender, _origin, _endowment, _gasPrice, bytesConstRef(), _init, sha3(_init), m_depth);
-
+		m_ext = make_shared<ExtVM>(m_s, m_envInfo, m_sealEngine, m_newAddress, _sender, _origin,
+		                           _endowment, _gasPrice, bytesConstRef(), _init, sha3(_init), _version, m_depth, true,
+		                           false);
+	else
+		// code stays empty, but we set the version
+		m_s.setCode(m_newAddress, {}, _version);
+	
 	return !m_ext;
 }
 
 OnOpFunc Executive::simpleTrace()
 {
-	return [](uint64_t steps, uint64_t PC, Instruction inst, bigint newMemSize, bigint gasCost, bigint gas, VM* voidVM, ExtVMFace const* voidExt)
-	{
+	Logger& traceLogger = m_vmTraceLogger;
+	
+	return [&traceLogger](uint64_t steps, uint64_t PC, Instruction inst, bigint newMemSize,
+	                      bigint gasCost, bigint gas, VMFace const* _vm, ExtVMFace const* voidExt) {
 		ExtVM const& ext = *static_cast<ExtVM const*>(voidExt);
-		VM& vm = *voidVM;
-
-		ostringstream o;
-		o << endl << "    STACK" << endl;
-		for (auto i: vm.stack())
-			o << (h256)i << endl;
-		o << "    MEMORY" << endl << ((vm.memory().size() > 1000) ? " mem size greater than 1000 bytes " : memDump(vm.memory()));
-		o << "    STORAGE" << endl;
-		for (auto const& i: ext.state().storage(ext.myAddress))
-			o << showbase << hex << i.second.first << ": " << i.second.second << endl;
-		dev::LogOutputStream<VMTraceChannel, false>() << o.str();
-		dev::LogOutputStream<VMTraceChannel, false>() << " < " << dec << ext.depth << " : " << ext.myAddress << " : #" << steps << " : " << hex << setw(4) << setfill('0') << PC << " : " << instructionInfo(inst).name << " : " << dec << gas << " : -" << dec << gasCost << " : " << newMemSize << "x32" << " >";
+		auto vm = dynamic_cast<LegacyVM const*>(_vm);
+		
+		if (vm)
+			LOG(traceLogger) << dumpStackAndMemory(*vm);
+		LOG(traceLogger) << dumpStorage(ext);
+		LOG(traceLogger) << " < " << dec << ext.depth << " : " << ext.myAddress << " : #" << steps
+		                 << " : " << hex << setw(4) << setfill('0') << PC << " : "
+		                 << instructionInfo(inst).name << " : " << dec << gas << " : -" << dec
+		                 << gasCost << " : " << newMemSize << "x32"
+		                 << " >";
 	};
 }
 
@@ -397,7 +446,8 @@ bool Executive::go(OnOpFunc const& _onOp)
 		try
 		{
 			// Create VM instance. Force Interpreter if tracing requested.
-			auto vm = _onOp ? VMFactory::create(VMKind::Interpreter) : VMFactory::create();
+			//auto vm = _onOp ? VMFactory::create(VMKind::Interpreter) : VMFactory::create();
+			auto vm = VMFactory::create();
 			if (m_isCreation)
 			{
 				m_s.clearStorage(m_ext->myAddress);
@@ -428,7 +478,7 @@ bool Executive::go(OnOpFunc const& _onOp)
 				}
 				if (m_res)
 					m_res->output = out.toVector(); // copy output to execution result
-				m_s.setCode(m_ext->myAddress, out.toVector());
+				m_s.setCode(m_ext->myAddress, out.toVector(), m_ext->version);
 			}
 			else
 				m_output = vm->exec(m_gas, *m_ext, _onOp);
@@ -476,32 +526,35 @@ bool Executive::go(OnOpFunc const& _onOp)
 
 bool Executive::finalize()
 {
-	// Accumulate refunds for suicides.
 	if (m_ext)
-		m_ext->sub.refunds += m_ext->evmSchedule().suicideRefundGas * m_ext->sub.suicides.size();
-
-	// SSTORE refunds...
-	// must be done before the miner gets the fees.
-	m_refunded = m_ext ? min((m_t.gas() - m_gas) / 2, m_ext->sub.refunds) : 0;
-	m_gas += m_refunded;
-
+	{
+		// Accumulate refunds for selfdestructs.
+		m_ext->sub.refunds +=
+			m_ext->evmSchedule().selfdestructRefundGas * m_ext->sub.selfdestructs.size();
+		
+		// Refunds must be applied before the miner gets the fees.
+		assert(m_ext->sub.refunds >= 0);
+		int64_t maxRefund = (static_cast<int64_t>(m_t.gas()) - static_cast<int64_t>(m_gas)) / 2;
+		m_gas += min(maxRefund, m_ext->sub.refunds);
+	}
+	
 	if (m_t)
 	{
 		m_s.addBalance(m_t.sender(), m_gas * m_t.gasPrice());
-
+		
 		u256 feesEarned = (m_t.gas() - m_gas) * m_t.gasPrice();
 		m_s.addBalance(m_envInfo.author(), feesEarned);
 	}
-
-	// Suicides...
+	
+	// Selfdestructs...
 	if (m_ext)
-		for (auto a: m_ext->sub.suicides)
+		for (auto a: m_ext->sub.selfdestructs)
 			m_s.kill(a);
-
-	// Logs..
+	
+	// Logs...
 	if (m_ext)
 		m_logs = m_ext->sub.logs;
-
+	
 	if (m_res) // Collect results
 	{
 		m_res->gasUsed = gasUsed();

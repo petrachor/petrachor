@@ -51,6 +51,7 @@ public:
 	/// @returns the status code.
 	/// @throw TransactionReceiptVersionError when the receipt has a state root instead of a status code.
 	uint8_t statusCode() const;
+	u256 const& cumulativeGasUsed() const { return m_gasUsed; }
 	u256 const& gasUsed() const { return m_gasUsed; }
 	LogBloom const& bloom() const { return m_bloom; }
 	LogEntries const& log() const { return m_log; }

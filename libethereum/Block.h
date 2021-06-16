@@ -241,7 +241,7 @@ public:
 
 	/// Sets m_currentBlock to a clean state, (i.e. no change from m_previousBlock) and
 	/// optionally modifies the timestamp.
-	void resetCurrent(u256 const& _timestamp = u256(utcTime()));
+	void resetCurrent(int64_t const& _timestamp = utcTime());
 
 	// Sealing
 

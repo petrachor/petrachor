@@ -30,6 +30,14 @@ endif()
 
 cmake_minimum_required(VERSION 3.9.3)
 
+include(cmake/cable/bootstrap.cmake)
+include(CableBuildInfo)
+include(CableBuildType)
+include(CableToolchains)
+include(GNUInstallDirs)
+
+cable_configure_toolchain(DEFAULT cxx14-pic)
+
 if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     # The default toolchain file configures compilers and build environment.
     # This configuration is also used by hunter to build dependencies.
@@ -55,36 +63,40 @@ set(HUNTER_JOBS_NUMBER 4)
 set(HUNTER_CACHE_SERVERS "https://github.com/ethereum/hunter-cache")
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.19.71.tar.gz"
-    SHA1 "8fe144d9490501d398777532e0c0f56bc7bb0ec7"
+        URL "https://github.com/ruslo/hunter/archive/v0.23.211.tar.gz"
+        SHA1 "c022f0c2480e835a6bafdd734035ec2071b51897"
+        LOCAL
 )
 
 if(HUNTER_ENABLED)
     find_package(PythonInterp QUIET)
     if(PYTHONINTERP_FOUND)
         hunter_gate_self(
-            "${HUNTER_CACHED_ROOT}"
-            "${HUNTER_VERSION}"
-            "${HUNTER_SHA1}"
-            hunter_dir
+                "${HUNTER_CACHED_ROOT}"
+                "${HUNTER_VERSION}"
+                "${HUNTER_SHA1}"
+                hunter_dir
         )
         set(hunter_upload_script "${hunter_dir}/maintenance/upload-cache-to-github.py")
         set(hunter_cache_dir "${HUNTER_GATE_ROOT}/_Base/Cache")
         set(hunter_tmp_dir "${HUNTER_GATE_ROOT}/tmp")
         add_custom_target(
-            hunter_upload_cache
-            ${PYTHON_EXECUTABLE} ${hunter_upload_script}
-            --username hunter-cache-bot
-            --repo-owner ethereum
-            --repo hunter-cache
-            --cache-dir ${hunter_cache_dir}
-            --temp-dir ${hunter_tmp_dir}
+                hunter_upload_cache
+                ${PYTHON_EXECUTABLE} ${hunter_upload_script}
+                --username hunter-cache-bot
+                --repo-owner ethereum
+                --repo hunter-cache
+                --cache-dir ${hunter_cache_dir}
+                --temp-dir ${hunter_tmp_dir}
         )
     endif()
 endif()
 
+add_subdirectory(evmc)
+
 # project name and version should be set after cmake_policy CMP0048
-project(petrachor VERSION "1.0")
+project(petrachor VERSION "1.5")
+cable_add_buildinfo_library(PROJECT_NAME petrachor)
 
 if (NOT EXISTS ${CMAKE_SOURCE_DIR}/evmjit/.git)
     message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init")
@@ -99,8 +111,10 @@ include(EthExecutableHelper)
 include(EthDependencies)
 include(EthUtils)
 
-hunter_add_package(Boost COMPONENTS filesystem system thread)
-find_package(Boost CONFIG REQUIRED filesystem system thread)
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+hunter_add_package(Boost COMPONENTS program_options filesystem system thread context log)
+find_package(Boost CONFIG REQUIRED program_options filesystem system thread context log)
 
 hunter_add_package(jsoncpp)
 find_package(jsoncpp CONFIG REQUIRED)
@@ -108,7 +122,17 @@ find_package(jsoncpp CONFIG REQUIRED)
 hunter_add_package(Snappy)
 find_package(Snappy CONFIG)
 
-include(ProjectCryptopp)
+hunter_add_package(cryptopp)
+find_package(cryptopp CONFIG REQUIRED)
+message("Crypto++: ${HUNTER_cryptopp_VERSION}")
+
+hunter_add_package(libscrypt)
+find_package(libscrypt CONFIG REQUIRED)
+
+hunter_add_package(ethash)
+find_package(ethash CONFIG REQUIRED)
+
+#include(ProjectCryptopp)
 include(ProjectJsonRpcCpp)
 include(ProjectSecp256k1)
 include(ProjectSnark)
@@ -122,12 +146,12 @@ endif()
 
 configure_project()
 
+include_directories("${CMAKE_SOURCE_DIR}")
+
+add_subdirectory(libaleth-interpreter)
 add_subdirectory(libdevcore)
 add_subdirectory(libdevcrypto)
 add_subdirectory(libp2p)
-
-add_subdirectory(libethash)
-
 add_subdirectory(libethcore)
 add_subdirectory(libevm)
 add_subdirectory(libethereum)

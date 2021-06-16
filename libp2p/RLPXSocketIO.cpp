@@ -85,7 +85,7 @@ void RLPXSocketIO::doWrite()
 void RLPXSocketIO::deferWrite()
 {
 	auto self(shared_from_this());
-	m_congestion.reset(new ba::deadline_timer(m_socket.get_io_service()));
+	m_congestion.reset(new ba::deadline_timer(m_socket.get_executor()));
 	m_congestion->expires_from_now(boost::posix_time::milliseconds(50));
 	m_congestion->async_wait([=](boost::system::error_code const& _ec) { m_congestion.reset(); if (!_ec) doWrite(); });
 }

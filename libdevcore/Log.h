@@ -30,6 +30,11 @@
 #include "FixedHash.h"
 #include "Terminal.h"
 
+#include <boost/log/attributes/scoped_attribute.hpp>
+#include <boost/log/sources/global_logger_storage.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/sources/severity_channel_logger.hpp>
+
 namespace dev
 {
 
@@ -82,6 +87,27 @@ public:
 	static void pop();
 	static std::string join(std::string const& _prior);
 };
+
+#define LOG BOOST_LOG
+
+enum Verbosity
+{
+	VerbositySilent = -1,
+	VerbosityError = 0,
+	VerbosityWarning = 1,
+	VerbosityInfo = 2,
+	VerbosityDebug = 3,
+	VerbosityTrace = 4,
+};
+
+// Simple non-thread-safe logger with fixed severity and channel for each message
+// For better formatting it is recommended to limit channel name to max 6 characters.
+using Logger = boost::log::sources::severity_channel_logger<>;
+inline Logger createLogger(int _severity, std::string const& _channel)
+{
+	return Logger(
+		boost::log::keywords::severity = _severity, boost::log::keywords::channel = _channel);
+}
 
 /// Set the current thread's log name.
 ///

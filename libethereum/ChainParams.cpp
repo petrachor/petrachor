@@ -78,6 +78,7 @@ ChainParams ChainParams::loadConfig(string const& _json, h256 const& _stateRoot)
     setU256Parameter(cp.EIP158ForkBlock, "EIP158ForkBlock");
     setU256Parameter(cp.byzantiumForkBlock, "byzantiumForkBlock");
     setU256Parameter(cp.constantinopleForkBlock, "constantinopleForkBlock");
+    setU256Parameter(cp.istanbulForkBlock, "istanbulForkBlock");
     setU256Parameter(cp.daoHardforkBlock, "daoHardforkBlock");
     setU256Parameter(cp.minimumDifficulty, "minimumDifficulty");
     setU256Parameter(cp.targetBlockInterval, "targetBlockInterval", false);

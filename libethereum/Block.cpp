@@ -23,7 +23,7 @@
 
 #include <ctime>
 #include <boost/filesystem.hpp>
-#include <boost/timer.hpp>
+#include <boost/timer/timer.hpp>
 #include <libdevcore/CommonIO.h>
 #include <libdevcore/Assertions.h>
 #include <libdevcore/TrieHash.h>
@@ -121,14 +121,14 @@ Block& Block::operator=(Block const& _s)
 	return *this;
 }
 
-void Block::resetCurrent(u256 const& _timestamp)
+void Block::resetCurrent(int64_t const& _timestamp)
 {
 	m_transactions.clear();
 	m_receipts.clear();
 	m_transactionSet.clear();
 	m_currentBlock = BlockHeader();
     m_currentBlock.setAuthor(m_author);
-	m_currentBlock.setTimestamp(max(m_previousBlock.timestamp() + 1, _timestamp));
+	m_currentBlock.setTimestamp(std::max(m_previousBlock.timestamp() + 1, _timestamp));
 	m_currentBytes.clear();
 	sealEngine()->populateFromParent(m_currentBlock, m_previousBlock);
 
@@ -661,9 +661,11 @@ ExecutionResult Block::execute(LastBlockHashesFace const& _lh, Transaction const
 	// Uncommitting is a non-trivial operation - only do it once we've verified as much of the
 	// transaction as possible.
 	uncommitToSeal();
-
-	std::pair<ExecutionResult, TransactionReceipt> resultReceipt = m_state.execute(EnvInfo(info(), _lh, gasUsed()), *m_sealEngine, _t, _p, _onOp);
-
+	
+	EnvInfo const envInfo{info(), _lh, gasUsed(), m_sealEngine->chainParams().chainID};
+	std::pair<ExecutionResult, TransactionReceipt> resultReceipt =
+		m_state.execute(envInfo, *m_sealEngine, _t, _p, _onOp);
+	
 	if (_p == Permanence::Committed)
 	{
 		// Add to the user-originated transactions that we've executed.
@@ -698,7 +700,8 @@ void Block::updateBlockhashContract()
 	if (blockNumber == constantinopleForkBlock)
 	{
 		m_state.createContract(c_blockhashContractAddress);
-		m_state.setCode(c_blockhashContractAddress, bytes(c_blockhashContractCode));
+		m_state.setCode(c_blockhashContractAddress, bytes(c_blockhashContractCode),
+		                m_sealEngine->evmSchedule(blockNumber).accountVersion);
 		m_state.commit(State::CommitBehaviour::KeepEmptyAccounts);
 	}
 

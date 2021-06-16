@@ -29,10 +29,12 @@ namespace dev {
                 {
                     response = this->test_mineBlocks(request[0u].asInt());
                 }
+                
                 inline virtual void test_modifyTimestampI(const Json::Value &request, Json::Value &response)
                 {
                     response = this->test_modifyTimestamp(request[0u].asInt());
                 }
+                
                 inline virtual void test_addBlockI(const Json::Value &request, Json::Value &response)
                 {
                     response = this->test_addBlock(request[0u].asString());

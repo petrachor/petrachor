@@ -8,7 +8,7 @@ set(
 add_executable(petrachor ${sources})
 target_link_libraries(
     petrachor
-    PRIVATE ethereum ethashseal evm web3jsonrpc webthree devcore
+    PRIVATE ethereum aleth-interpreter ethash::keccak ethashseal evm cryptopp-static devcrypto web3jsonrpc webthree devcore
 )
 
 install(TARGETS petrachor DESTINATION bin)

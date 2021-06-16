@@ -29,6 +29,7 @@ struct EVMSchedule
 {
 	EVMSchedule(): tierStepGas(std::array<unsigned, 8>{{0, 2, 3, 5, 8, 10, 20, 0}}) {}
 	EVMSchedule(bool _efcd, bool _hdc, unsigned const& _txCreateGas): exceptionalFailedCodeDeposit(_efcd), haveDelegateCall(_hdc), tierStepGas(std::array<unsigned, 8>{{0, 2, 3, 5, 8, 10, 20, 0}}), txCreateGas(_txCreateGas) {}
+	unsigned accountVersion = 0;
 	bool exceptionalFailedCodeDeposit = true;
 	bool haveDelegateCall = true;
 	bool eip150Mode = false;
@@ -64,20 +65,33 @@ struct EVMSchedule
 	unsigned txDataZeroGas = 4;
 	unsigned txDataNonZeroGas = 68;
 	unsigned copyGas = 3;
-
+	bool haveChainID = false;
 	unsigned extcodesizeGas = 20;
 	unsigned extcodecopyGas = 20;
 	unsigned balanceGas = 20;
 	unsigned suicideGas = 0;
 	unsigned blockhashGas = 20;
 	unsigned maxCodeSize = unsigned(-1);
-
+	bool eip1283Mode = false;
+	bool eip2200Mode = false;
+	unsigned sstoreUnchangedGas = 200;
+	unsigned selfdestructGas = 0;
+	bool haveBitwiseShifting = false;
+	bool haveSelfbalance = false;
+	unsigned extcodehashGas = 400;
+	bool haveExtcodehash = false;
+	unsigned precompileStaticCallGas = 700;
+	unsigned callSelfGas = 40;
+	unsigned selfdestructRefundGas = 24000;
+	
 	boost::optional<u256> blockRewardOverwrite;
 
 	bool staticCallDepthLimit() const { return !eip150Mode; }
 	bool suicideChargesNewAccountGas() const { return eip150Mode; }
 	bool emptinessIsNonexistence() const { return eip158Mode; }
 	bool zeroValueTransferChargesNewAccountGas() const { return !eip158Mode; }
+	bool sstoreNetGasMetering() const { return eip1283Mode || eip2200Mode; }
+	bool sstoreThrowsIfGasBelowCallStipend() const { return eip2200Mode; }
 };
 
 static const EVMSchedule DefaultSchedule = EVMSchedule();
@@ -116,13 +130,72 @@ static const EVMSchedule ByzantiumSchedule = []
 	return schedule;
 }();
 
+static const EVMSchedule EWASMSchedule = []
+{
+    EVMSchedule schedule = ByzantiumSchedule;
+    schedule.maxCodeSize = std::numeric_limits<unsigned>::max();
+    return schedule;
+}();
+
 static const EVMSchedule ConstantinopleSchedule = []
 {
-	EVMSchedule schedule = ByzantiumSchedule;
-	schedule.blockhashGas = 800;
-	schedule.haveCreate2 = true;
+    EVMSchedule schedule = ByzantiumSchedule;
+    schedule.haveCreate2 = true;
+    schedule.haveBitwiseShifting = true;
+    schedule.haveExtcodehash = true;
+    schedule.eip1283Mode = true;
+    schedule.blockRewardOverwrite = {2 * ether};
 	return schedule;
 }();
+
+static const EVMSchedule ConstantinopleFixSchedule = [] {
+	EVMSchedule schedule = ConstantinopleSchedule;
+	schedule.eip1283Mode = false;
+	return schedule;
+}();
+
+
+static const EVMSchedule IstanbulSchedule = [] {
+	EVMSchedule schedule = ConstantinopleFixSchedule;
+	schedule.txDataNonZeroGas = 16;
+	schedule.sloadGas = 800;
+	schedule.balanceGas = 700;
+	schedule.extcodehashGas = 700;
+	schedule.haveChainID = true;
+	schedule.haveSelfbalance = true;
+	schedule.eip2200Mode = true;
+	schedule.sstoreUnchangedGas = 800;
+	return schedule;
+}();
+
+static const EVMSchedule& MuirGlacierSchedule = IstanbulSchedule;
+
+static const EVMSchedule BerlinSchedule = [] {
+	EVMSchedule schedule = MuirGlacierSchedule;
+	return schedule;
+}();
+
+static const EVMSchedule ExperimentalSchedule = [] {
+	EVMSchedule schedule = BerlinSchedule;
+	schedule.accountVersion = 1;
+	schedule.blockhashGas = 800;
+	return schedule;
+}();
+
+inline EVMSchedule const& latestScheduleForAccountVersion(u256 const& _version)
+{
+	if (_version == 0)
+		return IstanbulSchedule;
+	else if (_version == ExperimentalSchedule.accountVersion)
+		return ExperimentalSchedule;
+	else
+	{
+		// This should not happen, as all existing accounts
+		// are created either with version 0 or with one of fork's versions
+		assert(false);
+		return DefaultSchedule;
+	}
+}
 
 }
 }

@@ -219,10 +219,10 @@ void Ethash::generateSeal(BlockHeader _bi, BlockHeader const& parent, BalanceRet
 
             std::map<Address, u256> balanceMap;
             for (auto kp: m_keyPairs) balanceMap.insert(std::make_pair(kp.address(), getAgedBalance(kp.address(), (BlockNumber) parent.number(), balanceRetriever)));
+	
+	        int64_t currentTime = utcTime();
 
-            u256 currentTime = utcTime();
-
-            for (u256 timestamp = currentTime; timestamp > (currentTime - 2); timestamp--){
+            for (int64_t timestamp = currentTime; timestamp > (currentTime - 2); timestamp--){
 
                 m_sealing.setTimestamp(timestamp);
                 m_sealing.setDifficulty(calculateDifficulty(m_sealing, parent));

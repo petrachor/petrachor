@@ -67,7 +67,7 @@ bool Test::test_modifyTimestamp(int _timestamp)
 {
 	try
 	{
-		asClientTest(m_eth).modifyTimestamp(u256(_timestamp));
+		asClientTest(m_eth).modifyTimestamp(_timestamp);
 	}
 	catch (std::exception const&)
 	{

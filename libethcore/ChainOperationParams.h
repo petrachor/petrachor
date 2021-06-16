@@ -63,6 +63,12 @@ private:
 	u256 m_startingBlock = 0;
 };
 
+constexpr int64_t c_infiniteBlockNumber = std::numeric_limits<int64_t>::max();struct AdditionalEIPs
+{
+	bool eip1380 = false;
+	bool eip2046 = false;
+};
+
 struct ChainOperationParams
 {
 	ChainOperationParams();
@@ -88,9 +94,9 @@ public:
 	u256 byzantiumForkBlock;
 	u256 constantinopleForkBlock;
 	u256 daoHardforkBlock;
-    //int chainID = 0; // Distinguishes different chains (mainnet, Ropsten, etc). --> Removed, change datadir name to distinguish
+    int chainID = 0; // Distinguishes different chains (mainnet, Ropsten, etc). --> Removed, change datadir name to distinguish
 	int networkID = 0; // Distinguishes different sub protocols.
-
+	u256 experimentalForkBlock = c_infiniteBlockNumber;
 	u256 minimumDifficulty;
 	u256 difficultyBoundDivisor;
 	u256 durationLimit;
@@ -98,6 +104,11 @@ public:
     u256 initialSupply, inflationFactorPerBlockFemtoPercent;
 	bool allowFutureBlocks = false;
 	u256 registrar;
+    u256 berlinForkBlock = c_infiniteBlockNumber;
+    u256 muirGlacierForkBlock = c_infiniteBlockNumber;
+    u256 istanbulForkBlock = c_infiniteBlockNumber;
+    u256 constantinopleFixForkBlock = c_infiniteBlockNumber;
+    u256 eWASMForkBlock = c_infiniteBlockNumber;
 
 	/// Precompiled contracts as specified in the chain params.
 	std::unordered_map<Address, PrecompiledContract> precompiled;

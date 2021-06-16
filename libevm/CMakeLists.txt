@@ -1,29 +1,28 @@
 
-set(SOURCES
-	ExtVMFace.cpp
-	Instruction.cpp
-	VM.cpp
-	VMOpt.cpp
-	VMCalls.cpp
-	VMSIMD.cpp
-	VMValidate.cpp
-	VMFactory.cpp
+set(sources
+    EVMC.cpp EVMC.h
+    ExtVMFace.cpp ExtVMFace.h
+    Instruction.cpp Instruction.h
+    LegacyVM.cpp LegacyVM.h
+    LegacyVMConfig.h
+    LegacyVMCalls.cpp
+    LegacyVMOpt.cpp
+    VMFace.h
+    VMFactory.cpp VMFactory.h
 )
 
-if (EVMJIT)
-	list(APPEND SOURCES
-		JitVM.cpp
-		SmartVM.cpp
-	)
-endif()
+add_library(evm ${sources})
 
-file(GLOB HEADERS "*.h")
+target_link_libraries(
+    evm
+    PUBLIC ethcore devcore evmc::evmc
+    PRIVATE
+        ethash::ethash
+        aleth-interpreter
+        #aleth-buildinfo
+        jsoncpp_lib_static Boost::program_options evmc::loader
+)
 
-add_library(evm ${SOURCES} ${HEADERS})
-
-target_link_libraries(evm PUBLIC ethcore devcore PRIVATE jsoncpp_lib_static)
-target_include_directories(evm PUBLIC ../evmjit/include)
-
-if (EVMJIT)
-	target_link_libraries(evm PRIVATE evmjit)
+if(EVM_OPTIMIZE)
+    target_compile_definitions(evm PRIVATE EVM_OPTIMIZE)
 endif()

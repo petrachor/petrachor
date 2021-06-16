@@ -237,7 +237,15 @@ public:
 			BOOST_THROW_EXCEPTION(BadCast());
 		return ret;
 	}
-
+	
+	int64_t toPositiveInt64(int _flags = Strict) const
+	{
+		int64_t i = toInt<int64_t>(_flags);
+		if ((_flags & ThrowOnFail) && i < 0)
+			BOOST_THROW_EXCEPTION(BadCast());
+		return i;
+	}
+	
 	template <class T, class U>
 	std::pair<T, U> toPair(int _flags = Strict) const
 	{

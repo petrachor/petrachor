@@ -56,13 +56,12 @@ void connectClients(Client& c1, Client& c2)
 	(void)c1;
 	(void)c2;
 	// TODO: Move to WebThree. eth::Client no longer handles networking.
-#if 0
+
 	short c1Port = 20000;
 	short c2Port = 21000;
 	c1.startNetwork(c1Port);
 	c2.startNetwork(c2Port);
 	c2.connect("127.0.0.1", c1Port);
-#endif
 }
 
 void mine(Block& s, BlockChain const& _bc, SealEngineFace* _sealer)

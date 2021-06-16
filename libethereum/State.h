@@ -266,9 +266,9 @@ public:
 
 	/// Create a contract at the given address (with unset code and unchanged balance).
 	void createContract(Address const& _address);
-
+	
 	/// Sets the code of the account. Must only be called during / after contract creation.
-	void setCode(Address const& _address, bytes&& _code);
+	void setCode(Address const& _address, bytes&& _code, u256 const& _version);
 
 	/// Delete an account (used for processing suicides).
 	void kill(Address _a);
@@ -325,7 +325,15 @@ public:
 	void rollback(size_t _savepoint);
 
 	ChangeLog const& changeLog() const { return m_changeLog; }
-
+	
+	/// Set the balance of @p _addr to @p _value.
+	/// Will instantiate the address if it has never been used.
+	void setBalance(Address const& _addr, u256 const& _value);
+	
+	/// Get contract account's version.
+	/// @returns 0 if no account exists at that address.
+	u256 version(Address const& _a) const;
+	
 private:
 	/// Turns all "touched" empty accounts into non-alive accounts.
 	void removeEmptyAccounts();

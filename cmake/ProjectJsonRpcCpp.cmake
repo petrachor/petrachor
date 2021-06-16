@@ -46,6 +46,7 @@ if (WIN32)
         -DMHD_LIBRARY_DEBUG=${MHD_LIBRARY})
 endif()
 
+include(ExternalProject)
 ExternalProject_Add(
     jsonrpccpp
     PREFIX "${prefix}"
