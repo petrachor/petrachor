@@ -95,7 +95,7 @@ endif()
 add_subdirectory(evmc)
 
 # project name and version should be set after cmake_policy CMP0048
-project(petrachor VERSION "1.5")
+project(petrachor VERSION "1.1.0")
 cable_add_buildinfo_library(PROJECT_NAME petrachor)
 
 if (NOT EXISTS ${CMAKE_SOURCE_DIR}/evmjit/.git)
