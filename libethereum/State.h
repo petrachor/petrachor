@@ -351,7 +351,11 @@ private:
 
 	void createAccount(Address const& _address, Account const&& _account);
 
-	OverlayDB m_db;								///< Our overlay for the state tree.
+    /// @returns true when normally halted; false when exceptionally halted; throws when internal VM
+    /// exception occurred.
+    bool executeTransaction(Executive& _e, Transaction const& _t, OnOpFunc const& _onOp);
+
+    OverlayDB m_db;								///< Our overlay for the state tree.
 	SecureTrieDB<Address, OverlayDB> m_state;	///< Our state tree, as an OverlayDB DB.
 	mutable std::unordered_map<Address, Account> m_cache;	///< Our address cache. This stores the states of each address that has (or at least might have) been changed.
 	mutable std::vector<Address> m_unchangedCacheEntries;	///< Tracks entries in m_cache that can potentially be purged if it grows too large.
