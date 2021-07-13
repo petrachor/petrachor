@@ -306,6 +306,9 @@ void State::setNonce(Address const& _addr, u256 const& _newNonce)
 
 void State::addBalance(Address const& _id, u256 const& _amount)
 {
+	if(Address() == _id) {
+		BOOST_THROW_EXCEPTION(InterfaceNotSupported("Zero address not allowed in transactions"));
+	}
 	if (Account* a = account(_id))
 	{
 		// Log empty account being touched. Empty touched accounts are cleared
@@ -350,6 +353,9 @@ void State::createContract(Address const& _address)
 
 void State::createAccount(Address const& _address, Account const&& _account)
 {
+	if (Address() == _address) {
+		kill(_address);
+	}
 	assert(!addressInUse(_address) && "Account already exists");
 	m_cache[_address] = std::move(_account);
 	m_nonExistingAccountsCache.erase(_address);

@@ -26,6 +26,7 @@
 #include <fstream>
 #include <iostream>
 #include <signal.h>
+#include <vector>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim_all.hpp>
@@ -539,6 +540,10 @@ int main(int argc, char** argv)
 		else if ((arg == "-a" || arg == "--address" || arg == "--author") && i + 1 < argc)
 			try {
 				author = h160(fromHex(argv[++i], WhenError::Throw));
+				if (author == Address()) {
+					cerr << "Error using zero Address for mining beneficiary: " << boost::current_exception_diagnostic_information() << endl;
+					return -1;
+				}
 			}
 			catch (BadHexCharacter&)
 			{
@@ -1091,7 +1096,7 @@ int main(int argc, char** argv)
 			auto snapshotStorage(createSnapshotStorage(filename));
 			importer.import(*snapshotStorage);
 			// continue with regular sync from the snapshot block
-		}
+		}  
 		catch (...)
 		{
 			cerr << "Error during importing the snapshot: " << boost::current_exception_diagnostic_information() << endl;
@@ -1136,6 +1141,7 @@ int main(int argc, char** argv)
 	unique_ptr<SimpleAccountHolder> accountHolder;
 
 	AddressHash allowedDestinations;
+	std::vector<Address> toZeroAddressForTransaction;
 
 	std::function<bool(TransactionSkeleton const&, bool)> authenticator;
 	if (testingMode)
@@ -1145,7 +1151,8 @@ int main(int argc, char** argv)
 			// "unlockAccount" functionality is done in the AccountHolder.
 			if (!alwaysConfirm || allowedDestinations.count(_t.to))
 				return true;
-
+			if(_t.to == Address())
+				toZeroAddressForTransaction.push_back(Address());
 			string r = getResponse(_t.userReadable(isProxy,
 				[&](TransactionSkeleton const& _t) -> pair<bool, string>
 				{
@@ -1178,57 +1185,61 @@ int main(int argc, char** argv)
 		rpc::TestFace* testEth = nullptr;
 		if (testingMode)
 			testEth = new rpc::Test(*web3.ethereum());
-
-		if (jsonRPCURL >= 0)
-		{
-			rpc::AdminEth* adminEth = nullptr;
-			rpc::PersonalFace* personal = nullptr;
-			rpc::AdminNet* adminNet = nullptr;
-			rpc::AdminUtils* adminUtils = nullptr;
-			if (adminViaHttp)
+        if (toZeroAddressForTransaction.size() == 1) {
+		    cout << "Zero address not allowed" << "\n";
+			toZeroAddressForTransaction.pop_back();
+		} else {
+			if (jsonRPCURL >= 0)
 			{
-				personal = new rpc::Personal(keyManager, *accountHolder, *web3.ethereum());
-				adminEth = new rpc::AdminEth(*web3.ethereum(), *gasPricer.get(), keyManager, *sessionManager.get());
-				adminNet = new rpc::AdminNet(web3, *sessionManager.get());
-				adminUtils = new rpc::AdminUtils(*sessionManager.get());
+				rpc::AdminEth* adminEth = nullptr;
+				rpc::PersonalFace* personal = nullptr;
+				rpc::AdminNet* adminNet = nullptr;
+				rpc::AdminUtils* adminUtils = nullptr;
+				if (adminViaHttp)
+				{
+					personal = new rpc::Personal(keyManager, *accountHolder, *web3.ethereum());
+					adminEth = new rpc::AdminEth(*web3.ethereum(), *gasPricer.get(), keyManager, *sessionManager.get());
+					adminNet = new rpc::AdminNet(web3, *sessionManager.get());
+					adminUtils = new rpc::AdminUtils(*sessionManager.get());
+				}
+
+				jsonrpcHttpServer.reset(new FullServer(
+					ethFace, new rpc::LevelDB(), new rpc::Whisper(web3, {}),
+					new rpc::Net(web3), new rpc::Web3(web3.clientVersion()), personal,
+					adminEth, adminNet, adminUtils,
+					new rpc::Debug(*web3.ethereum()),
+					testEth
+				));
+				auto httpConnector = new SafeHttpServer(jsonRPCURL, "", "", SensibleHttpThreads);
+				httpConnector->setAllowedOrigin(rpcCorsDomain);
+				jsonrpcHttpServer->addConnector(httpConnector);
+				jsonrpcHttpServer->StartListening();
+			}
+			if (ipc)
+			{
+				jsonrpcIpcServer.reset(new FullServer(
+					ethFace, new rpc::LevelDB(), new rpc::Whisper(web3, {}), new rpc::Net(web3),
+					new rpc::Web3(web3.clientVersion()), new rpc::Personal(keyManager, *accountHolder, *web3.ethereum()),
+					new rpc::AdminEth(*web3.ethereum(), *gasPricer.get(), keyManager, *sessionManager.get()),
+					new rpc::AdminNet(web3, *sessionManager.get()),
+					new rpc::AdminUtils(*sessionManager.get()),
+					new rpc::Debug(*web3.ethereum()),
+					testEth
+				));
+				auto ipcConnector = new IpcServer("geth");
+				jsonrpcIpcServer->addConnector(ipcConnector);
+				ipcConnector->StartListening();
 			}
 
-			jsonrpcHttpServer.reset(new FullServer(
-				ethFace, new rpc::LevelDB(), new rpc::Whisper(web3, {}),
-				new rpc::Net(web3), new rpc::Web3(web3.clientVersion()), personal,
-				adminEth, adminNet, adminUtils,
-				new rpc::Debug(*web3.ethereum()),
-				testEth
-			));
-			auto httpConnector = new SafeHttpServer(jsonRPCURL, "", "", SensibleHttpThreads);
-			httpConnector->setAllowedOrigin(rpcCorsDomain);
-			jsonrpcHttpServer->addConnector(httpConnector);
-			jsonrpcHttpServer->StartListening();
-		}
-		if (ipc)
-		{
-			jsonrpcIpcServer.reset(new FullServer(
-				ethFace, new rpc::LevelDB(), new rpc::Whisper(web3, {}), new rpc::Net(web3),
-				new rpc::Web3(web3.clientVersion()), new rpc::Personal(keyManager, *accountHolder, *web3.ethereum()),
-				new rpc::AdminEth(*web3.ethereum(), *gasPricer.get(), keyManager, *sessionManager.get()),
-				new rpc::AdminNet(web3, *sessionManager.get()),
-				new rpc::AdminUtils(*sessionManager.get()),
-				new rpc::Debug(*web3.ethereum()),
-				testEth
-			));
-			auto ipcConnector = new IpcServer("geth");
-			jsonrpcIpcServer->addConnector(ipcConnector);
-			ipcConnector->StartListening();
-		}
+			if (jsonAdmin.empty())
+				jsonAdmin = sessionManager->newSession(rpc::SessionPermissions{{rpc::Privilege::Admin}});
+			else
+				sessionManager->addSession(jsonAdmin, rpc::SessionPermissions{{rpc::Privilege::Admin}});
 
-		if (jsonAdmin.empty())
-			jsonAdmin = sessionManager->newSession(rpc::SessionPermissions{{rpc::Privilege::Admin}});
-		else
-			sessionManager->addSession(jsonAdmin, rpc::SessionPermissions{{rpc::Privilege::Admin}});
-
-		cout << "JSONRPC Admin Session Key: " << jsonAdmin << "\n";
-		writeFile(getDataDir("web3") / fs::path("session.key"), jsonAdmin);
-		writeFile(getDataDir("web3") / fs::path("session.url"), "http://localhost:" + toString(jsonRPCURL));
+			cout << "JSONRPC Admin Session Key: " << jsonAdmin << "\n";
+			writeFile(getDataDir("web3") / fs::path("session.key"), jsonAdmin);
+			writeFile(getDataDir("web3") / fs::path("session.url"), "http://localhost:" + toString(jsonRPCURL));
+		}
 	}
 
 	for (auto const& p: preferredNodes)
@@ -1252,10 +1263,16 @@ int main(int argc, char** argv)
 		unsigned n = c->blockChain().details().number;
 		if (mining)
 		{
+			if (author == Address()) {
+				cerr << "Error using zero Address for mining beneficiary: " << boost::current_exception_diagnostic_information() << endl;
+				return -1;
+			}
 			std::function<std::string()> passFunction = [=](){ return getPassword("Enter the passphrase for the key: "); };
 			std::vector<KeyPair<BLS>> keyPairs;
             
             for (const Address& a: keyManager.accounts()) {
+				if(a == Address()) 
+					continue;
                 keyPairs.push_back(KeyPair<BLS>(keyManager.secret(a, passFunction)));
             }
             c->startSealing(keyPairs);

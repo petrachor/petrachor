@@ -68,6 +68,10 @@ Block::Block(BlockChain const& _bc, OverlayDB const& _db, BaseState _bs, Address
 	m_precommit(Invalid256),
     m_author(_author)
 {
+	//if (_author == Address())
+	//	BOOST_THROW_EXCEPTION(ChainOperationWithUnknownBlockChain());
+	//assert(_author != Address() && "Block one author is zero address");
+	//To be looked into
 	noteChain(_bc);
 	m_previousBlock.clear();
 	m_currentBlock.clear();
@@ -83,6 +87,10 @@ Block::Block(BlockChain const& _bc, OverlayDB const& _db, h256 const& _root, Add
 	m_state.setRoot(_root);
 	m_previousBlock.clear();
 	m_currentBlock.clear();
+	//if (_author == Address())
+	//	BOOST_THROW_EXCEPTION(ChainOperationWithUnknownBlockChain());
+	//assert(_author != Address() && "Block address(_author) is zero address");
+	//To be looked into
 //	assert(m_state.root() == m_previousBlock.stateRoot());
 }
 
@@ -99,6 +107,10 @@ Block::Block(Block const& _s):
 	m_sealEngine(_s.m_sealEngine)
 {
 	m_committedToSeal = false;
+	//if (_s.m_author == Address())
+	//	BOOST_THROW_EXCEPTION(ChainOperationWithUnknownBlockChain());
+	//assert(_s.m_author != Address() && "_s.m_author is zero address");
+	//To be looked into
 }
 
 Block& Block::operator=(Block const& _s)
@@ -834,6 +846,9 @@ bool Block::sealBlock(bytesConstRef _header)
     testHeader.setDifficulty(m_currentBlock.difficulty());
 //    clog << "block A: " << testHeader << " block B: " << m_currentBlock << "\n";
     if (testHeader.hash(WithoutSeal) != m_currentBlock.hash(WithoutSeal))
+		return false;
+
+	if(m_currentBlock.author() == Address())
 		return false;
 
 	clog(StateDetail) << "Sealing block!";
