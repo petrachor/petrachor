@@ -266,9 +266,9 @@ public:
 
 	/// Create a contract at the given address (with unset code and unchanged balance).
 	void createContract(Address const& _address);
-
+	
 	/// Sets the code of the account. Must only be called during / after contract creation.
-	void setCode(Address const& _address, bytes&& _code);
+	void setCode(Address const& _address, bytes&& _code, u256 const& _version);
 
 	/// Delete an account (used for processing suicides).
 	void kill(Address _a);
@@ -325,7 +325,15 @@ public:
 	void rollback(size_t _savepoint);
 
 	ChangeLog const& changeLog() const { return m_changeLog; }
-
+	
+	/// Set the balance of @p _addr to @p _value.
+	/// Will instantiate the address if it has never been used.
+	void setBalance(Address const& _addr, u256 const& _value);
+	
+	/// Get contract account's version.
+	/// @returns 0 if no account exists at that address.
+	u256 version(Address const& _a) const;
+	
 private:
 	/// Turns all "touched" empty accounts into non-alive accounts.
 	void removeEmptyAccounts();
@@ -343,7 +351,11 @@ private:
 
 	void createAccount(Address const& _address, Account const&& _account);
 
-	OverlayDB m_db;								///< Our overlay for the state tree.
+    /// @returns true when normally halted; false when exceptionally halted; throws when internal VM
+    /// exception occurred.
+    bool executeTransaction(Executive& _e, Transaction const& _t, OnOpFunc const& _onOp);
+
+    OverlayDB m_db;								///< Our overlay for the state tree.
 	SecureTrieDB<Address, OverlayDB> m_state;	///< Our state tree, as an OverlayDB DB.
 	mutable std::unordered_map<Address, Account> m_cache;	///< Our address cache. This stores the states of each address that has (or at least might have) been changed.
 	mutable std::vector<Address> m_unchangedCacheEntries;	///< Tracks entries in m_cache that can potentially be purged if it grows too large.

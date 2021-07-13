@@ -28,8 +28,8 @@
 /// DEVified by Gav Wood.
 #pragma once
 
-#include <string>
 #include "FixedHash.h"
+#include <string>
 
 namespace dev
 {

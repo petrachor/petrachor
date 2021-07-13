@@ -110,7 +110,7 @@ void BlockHeader::clear()
 	m_number = 0;
 	m_gasLimit = 0;
 	m_gasUsed = 0;
-	m_timestamp = Invalid256;
+	m_timestamp = -1;
 	m_extraData.clear();
 	m_seal.clear();
 	noteDirty();
@@ -181,10 +181,10 @@ void BlockHeader::populate(RLP const& _header)
         m_receiptsRoot = _header[field++].toHash<h256>(RLP::VeryStrict);
         m_logBloom = _header[field++].toHash<LogBloom>(RLP::VeryStrict);
         m_difficulty = _header[field++].toInt<u256>();
-        m_number = _header[field++].toInt<u256>();
+        m_number = _header[field++].toInt<int64_t>();
         m_gasLimit = _header[field++].toInt<u256>();
         m_gasUsed = _header[field++].toInt<u256>();
-        m_timestamp = _header[field++].toInt<u256>();
+        m_timestamp = _header[field++].toInt<int64_t>();
         m_extraData = _header[field++].toBytes();
         m_seal.clear();
         for (unsigned i = field; i < _header.itemCount(); ++i)

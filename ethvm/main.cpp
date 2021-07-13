@@ -29,7 +29,7 @@
 #include <libethereum/LastBlockHashesFace.h>
 #include <libethashseal/GenesisInfo.h>
 #include <libethashseal/Ethash.h>
-#include <libevm/VM.h>
+//#include <libevm/VM.h>
 #include <libevm/VMFactory.h>
 #include <boost/algorithm/string.hpp>
 #include <fstream>
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
 	setDefaultOrCLocale();
 	string inputFile;
 	Mode mode = Mode::Statistics;
-	VMKind vmKind = VMKind::Interpreter;
+
 	State state(0);
 	Address sender = Address(69);
 	Address origin = Address(69);
@@ -157,23 +157,6 @@ int main(int argc, char** argv)
 			help();
 		else if (arg == "-V" || arg == "--version")
 			version();
-		else if (arg == "--vm" && i + 1 < argc)
-		{
-			string vmKindStr = argv[++i];
-			if (vmKindStr == "interpreter")
-				vmKind = VMKind::Interpreter;
-#if ETH_EVMJIT
-			else if (vmKindStr == "jit")
-				vmKind = VMKind::JIT;
-			else if (vmKindStr == "smart")
-				vmKind = VMKind::Smart;
-#endif
-			else
-			{
-				cerr << "Unknown/unsupported VM kind: " << vmKindStr << "\n";
-				return -1;
-			}
-		}
 		else if (arg == "--mnemonics")
 			st.setShowMnemonics();
 		else if (arg == "--flat")
@@ -188,12 +171,8 @@ int main(int argc, char** argv)
 			gasPrice = u256(argv[++i]);
 		else if (arg == "--author" && i + 1 < argc)
 			blockHeader.setAuthor(Address(argv[++i]));
-		else if (arg == "--number" && i + 1 < argc)
-			blockHeader.setNumber(u256(argv[++i]));
 		else if (arg == "--difficulty" && i + 1 < argc)
 			blockHeader.setDifficulty(u256(argv[++i]));
-		else if (arg == "--timestamp" && i + 1 < argc)
-			blockHeader.setTimestamp(u256(argv[++i]));
 		else if (arg == "--gas-limit" && i + 1 < argc)
 			blockHeader.setGasLimit(u256(argv[++i]).convert_to<int64_t>());
 		else if (arg == "--value" && i + 1 < argc)
@@ -240,9 +219,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-	VMFactory::setKind(vmKind);
-
-
 	// Read code from input file.
 	if (!inputFile.empty())
 	{
@@ -271,7 +247,7 @@ int main(int argc, char** argv)
 	{
 		// Deploy the code on some fake account to be called later.
 		Account account(0, 0);
-		account.setCode(bytes{code});
+		account.setCode(bytes{code}, 0);
 		std::unordered_map<Address, Account> map;
 		map[contractDestination] = account;
 		state.populateFrom(map);
@@ -286,7 +262,7 @@ int main(int argc, char** argv)
 
 	unique_ptr<SealEngineFace> se(ChainParams(genesisInfo(networkName)).createSealEngine());
 	LastBlockHashes lastBlockHashes;
-	EnvInfo const envInfo(blockHeader, lastBlockHashes, 0);
+	EnvInfo const envInfo(blockHeader, lastBlockHashes, 0, 0);
 	Executive executive(state, envInfo, *se);
 	ExecutionResult res;
 	executive.setResultRecipient(res);
@@ -295,18 +271,6 @@ int main(int argc, char** argv)
 	unordered_map<byte, pair<unsigned, bigint>> counts;
 	unsigned total = 0;
 	bigint memTotal;
-	auto onOp = [&](uint64_t step, uint64_t PC, Instruction inst, bigint m, bigint gasCost, bigint gas, VM* vm, ExtVMFace const* extVM) {
-		if (mode == Mode::Statistics)
-		{
-			counts[(byte)inst].first++;
-			counts[(byte)inst].second += gasCost;
-			total++;
-			if (m > 0)
-				memTotal = m;
-		}
-		else if (mode == Mode::Trace)
-			st(step, PC, inst, m, gasCost, gas, vm, extVM);
-	};
 
 	executive.initialize(t);
 	if (!code.empty())
@@ -315,11 +279,9 @@ int main(int argc, char** argv)
 		executive.create(sender, value, gasPrice, gas, &data, origin);
 
 	Timer timer;
-	if ((mode == Mode::Statistics || mode == Mode::Trace) && vmKind == VMKind::Interpreter)
-		// If we use onOp, the factory falls back to "interpreter"
-		executive.go(onOp);
-	else
-		executive.go();
+
+	executive.go();
+	
 	double execTime = timer.elapsed();
 	executive.finalize();
 	bytes output = std::move(res.output);
@@ -333,8 +295,8 @@ int main(int argc, char** argv)
 		for (LogEntry const& l: logs)
 		{
 			cout << "  " << l.address.hex() << ": " << toHex(t.data()) << "\n";
-			for (h256 const& t: l.topics)
-				cout << "    " << t.hex() << "\n";
+			for (h256 const& tx: l.topics)
+				cout << "    " << tx.hex() << "\n";
 		}
 
 		cout << total << " operations in " << execTime << " seconds.\n";

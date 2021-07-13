@@ -190,8 +190,8 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
 		RLP blockChunk(chunkUncompressed);
 		if (blockChunk.itemCount() < 3)
 			BOOST_THROW_EXCEPTION(InvalidBlockChunkData());
-
-		u256 const firstBlockNumber = blockChunk[0].toInt<u256>(RLP::VeryStrict);
+		
+		int64_t const firstBlockNumber = blockChunk[0].toPositiveInt64(RLP::VeryStrict);
 		h256 const firstBlockHash = blockChunk[1].toHash<h256>(RLP::VeryStrict);
 		u256 const firstBlockDifficulty = blockChunk[2].toInt<u256>(RLP::VeryStrict);
 		if (!firstBlockNumber || !firstBlockHash || !firstBlockDifficulty)
@@ -201,7 +201,7 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
 
 		size_t const itemCount = blockChunk.itemCount();
 		h256 parentHash = firstBlockHash;
-		u256 number = firstBlockNumber + 1;
+		int64_t number = firstBlockNumber + 1;
 		u256 totalDifficulty = firstBlockDifficulty;
 		for (size_t i = 3; i < itemCount; ++i, ++number)
 		{
@@ -233,7 +233,7 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
 			header.setNumber(number);
 			header.setGasLimit(abridgedBlock[4].toInt<u256>(RLP::VeryStrict));
 			header.setGasUsed(abridgedBlock[5].toInt<u256>(RLP::VeryStrict));
-			header.setTimestamp(abridgedBlock[6].toInt<u256>(RLP::VeryStrict));
+			header.setTimestamp(abridgedBlock[6].toPositiveInt64(RLP::VeryStrict));
 			header.setExtraData(abridgedBlock[7].toBytes(RLP::VeryStrict));
 
 			totalDifficulty += difficulty;

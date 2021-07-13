@@ -22,7 +22,7 @@
 #include "State.h"
 
 #include <boost/filesystem.hpp>
-#include <boost/timer.hpp>
+#include  <boost/timer/timer.hpp>
 #include <libdevcore/Assertions.h>
 #include <libdevcore/TrieHash.h>
 #include <libevm/VMFactory.h>
@@ -41,21 +41,6 @@ const char* StateSafeExceptions::name() { return EthViolet "⚙" EthBlue " ℹ";
 const char* StateDetail::name() { return EthViolet "⚙" EthWhite " ◌"; }
 const char* StateTrace::name() { return EthViolet "⚙" EthGray " ◎"; }
 const char* StateChat::name() { return EthViolet "⚙" EthWhite " ◌"; }
-
-namespace
-{
-
-/// @returns true when normally halted; false when exceptionally halted.
-bool executeTransaction(Executive& _e, Transaction const& _t, OnOpFunc const& _onOp)
-{
-	_e.initialize(_t);
-
-	if (!_e.execute())
-		_e.go(_onOp);
-	return _e.finalize();
-}
-
-}
 
 State::State(u256 const& _accountStartNonce, OverlayDB const& _db, BaseState _bs):
 	m_db(_db),
@@ -346,9 +331,24 @@ void State::subBalance(Address const& _addr, u256 const& _value)
 	addBalance(_addr, 0 - _value);
 }
 
+void State::setBalance(Address const& _addr, u256 const& _value)
+{
+	Account* a = account(_addr);
+	u256 original = a ? a->balance() : 0;
+	
+	// Fall back to addBalance().
+	addBalance(_addr, _value - original);
+}
+
 void State::createContract(Address const& _address)
 {
 	createAccount(_address, {requireAccountStartNonce(), 0});
+}
+
+u256 State::version(Address const& _a) const
+{
+	Account const* a = account(_a);
+	return a ? a->version() : 0;
 }
 
 void State::createAccount(Address const& _address, Account const&& _account)
@@ -473,10 +473,13 @@ bytes const& State::code(Address const& _addr) const
 	return a->code();
 }
 
-void State::setCode(Address const& _address, bytes&& _code)
+void State::setCode(Address const& _address, bytes&& _code, u256 const& _version)
 {
-	m_changeLog.emplace_back(_address, code(_address));
-	m_cache[_address].setCode(std::move(_code));
+	// rollback assumes that overwriting of the code never happens
+	// (not allowed in contract creation logic in Executive)
+	assert(!addressHasCode(_address));
+    m_changeLog.emplace_back(_address, code(_address));
+	m_cache[_address].setCode(move(_code), _version);
 }
 
 h256 State::codeHash(Address const& _a) const
@@ -540,7 +543,7 @@ void State::rollback(size_t _savepoint)
 			m_cache.erase(change.address);
 			break;
 		case Change::Code:
-			account.setCode(std::move(change.oldCode));
+			account.resetCode();
 			break;
 		case Change::Touch:
 			account.untouch();
@@ -593,8 +596,8 @@ void State::executeBlockTransactions(Block const& _block, unsigned _txCount, Las
 	u256 gasUsed = 0;
 	for (unsigned i = 0; i < _txCount; ++i)
 	{
-		EnvInfo envInfo(_block.info(), _lastHashes, gasUsed);
-
+		EnvInfo envInfo(_block.info(), _lastHashes, gasUsed, _sealEngine.chainParams().chainID);
+		
 		Executive e(*this, envInfo, _sealEngine);
 		executeTransaction(e, _block.pending()[i], OnOpFunc());
 
@@ -602,6 +605,25 @@ void State::executeBlockTransactions(Block const& _block, unsigned _txCount, Las
 	}
 }
 
+/// @returns true when normally halted; false when exceptionally halted; throws when internal VM
+/// exception occurred.
+bool State::executeTransaction(Executive& _e, Transaction const& _t, OnOpFunc const& _onOp)
+{
+    size_t const savept = savepoint();
+    try
+    {
+        _e.initialize(_t);
+
+        if (!_e.execute())
+            _e.go(_onOp);
+        return _e.finalize();
+    }
+    catch (Exception const&)
+    {
+        rollback(savept);
+        throw;
+    }
+}
 std::ostream& dev::eth::operator<<(std::ostream& _out, State const& _s)
 {
 	_out << "--- " << _s.rootHash() << std::endl;

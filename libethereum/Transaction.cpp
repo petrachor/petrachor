@@ -77,21 +77,24 @@ std::ostream& dev::eth::operator<<(std::ostream& _out, TransactionException cons
 {
 	switch (_er)
 	{
-		case TransactionException::None: _out << "None"; break;
-		case TransactionException::BadRLP: _out << "BadRLP"; break;
-		case TransactionException::InvalidFormat: _out << "InvalidFormat"; break;
-		case TransactionException::OutOfGasIntrinsic: _out << "OutOfGasIntrinsic"; break;
-		case TransactionException::InvalidSignature: _out << "InvalidSignature"; break;
-		case TransactionException::InvalidNonce: _out << "InvalidNonce"; break;
-		case TransactionException::NotEnoughCash: _out << "NotEnoughCash"; break;
-		case TransactionException::OutOfGasBase: _out << "OutOfGasBase"; break;
-		case TransactionException::BlockGasLimitReached: _out << "BlockGasLimitReached"; break;
-		case TransactionException::BadInstruction: _out << "BadInstruction"; break;
-		case TransactionException::BadJumpDestination: _out << "BadJumpDestination"; break;
-		case TransactionException::OutOfGas: _out << "OutOfGas"; break;
-		case TransactionException::OutOfStack: _out << "OutOfStack"; break;
-		case TransactionException::StackUnderflow: _out << "StackUnderflow"; break;
-		default: _out << "Unknown"; break;
+        case TransactionException::None: _out << "None"; break;
+        case TransactionException::BadRLP: _out << "BadRLP"; break;
+        case TransactionException::InvalidFormat: _out << "InvalidFormat"; break;
+        case TransactionException::OutOfGasIntrinsic: _out << "OutOfGasIntrinsic"; break;
+        case TransactionException::InvalidSignature: _out << "InvalidSignature"; break;
+        case TransactionException::InvalidNonce: _out << "InvalidNonce"; break;
+        case TransactionException::NotEnoughCash: _out << "NotEnoughCash"; break;
+        case TransactionException::OutOfGasBase: _out << "OutOfGasBase"; break;
+        case TransactionException::BlockGasLimitReached: _out << "BlockGasLimitReached"; break;
+        case TransactionException::BadInstruction: _out << "BadInstruction"; break;
+        case TransactionException::BadJumpDestination: _out << "BadJumpDestination"; break;
+        case TransactionException::OutOfGas: _out << "OutOfGas"; break;
+        case TransactionException::OutOfStack: _out << "OutOfStack"; break;
+        case TransactionException::StackUnderflow: _out << "StackUnderflow"; break;
+        case TransactionException::RevertInstruction:
+            _out << "RevertInstruction";
+            break;
+        default: _out << "Unknown"; break;
 	}
 	return _out;
 }

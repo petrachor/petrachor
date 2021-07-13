@@ -149,7 +149,7 @@ public:
 	bool hasNewCode() const { return m_hasNewCode; }
 
 	/// Sets the code of the account. Used by "create" messages.
-	void setCode(bytes&& _code);
+	void setCode(bytes&& _code, u256 const& _version);
 
 	/// Reset the code set by previous CREATE message.
 	void resetCode() { m_codeCache.clear(); m_hasNewCode = false; m_codeHash = EmptySHA3; }
@@ -160,7 +160,8 @@ public:
 
 	/// @returns the account's code.
 	bytes const& code() const { return m_codeCache; }
-
+	
+	u256 version() const { return m_version; }
 private:
 	/// Note that we've altered the account.
 	void changed() { m_isUnchanged = false; }
@@ -191,6 +192,9 @@ private:
 	 * be called with the correct args.
 	 */
 	h256 m_codeHash = EmptySHA3;
+	
+	/// Account's version
+	u256 m_version = 0;
 
 	/// The map with is overlaid onto whatever storage is implied by the m_storageRoot in the trie.
 	std::unordered_map<u256, u256> m_storageOverlay;

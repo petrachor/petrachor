@@ -33,7 +33,6 @@
 #include <boost/filesystem.hpp>
 
 #include <libdevcore/FileSystem.h>
-#include <libevm/VM.h>
 #include <libevm/VMFactory.h>
 #include <libethcore/KeyManager.h>
 #include <libethereum/Defaults.h>
@@ -177,11 +176,11 @@ inline std::string credits()
 
 string ethCredits(bool _interactive = false)
 {
-	std::ostringstream cout;
+	std::ostringstream s;
 	if (_interactive)
-		cout
+		s
 			<< "Type 'exit' to quit\n\n";
-	return credits() + cout.str();
+	return credits() + s.str();
 }
 
 void version()

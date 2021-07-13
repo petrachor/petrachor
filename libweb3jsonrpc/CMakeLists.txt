@@ -57,4 +57,4 @@ jsonrpcstub_create(web3jsonrpc test.json
 	TestClient ${CMAKE_CURRENT_BINARY_DIR} TestClient
 )
 
-target_link_libraries(web3jsonrpc ethashseal webthree whisper JsonRpcCpp::Server)
+target_link_libraries(web3jsonrpc ethashseal webthree whisper JsonRpcCpp::Server ethash::ethash)

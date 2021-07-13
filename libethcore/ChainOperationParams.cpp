@@ -55,7 +55,10 @@ ChainOperationParams::ChainOperationParams():
 
 EVMSchedule const& ChainOperationParams::scheduleForBlockNumber(u256 const& _blockNumber) const
 {
-	if (_blockNumber >= constantinopleForkBlock)
-		return ConstantinopleSchedule;
+    if (_blockNumber >= istanbulForkBlock)
+        return IstanbulSchedule;
+    if (_blockNumber >= constantinopleForkBlock)
+        return ConstantinopleSchedule;
     else return ByzantiumSchedule;
+
 }

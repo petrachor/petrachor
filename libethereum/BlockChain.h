@@ -189,7 +189,9 @@ public:
 	h256 numberHash(unsigned _i) const { if (!_i) return genesisHash(); return queryExtras<BlockHash, uint64_t, ExtraBlockHash>(_i, m_blockHashes, x_blockHashes, NullBlockHash).value; }
 
 	LastBlockHashesFace const& lastBlockHashes() const { return *m_lastBlockHashes;  }
-
+	
+	int chainID() const { return m_params.chainID; }
+	
 	/** Get the block blooms for a number of blocks. Thread-safe.
 	 * @returns the object pertaining to the blocks:
 	 * level 0:
