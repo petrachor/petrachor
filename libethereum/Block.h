@@ -283,6 +283,8 @@ public:
     BlockHeader const& previousInfo() const { return m_previousBlock; }
     BlockHeader& info() { return m_currentBlock; }
 
+    void triggerPendingEvents(bool flag) { m_triggerPendingEvents = flag;}
+
 private:
 	SealEngineFace* sealEngine() const;
 
@@ -322,6 +324,7 @@ private:
     Address m_author;							///< Our address (i.e. the address to which fees go).
 
 	SealEngineFace* m_sealEngine = nullptr;		///< The chain's seal engine.
+	bool m_triggerPendingEvents = false;		///< Will this block trigger pending transaction events
 };
 
 

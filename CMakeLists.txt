@@ -160,6 +160,7 @@ add_subdirectory(libethashseal)
 add_subdirectory(libwhisper)
 add_subdirectory(libwebthree)
 add_subdirectory(libweb3jsonrpc)
+add_subdirectory(websocket-api)
 
 if (EVMJIT)
     add_subdirectory(evmjit)

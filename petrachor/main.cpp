@@ -64,6 +64,8 @@
 #include "BuildInfo.h"
 #include "AccountManager.h"
 
+#include "websocket-api/WebsocketServer.h"
+
 using namespace std;
 using namespace dev;
 using namespace dev::p2p;
@@ -948,6 +950,9 @@ int main(int argc, char** argv)
 		&nodesState,
 		testingMode
 	);
+
+	//...
+    WebsocketAPI::connectAsync(8546);
 
 	if (!extraData.empty())
 		web3.ethereum()->setExtraData(extraData);
