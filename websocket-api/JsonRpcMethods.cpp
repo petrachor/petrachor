@@ -2,7 +2,7 @@
 #include <thread>
 #include <iostream>
 #include "JsonRpcMethods.h"
-#include "SubsccriptionFactory.h"
+#include "websocket-api/subscription/SubsccriptionFactory.h"
 #include "JsonRpcWebSocketsClient.h"
 
 namespace WebsocketAPI { namespace JsonRpcMethods {
@@ -14,6 +14,7 @@ void initialize()
 {
     f_methods.clear();
     f_methods.insert(std::make_pair(std::string("eth_subscribe"), eth_subscribe));
+	f_methods.insert(std::make_pair(std::string("eth_unsubscribe"), eth_unsubscribe));
 }
 
 bool find(const std::string& method)
@@ -42,10 +43,7 @@ void invokeMethod(Json::Value json, IWebsocketClient* client)
 
 void eth_subscribe(Json::Value json, IWebsocketClient* client)
 {
-    // TODO: change to actual log
-    std::cout << "eth_subscribe" << std::endl;
-
-    auto subscription = createSubscription(json, client);
+	auto subscription = createSubscription(json, client);
 
     if(subscription != nullptr) {
         Json::Value root;
@@ -64,7 +62,29 @@ void eth_subscribe(Json::Value json, IWebsocketClient* client)
         derived->cacheSubscription(subscription);
     }
 
-    //TODO: send errors
+    //TODO: send errors when method is not found
+}
+
+void eth_unsubscribe(Json::Value json, IWebsocketClient* client)
+{
+	//{"id": 1, "method": "eth_unsubscribe", "params": ["0xcd0c3e8af590364c09d0fa6a1210faf5"]}
+
+	auto params = json["params"];
+	auto subId = params[0].asString();
+
+	JsonRpcWebSocketsClient* derived = (JsonRpcWebSocketsClient*)client;
+	auto result = derived->unsubscribe(subId);
+
+	Json::Value root;
+
+	root["jsonrpc"] = "2.0";
+	root["id"] = 1;
+	root["result"] = result;
+
+	Json::FastWriter fastWriter;
+	std::string output = fastWriter.write(root);
+	client->sendSync(output);
+
 }
 
 }}

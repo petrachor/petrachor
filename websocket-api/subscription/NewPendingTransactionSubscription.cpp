@@ -4,7 +4,7 @@
 #include <thread>
 
 #include "NewPendingTransactionSubscription.h"
-#include "WebsocketEvents.h"
+#include "websocket-api/WebsocketEvents.h"
 
 namespace WebsocketAPI {
     NewPendingTransactionSubscription::NewPendingTransactionSubscription(IWebsocketClient* client)
@@ -19,8 +19,6 @@ namespace WebsocketAPI {
      //   std::thread{ std::bind(
        //         [=]() {
                     try {
-                        std::cout << "NewPendingTransactionSubscription" << std::endl;
-
                         auto hash = _t.sha3();
                         auto transactiohHash = "0x" + hash.hex();
 

@@ -17,4 +17,5 @@ namespace WebsocketAPI { namespace JsonRpcMethods {
     void invokeMethod(Json::Value json, IWebsocketClient* client);
 
     void eth_subscribe(Json::Value json, IWebsocketClient* client);
+    void eth_unsubscribe(Json::Value json, IWebsocketClient* client);
 }}

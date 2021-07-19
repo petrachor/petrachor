@@ -301,12 +301,37 @@ unsigned ClientBase::installWatch(h256 _h, Reaping _r)
 	return ret;
 }
 
+unsigned ClientBase::installWatchWS(LogFilter _filterId, Reaping _r)
+{
+	auto ret = installWatch(_filterId, _r);
+	m_subscribedWatch[ret] = true;
+	return ret;
+}
+
+bool ClientBase::uninstallWatchWS(unsigned _watchId)
+{
+	auto iter = m_subscribedWatch.find(_watchId);
+	if( iter == m_subscribedWatch.end())
+		return false;
+
+	m_subscribedWatch[_watchId] = false;
+	m_subscribedWatch.erase(iter);
+
+	uninstallWatch(_watchId);
+
+	return true;
+}
+
 bool ClientBase::uninstallWatch(unsigned _i)
 {
 	cwatch << "XXX" << _i;
 	
 	Guard l(x_filtersWatches);
-	
+
+	auto iter = m_subscribedWatch.find(_i);
+	if(iter != m_subscribedWatch.end() && iter->second)
+		return false;
+
 	auto it = m_watches.find(_i);
 	if (it == m_watches.end())
 		return false;

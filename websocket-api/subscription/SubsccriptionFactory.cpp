@@ -1,6 +1,7 @@
 
 #include "SubsccriptionFactory.h"
 #include "NewPendingTransactionSubscription.h"
+#include "LogsSubscription.h"
 #include <iostream>
 
 namespace WebsocketAPI
@@ -12,11 +13,14 @@ namespace WebsocketAPI
         auto subscriptionType = params[0].asString();
 
         constexpr int NewPendingTransactionType = 0;
+		constexpr int Logs = 1;
 
         auto evaluate = [=](const std::string& type){
             std::map<std::string, int> subscriptionMapping;
             subscriptionMapping.insert(
                     std::make_pair(std::string("newPendingTransactions"), NewPendingTransactionType));
+			subscriptionMapping.insert(
+					std::make_pair(std::string("logs"), Logs));
 
             auto iter = subscriptionMapping.find(type);
             if(iter != subscriptionMapping.end())
@@ -29,6 +33,14 @@ namespace WebsocketAPI
         switch(type) {
             case NewPendingTransactionType:
                 return std::make_shared<NewPendingTransactionSubscription>(client);
+        	case Logs: {
+				if( params.size() < 2) {
+					//TODO: error here
+					return nullptr;
+				}
+
+        		return std::make_shared<LogsSubscription>(client, params[1]);
+			}
         }
 
         return nullptr;

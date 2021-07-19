@@ -31,6 +31,8 @@
 #include "EthereumHost.h"
 #include "Block.h"
 #include "TransactionQueue.h"
+#include "websocket-api/WebsocketEvents.h"
+
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
@@ -396,6 +398,9 @@ void Client::syncBlockQueue()
 	if (ir.liveBlocks.empty())
 		return;
 	onChainChanged(ir);
+
+	// trigger websocket API
+	WebsocketAPI::WebSocketEvents::getInstance()->triggerBlocksMinedEvent();
 }
 
 void Client::syncTransactionQueue()

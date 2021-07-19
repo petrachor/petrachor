@@ -20,9 +20,6 @@ void JsonRpcWebSocketsClient::readAsync(const std::string& jsonStr)
                         return;
 
                     auto params = jsonObject["params"];
-                    if(params.isArray()) {
-                        std::cout << "for debugging" << std::endl;
-                    }
                     auto test = params[0].asString();
 
                     auto base = std::static_pointer_cast<IWebsocketClient>(client);
@@ -62,7 +59,37 @@ void JsonRpcWebSocketsClient::sendSync(const std::string& jsonStr)
 
 void JsonRpcWebSocketsClient::cacheSubscription(std::shared_ptr<Subscription> sub)
 {
-    m_subscriptionCache[sub->getType()] = sub;
+	m_subscriptionMap.insert(std::make_pair(sub->getId(), sub));
 }
 
+void JsonRpcWebSocketsClient::freeSubscription(SubscriptionMapIt iter)
+{
+	iter->second->cleanUp();
+	iter->second.reset();
+	m_subscriptionMap[iter->first] = nullptr;
+}
+
+bool JsonRpcWebSocketsClient::unsubscribe(const std::string& subId)
+{
+	auto iter = m_subscriptionMap.find(subId);
+	if(iter == m_subscriptionMap.end())
+		return false;
+
+	freeSubscription(iter);
+	m_subscriptionMap.erase(iter);
+	return true;
+}
+
+void JsonRpcWebSocketsClient::close()
+{
+	SubscriptionMapIt iter = m_subscriptionMap.begin();
+	while(iter != m_subscriptionMap.end()) {
+		freeSubscription(iter);
+		iter++;
+	}
+
+	m_subscriptionMap.clear();
+}
+
+//TODO: add unsubsscribe
 }

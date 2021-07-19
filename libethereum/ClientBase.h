@@ -115,7 +115,10 @@ public:
 	/// Install, uninstall and query watches.
 	virtual unsigned installWatch(LogFilter const& _filter, Reaping _r = Reaping::Automatic) override;
 	virtual unsigned installWatch(h256 _filterId, Reaping _r = Reaping::Automatic) override;
+	virtual unsigned installWatchWS(LogFilter _filterId, Reaping _r = Reaping::Automatic) override;
+
 	virtual bool uninstallWatch(unsigned _watchId) override;
+	virtual bool uninstallWatchWS(unsigned _watchId) override;
 	virtual LocalisedLogEntries peekWatch(unsigned _watchId) const override;
 	virtual LocalisedLogEntries checkWatch(unsigned _watchId) override;
 
@@ -188,6 +191,8 @@ protected:
 	std::unordered_map<h256, h256s> m_specialFilters = std::unordered_map<h256, std::vector<h256>>{{PendingChangedFilter, {}}, {ChainChangedFilter, {}}};
 															///< The dictionary of special filters and their additional data
 	std::map<unsigned, ClientWatch> m_watches;				///< Each and every watch - these reference a filter.
+
+	std::map<unsigned, bool> m_subscribedWatch;				///< this watch is used for subscription
 };
 
 }}

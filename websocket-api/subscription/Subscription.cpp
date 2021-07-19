@@ -26,4 +26,7 @@ Subscription::Type Subscription::getType()
     return m_type;
 }
 
+void Subscription::cleanUp()
+{}
+
 }

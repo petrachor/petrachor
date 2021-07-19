@@ -20,6 +20,8 @@ namespace WebsocketAPI {
         virtual void sendAsync(std::string jsonStr) = 0;
         virtual void sendSync(const std::string& jsonStr) = 0;
 
+        virtual void close() = 0;
+
     protected:
         BoostWebsocket& m_ws;
     };

@@ -529,6 +529,19 @@ string Eth::eth_newFilterEx(Json::Value const& _json)
 	}
 }
 
+
+string Eth::eth_newFilterWS(Json::Value const& _json)
+{
+	try
+	{
+		return toJS(client()->installWatchWS(toLogFilter(_json)));
+	}
+	catch (...)
+	{
+		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
+	}
+}
+
 string Eth::eth_newBlockFilter()
 {
 	h256 filter = dev::eth::ChainChangedFilter;
@@ -546,6 +559,18 @@ bool Eth::eth_uninstallFilter(string const& _filterId)
 	try
 	{
 		return client()->uninstallWatch(jsToInt(_filterId));
+	}
+	catch (...)
+	{
+		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
+	}
+}
+
+bool Eth::eth_uninstallFilterWS(std::string const& _filterId)
+{
+	try
+	{
+		return client()->uninstallWatchWS(jsToInt(_filterId));
 	}
 	catch (...)
 	{

@@ -2,12 +2,25 @@
 #include <string>
 #include <thread>
 #include <memory.h>
-
 #include "JsonRpcWebSocketsClient.h"
 #include "JsonRpcMethods.h"
+#include "WebsocketServer.h"
 
 namespace WebsocketAPI
 {
+
+static dev::rpc::Eth* f_ethInterface = nullptr;
+
+void setEthInterface(dev::rpc::Eth* eth)
+{
+	f_ethInterface = eth;
+}
+
+dev::rpc::Eth* getEthInterface()
+{
+	return f_ethInterface;
+}
+
 void connect(unsigned short port)
 {
     JsonRpcMethods::initialize();
@@ -23,7 +36,6 @@ void connect(unsigned short port)
         acceptor.accept(socket); // stops until new socket/client connections
 
         std::thread{ std::bind(
-                //[q = std::move(socket)]() mutable { // socket will be const - mutable should be used
                 [q{std::move(socket)}]() { // socket will be const - mutable should be used
 
                     websocket::stream<tcp::socket> ws{std::move(const_cast<tcp::socket&>(q))};
@@ -58,7 +70,7 @@ void connect(unsigned short port)
                             ws.read(buffer);   // synchronous hold until new data
 
                             auto out = beast::buffers_to_string(buffer.cdata());
-                            std::cout << out << std::endl;                          //TODO: change to actual logging
+                            //std::cout << out << std::endl;
 
                             client->readAsync(out);
 
@@ -71,7 +83,8 @@ void connect(unsigned short port)
                                 break;
                             }
                         }
-                    }
+                    } // end of while
+                    client->close();
                 }
         ) }.detach();
     }

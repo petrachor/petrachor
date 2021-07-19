@@ -101,9 +101,13 @@ public:
 	virtual Json::Value eth_getUncleByBlockNumberAndIndex(std::string const& _blockNumber, std::string const& _uncleIndex) override;
 	virtual std::string eth_newFilter(Json::Value const& _json) override;
 	virtual std::string eth_newFilterEx(Json::Value const& _json) override;
+	virtual std::string eth_newFilterWS(Json::Value const& _json);
+
 	virtual std::string eth_newBlockFilter() override;
 	virtual std::string eth_newPendingTransactionFilter() override;
 	virtual bool eth_uninstallFilter(std::string const& _filterId) override;
+	virtual bool eth_uninstallFilterWS(std::string const& _filterId);
+
 	virtual Json::Value eth_getFilterChanges(std::string const& _filterId) override;
 	virtual Json::Value eth_getFilterChangesEx(std::string const& _filterId) override;
 	virtual Json::Value eth_getFilterLogs(std::string const& _filterId) override;

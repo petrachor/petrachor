@@ -952,7 +952,7 @@ int main(int argc, char** argv)
 	);
 
 	//...
-    WebsocketAPI::connectAsync(8546);
+	WebsocketAPI::connectAsync(8546);
 
 	if (!extraData.empty())
 		web3.ethereum()->setExtraData(extraData);
@@ -1182,6 +1182,8 @@ int main(int argc, char** argv)
 		rpc::TestFace* testEth = nullptr;
 		if (testingMode)
 			testEth = new rpc::Test(*web3.ethereum());
+
+		WebsocketAPI::setEthInterface(ethFace);
 
 		if (jsonRPCURL >= 0)
 		{

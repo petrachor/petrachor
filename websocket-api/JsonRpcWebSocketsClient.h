@@ -1,6 +1,7 @@
 #pragma once
+#include <vector>
 #include "IWebSocketClient.h"
-#include "Subscription.h"
+#include "websocket-api/subscription/Subscription.h"
 
 namespace WebsocketAPI {
 
@@ -9,13 +10,19 @@ namespace WebsocketAPI {
 
     public:
         JsonRpcWebSocketsClient(BoostWebsocket& ws);
+
         virtual void readAsync(const std::string& jsonStr);
         virtual void sendAsync(std::string jsonStr);
         virtual void sendSync(const std::string& jsonStr);
+		virtual void close();
 
         void cacheSubscription(std::shared_ptr<Subscription> sub);
+		bool unsubscribe(const std::string& subId);
 
     private:
-        std::shared_ptr<Subscription> m_subscriptionCache[3];
+		using SubscriptionMapIt = std::map<std::string, SubscriptionPtr>::iterator ;
+		std::map<std::string, SubscriptionPtr> m_subscriptionMap;
+
+		void freeSubscription(SubscriptionMapIt it);
     };
 }

@@ -134,7 +134,11 @@ public:
 	/// Install, uninstall and query watches.
 	virtual unsigned installWatch(LogFilter const& _filter, Reaping _r = Reaping::Automatic) = 0;
 	virtual unsigned installWatch(h256 _filterId, Reaping _r = Reaping::Automatic) = 0;
+	virtual unsigned installWatchWS(LogFilter _filterId, Reaping _r = Reaping::Automatic) = 0;
+
 	virtual bool uninstallWatch(unsigned _watchId) = 0;
+	virtual bool uninstallWatchWS(unsigned _watchId) = 0;
+
 	LocalisedLogEntries peekWatchSafe(unsigned _watchId) const { try { return peekWatch(_watchId); } catch (...) { return LocalisedLogEntries(); } }
 	LocalisedLogEntries checkWatchSafe(unsigned _watchId) { try { return checkWatch(_watchId); } catch (...) { return LocalisedLogEntries(); } }
 	virtual LocalisedLogEntries peekWatch(unsigned _watchId) const = 0;

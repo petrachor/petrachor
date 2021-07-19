@@ -24,4 +24,14 @@ namespace WebsocketAPI {
     {
         m_onPendingTransactionEvent(_t);
     }
+
+	void WebSocketEvents::subscribeBlocksMinedEvent(OnBlocksMined func)
+	{
+		m_onBlocksMinedEvent.connect(func);
+	}
+
+    void WebSocketEvents::triggerBlocksMinedEvent()
+	{
+		m_onBlocksMinedEvent();
+	}
 }

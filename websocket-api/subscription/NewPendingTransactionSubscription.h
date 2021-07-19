@@ -1,5 +1,5 @@
 #pragma once
-#include "IWebSocketClient.h"
+#include "websocket-api/IWebSocketClient.h"
 #include "Subscription.h"
 #include "libethereum/Transaction.h"
 

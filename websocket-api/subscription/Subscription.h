@@ -1,13 +1,14 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "IWebSocketClient.h"
+#include "websocket-api/IWebSocketClient.h"
 
 namespace WebsocketAPI {
     class Subscription{
     public:
         enum Type {
-            NewPendingTransaction = 0
+            NewPendingTransaction = 0,
+            Logs = 1
         };
 
     public:
@@ -16,11 +17,13 @@ namespace WebsocketAPI {
         std::string getId();
         Type getType();
         IWebsocketClient* getClient();
+        virtual void cleanUp();
 
     protected:
         std::string m_id;
-        //std::shared_ptr<IWebsocketClient>& m_client;
         IWebsocketClient* m_client;
         Type m_type;
     };
+
+	using SubscriptionPtr = std::shared_ptr<Subscription>;
 }
