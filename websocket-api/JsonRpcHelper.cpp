@@ -9,18 +9,4 @@ namespace WebsocketAPI { namespace JsonRpcHelper {
         reader.parse(input, root);
         return root;
     }
-
-    bool validate(const Json::Value& json)
-    {
-        const std::string method = json["method"].asString();
-        if(method.empty()) {
-            //TODO: log proper error
-            return false;
-        }
-
-        if(!JsonRpcMethods::find(method))
-            return false;
-
-        return true;
-    }
 }}

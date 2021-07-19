@@ -18,4 +18,6 @@ namespace WebsocketAPI { namespace JsonRpcMethods {
 
     void eth_subscribe(Json::Value json, IWebsocketClient* client);
     void eth_unsubscribe(Json::Value json, IWebsocketClient* client);
+
+    bool invokeWeb3JsonRpc(const std::string& name, Json::Value json, IWebsocketClient* client);
 }}

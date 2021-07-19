@@ -70,7 +70,7 @@ void connect(unsigned short port)
                             ws.read(buffer);   // synchronous hold until new data
 
                             auto out = beast::buffers_to_string(buffer.cdata());
-                            //std::cout << out << std::endl;
+                            std::cout << out << std::endl;		// for debugging on data received by websocket server
 
                             client->readAsync(out);
 

@@ -4,6 +4,7 @@
 #include "JsonRpcMethods.h"
 #include "websocket-api/subscription/SubsccriptionFactory.h"
 #include "JsonRpcWebSocketsClient.h"
+#include "WebsocketServer.h"
 
 namespace WebsocketAPI { namespace JsonRpcMethods {
 
@@ -38,7 +39,45 @@ void invokeMethod(Json::Value json, IWebsocketClient* client)
     auto method = get(name);
     if(method != nullptr) {
         method(json, client);
+        return;
     }
+
+    auto r = invokeWeb3JsonRpc(name, json, client);
+	if(!r) {
+		// TODO: return error that method is not found or supported
+	}
+}
+
+bool invokeWeb3JsonRpc(const std::string& name, Json::Value json, IWebsocketClient* client)
+{
+	auto interface = WebsocketAPI::getEthInterface();
+	if(interface == nullptr)
+		return false;
+
+	for (auto const& method: interface->methods())
+	{
+		auto methodName = std::get<0>(method).GetProcedureName();
+		if(methodName == name){
+			const Json::Value request = json["params"];
+			Json::Value response;
+
+			auto func = std::get<1>(method);
+			(interface->*(func))(request, response);
+
+			Json::Value root;
+			root["jsonrpc"] = "2.0";
+			root["id"] = json["id"];
+			root["result"] = response;
+
+			Json::FastWriter fastWriter;
+			std::string output = fastWriter.write(root);
+			client->sendSync(output);
+
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void eth_subscribe(Json::Value json, IWebsocketClient* client)
@@ -49,7 +88,7 @@ void eth_subscribe(Json::Value json, IWebsocketClient* client)
         Json::Value root;
 
         root["jsonrpc"] = "2.0";
-        root["id"] = 1;
+        root["id"] = json["id"];
         root["result"] = subscription->getId();
 
         Json::FastWriter fastWriter;
@@ -62,13 +101,11 @@ void eth_subscribe(Json::Value json, IWebsocketClient* client)
         derived->cacheSubscription(subscription);
     }
 
-    //TODO: send errors when method is not found
+    //TODO: send errors when subscription method not found
 }
 
 void eth_unsubscribe(Json::Value json, IWebsocketClient* client)
 {
-	//{"id": 1, "method": "eth_unsubscribe", "params": ["0xcd0c3e8af590364c09d0fa6a1210faf5"]}
-
 	auto params = json["params"];
 	auto subId = params[0].asString();
 
@@ -78,13 +115,12 @@ void eth_unsubscribe(Json::Value json, IWebsocketClient* client)
 	Json::Value root;
 
 	root["jsonrpc"] = "2.0";
-	root["id"] = 1;
+	root["id"] = json["id"];
 	root["result"] = result;
 
 	Json::FastWriter fastWriter;
 	std::string output = fastWriter.write(root);
 	client->sendSync(output);
-
 }
 
 }}

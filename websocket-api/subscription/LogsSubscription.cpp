@@ -2,7 +2,6 @@
 #include "libweb3jsonrpc/Eth.h"
 #include "LogsSubscription.h"
 #include "../WebsocketServer.h"
-#include "websocket-api/WebsocketEvents.h"
 
 namespace WebsocketAPI
 {

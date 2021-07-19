@@ -16,12 +16,6 @@ void JsonRpcWebSocketsClient::readAsync(const std::string& jsonStr)
                 try
                 {
                     auto jsonObject = JsonRpcHelper::parse(json);
-                    if(!JsonRpcHelper::validate(jsonObject))
-                        return;
-
-                    auto params = jsonObject["params"];
-                    auto test = params[0].asString();
-
                     auto base = std::static_pointer_cast<IWebsocketClient>(client);
                     JsonRpcMethods::invokeMethod(jsonObject, base.get());
 
