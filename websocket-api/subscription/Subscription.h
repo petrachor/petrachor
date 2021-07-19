@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include "websocket-api/IWebSocketClient.h"
+#include "boost/signals2/signal.hpp"
 
 namespace WebsocketAPI {
     class Subscription{
@@ -23,6 +24,7 @@ namespace WebsocketAPI {
         std::string m_id;
         IWebsocketClient* m_client;
         Type m_type;
+        boost::signals2::connection m_connection;
     };
 
 	using SubscriptionPtr = std::shared_ptr<Subscription>;

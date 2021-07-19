@@ -11,8 +11,9 @@ namespace WebsocketAPI {
         : Subscription(client, Subscription::Type::NewPendingTransaction) {
 
         // subscribe to event
-        WebSocketEvents::getInstance()->subscribeNewPendingTransactionEvent(
-                std::bind(&NewPendingTransactionSubscription::onPendingTransaction, this, std::placeholders::_1));
+		m_connection = WebSocketEvents::getInstance()->subscribeNewPendingTransactionEvent(
+                std::bind(&NewPendingTransactionSubscription::onPendingTransaction,
+				this, std::placeholders::_1));
     }
 
     void NewPendingTransactionSubscription::onPendingTransaction(dev::eth::Transaction const _t) {

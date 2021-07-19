@@ -14,7 +14,7 @@ namespace WebsocketAPI
 
 		m_filterId = interface->eth_newFilterWS(j);
 
-		WebSocketEvents::getInstance()->subscribeBlocksMinedEvent(
+		m_connection = WebSocketEvents::getInstance()->subscribeBlocksMinedEvent(
 				std::bind(&LogsSubscription::onBlocksMined, this));
 	}
 
@@ -55,6 +55,8 @@ namespace WebsocketAPI
 
 	void LogsSubscription::cleanUp()
 	{
+		Subscription::cleanUp();
+
 		auto interface = WebsocketAPI::getEthInterface();
 		if (interface == nullptr || m_filterId.empty())
 			return;

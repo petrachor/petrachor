@@ -27,6 +27,9 @@ Subscription::Type Subscription::getType()
 }
 
 void Subscription::cleanUp()
-{}
+{
+	if(m_connection.connected())
+		m_connection.disconnect();
+}
 
 }

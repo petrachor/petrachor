@@ -15,9 +15,9 @@ namespace WebsocketAPI {
         return m_instance;
     }
 
-    void WebSocketEvents::subscribeNewPendingTransactionEvent(OnNewPendingTransactionEvent func)
+	boost::signals2::connection WebSocketEvents::subscribeNewPendingTransactionEvent(OnNewPendingTransactionEvent func)
     {
-        m_onPendingTransactionEvent.connect(func);
+        return m_onPendingTransactionEvent.connect(func);
     }
 
     void WebSocketEvents::triggerNewPendingTransactionEvent(Transaction const _t)
@@ -25,9 +25,9 @@ namespace WebsocketAPI {
         m_onPendingTransactionEvent(_t);
     }
 
-	void WebSocketEvents::subscribeBlocksMinedEvent(OnBlocksMined func)
+	boost::signals2::connection WebSocketEvents::subscribeBlocksMinedEvent(OnBlocksMined func)
 	{
-		m_onBlocksMinedEvent.connect(func);
+		return m_onBlocksMinedEvent.connect(func);
 	}
 
     void WebSocketEvents::triggerBlocksMinedEvent()

@@ -15,10 +15,10 @@ public:
     WebSocketEvents();
     static std::shared_ptr<WebSocketEvents>& getInstance();
 
-    void subscribeNewPendingTransactionEvent(OnNewPendingTransactionEvent func);
+	boost::signals2::connection subscribeNewPendingTransactionEvent(OnNewPendingTransactionEvent func);
     void triggerNewPendingTransactionEvent(Transaction const _t);
 
-	void subscribeBlocksMinedEvent(OnBlocksMined func);
+	boost::signals2::connection subscribeBlocksMinedEvent(OnBlocksMined func);
 	void triggerBlocksMinedEvent();
 
 private:
