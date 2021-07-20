@@ -25,7 +25,7 @@ void connect(unsigned short port)
 {
     JsonRpcMethods::initialize();
 
-    auto const address = net::ip::make_address("127.0.0.1");
+    auto const address = net::ip::make_address("0.0.0.0");
     net::io_context ioc{ 1 };
     tcp::acceptor acceptor{ ioc, {address, port} };
     for (;;)
