@@ -13,23 +13,28 @@ namespace WebsocketAPI
 
 	void SyncChangeSubscription::onSyncChanged()
 	{
-		auto interface = WebsocketAPI::getEthInterface();
-		if(interface == nullptr)
-			return;
+		try {
+			auto interface = WebsocketAPI::getEthInterface();
+			if(interface == nullptr)
+				return;
 
-		auto result = interface->eth_syncing();
-		Json::Value root;
-		Json::Value params;
+			auto result = interface->eth_syncing();
+			Json::Value root;
+			Json::Value params;
 
-		root["jsonrpc"] = "2.0";
-		root["method"] = "eth_subscription";
-		params["subscription"] = getId();
-		params["result"] = result;
+			root["jsonrpc"] = "2.0";
+			root["method"] = "eth_subscription";
+			params["subscription"] = getId();
+			params["result"] = result;
 
-		root["params"] = params;
+			root["params"] = params;
 
-		Json::FastWriter fastWriter;
-		std::string out = fastWriter.write(root);
-		getClient()->sendSync(out);
+			Json::FastWriter fastWriter;
+			std::string out = fastWriter.write(root);
+			getClient()->sendSync(out);
+
+		} catch (std::exception &e) {
+			std::cout << e.what() << std::endl;
+		}
 	}
 }

@@ -15,23 +15,28 @@ namespace WebsocketAPI
 
 	void NewBlockHeader::onNewBlockHeader(BlockHeader bh)
 	{
-		Json::Value root;
-		Json::Value params;
-		Json::Value result;
+		try {
+			Json::Value root;
+			Json::Value params;
+			Json::Value result;
 
-		params["subscription"] = getId();
+			params["subscription"] = getId();
 
-		root["jsonrpc"] = "2.0";
-		root["method"] = "eth_subscription";
+			root["jsonrpc"] = "2.0";
+			root["method"] = "eth_subscription";
 
-		result = toJson(bh);
-		params["subscription"] = getId();
-		params["result"] = result;
+			result = toJson(bh);
+			params["subscription"] = getId();
+			params["result"] = result;
 
-		root["params"] = params;
+			root["params"] = params;
 
-		Json::FastWriter fastWriter;
-		std::string out = fastWriter.write(root);
-		getClient()->sendSync(out);
+			Json::FastWriter fastWriter;
+			std::string out = fastWriter.write(root);
+			getClient()->sendSync(out);
+		}
+		catch (std::exception &e) {
+			std::cout << e.what() << std::endl;
+		}
 	}
 }
