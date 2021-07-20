@@ -787,11 +787,13 @@ void BlockChainSync::restartSync()
 
 void BlockChainSync::completeSync()
 {
+	if(m_state != SyncState::Idle){
+		// trigger listeners when sync stopped and not idle
+		WebsocketAPI::WebSocketEvents::getInstance()->triggerSyncChangeEvent();
+	}
+
 	resetSync();
 	m_state = SyncState::Idle;
-
-	// trigger listeners when sync stopped
-	WebsocketAPI::WebSocketEvents::getInstance()->triggerSyncChangeEvent();
 }
 
 void BlockChainSync::pauseSync()

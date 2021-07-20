@@ -295,7 +295,7 @@ namespace dev {
                 virtual std::string eth_getStorageAt(const std::string& param1, const std::string& param2, const std::string& param3) = 0;
                 virtual std::string eth_getStorageRoot(const std::string& param1, const std::string& param2) = 0;
                 virtual std::string eth_getTransactionCount(const std::string& param1, const std::string& param2) = 0;
-                virtual std::string eth_pendingTransactions() = 0;
+                virtual Json::Value eth_pendingTransactions() = 0;
                 virtual Json::Value eth_getBlockTransactionCountByHash(const std::string& param1) = 0;
                 virtual Json::Value eth_getBlockTransactionCountByNumber(const std::string& param1) = 0;
                 virtual Json::Value eth_getUncleCountByBlockHash(const std::string& param1) = 0;
