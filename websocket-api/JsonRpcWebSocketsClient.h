@@ -24,5 +24,6 @@ namespace WebsocketAPI {
 		std::map<std::string, SubscriptionPtr> m_subscriptionMap;
 
 		void freeSubscription(SubscriptionMapIt it);
+		std::recursive_mutex m_mutex;
     };
 }

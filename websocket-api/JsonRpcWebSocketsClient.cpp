@@ -40,6 +40,7 @@ void JsonRpcWebSocketsClient::sendSync(const std::string& jsonStr)
 {
     try
     {
+    	std::lock_guard<std::recursive_mutex> lock(m_mutex);
         beast::flat_buffer buffer;
         beast::ostream(buffer) << jsonStr;
         m_ws.write(buffer.data());

@@ -21,8 +21,6 @@ namespace WebsocketAPI
 		Json::Value root;
 		Json::Value params;
 
-		params["subscription"] = getId();
-
 		root["jsonrpc"] = "2.0";
 		root["method"] = "eth_subscription";
 		params["subscription"] = getId();
