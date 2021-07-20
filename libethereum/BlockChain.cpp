@@ -33,6 +33,7 @@
 #include <libdevcore/FileSystem.h>
 #include <libethcore/Exceptions.h>
 #include <libethcore/BlockHeader.h>
+#include <websocket-api/WebsocketEvents.h>
 
 #if ETH_PROFILING_GPERF
 #include <gperftools/profiler.h>
@@ -720,6 +721,9 @@ ImportRoute BlockChain::import(VerifiedBlockRef const& _block, OverlayDB const& 
 		addBlockInfo(ex, _block.info, _block.block.toBytes());
 		throw;
 	}
+
+	//trigger an event to notify listeners
+	WebsocketAPI::WebSocketEvents::getInstance()->triggerNewBlockHeaderEvent(_block.info);
 
 	// All ok - insert into DB
 	bytes const receipts = br.rlp();

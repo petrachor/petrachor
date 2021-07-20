@@ -2,6 +2,8 @@
 #include "SubsccriptionFactory.h"
 #include "NewPendingTransactionSubscription.h"
 #include "LogsSubscription.h"
+#include "NewBlockHeader.h"
+#include "SyncChangeSubscription.h"
 #include <iostream>
 
 namespace WebsocketAPI
@@ -12,15 +14,15 @@ namespace WebsocketAPI
         auto params = json["params"];
         auto subscriptionType = params[0].asString();
 
-        constexpr int NewPendingTransactionType = 0;
-		constexpr int Logs = 1;
-
         auto evaluate = [=](const std::string& type){
             std::map<std::string, int> subscriptionMapping;
             subscriptionMapping.insert(
-                    std::make_pair(std::string("newPendingTransactions"), NewPendingTransactionType));
+                    std::make_pair(std::string("newPendingTransactions"), Subscription::Type::NewPendingTransaction));
 			subscriptionMapping.insert(
-					std::make_pair(std::string("logs"), Logs));
+					std::make_pair(std::string("logs"), Subscription::Type::Logs));
+
+			subscriptionMapping.insert(std::make_pair(std::string("newHeads"), Subscription::Type::NewBlockHeaders));
+			subscriptionMapping.insert(std::make_pair(std::string("syncing"), Subscription::Type::SyncChanged));
 
             auto iter = subscriptionMapping.find(type);
             if(iter != subscriptionMapping.end())
@@ -31,9 +33,9 @@ namespace WebsocketAPI
         auto type = evaluate(subscriptionType);
 
         switch(type) {
-            case NewPendingTransactionType:
+            case Subscription::Type::NewPendingTransaction:
                 return std::make_shared<NewPendingTransactionSubscription>(client);
-        	case Logs: {
+        	case Subscription::Type::Logs: {
 				if( params.size() < 2) {
 					//TODO: error here
 					return nullptr;
@@ -41,6 +43,10 @@ namespace WebsocketAPI
 
         		return std::make_shared<LogsSubscription>(client, params[1]);
 			}
+			case Subscription::Type::NewBlockHeaders:
+				return std::make_shared<NewBlockHeader>(client);
+        	case Subscription::Type::SyncChanged:
+        		return std::make_shared<SyncChangeSubscription>(client);
         }
 
         return nullptr;

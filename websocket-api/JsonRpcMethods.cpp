@@ -44,7 +44,18 @@ void invokeMethod(Json::Value json, IWebsocketClient* client)
 
     auto r = invokeWeb3JsonRpc(name, json, client);
 	if(!r) {
-		// TODO: return error that method is not found or supported
+		Json::Value root;
+		Json::Value error;
+		root["jsonrpc"] = "2.0";
+		root["id"] = json["id"];
+
+		error["code"] = -32601;
+		error["message"] = "The method " + name +" does not exist";
+		root["error"] = error;
+
+		Json::FastWriter fastWriter;
+		std::string output = fastWriter.write(root);
+		client->sendSync(output);
 	}
 }
 

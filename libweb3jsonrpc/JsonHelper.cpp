@@ -102,6 +102,7 @@ Json::Value toJson(dev::eth::BlockHeader const& _bi, SealEngineFace* _sealer)
 		res["receiptsRoot"] = toJS(_bi.receiptsRoot());
 		res["number"] = toJS(_bi.number());
 		res["gasUsed"] = toJS(_bi.gasUsed());
+		res["difficulty"] = toJS(_bi.difficulty());
 		res["gasLimit"] = toJS(_bi.gasLimit());
 		res["extraData"] = toJS(_bi.extraData());
 		res["logsBloom"] = toJS(_bi.logBloom());

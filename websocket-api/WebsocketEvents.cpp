@@ -1,6 +1,8 @@
 
 #include "WebsocketEvents.h"
 
+using namespace dev::eth;
+
 namespace WebsocketAPI {
     std::shared_ptr<WebSocketEvents> WebSocketEvents::m_instance = nullptr;
 
@@ -33,5 +35,25 @@ namespace WebsocketAPI {
     void WebSocketEvents::triggerBlocksMinedEvent()
 	{
 		m_onBlocksMinedEvent();
+	}
+
+	boost::signals2::connection WebSocketEvents::subscribeNewBlockHeaderEvent(OnNewBlockHeader func)
+	{
+    	return m_onNewBlockHeaderEvent.connect(func);
+	}
+
+	void WebSocketEvents::triggerNewBlockHeaderEvent(BlockHeader bh)
+	{
+		m_onNewBlockHeaderEvent(bh);
+	}
+
+	boost::signals2::connection WebSocketEvents::subscribeSyncChangeEvent(OnSyncChangeEvent func)
+	{
+    	return m_onSyncChangeEvent.connect(func);
+	}
+
+	void WebSocketEvents::triggerSyncChangeEvent()
+	{
+		m_onSyncChangeEvent();
 	}
 }

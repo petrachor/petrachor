@@ -9,7 +9,9 @@ namespace WebsocketAPI {
     public:
         enum Type {
             NewPendingTransaction = 0,
-            Logs = 1
+            Logs = 1,
+            NewBlockHeaders = 2,
+            SyncChanged = 3
         };
 
     public:
