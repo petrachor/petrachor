@@ -750,3 +750,14 @@ Json::Value Eth::eth_fetchQueuedTransactions(string const& _accountId)
 		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
 	}
 }
+
+Json::Value Eth::txpool_content()
+{
+	//Return list of transactions from transactions pool
+	Transactions ours;
+	for (Transaction const& pending:client()->pending()) {
+		ours.push_back(pending);
+	}
+
+	return toJson(ours);
+}
