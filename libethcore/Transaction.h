@@ -98,7 +98,7 @@ public:
 	/// @returns the SHA3 hash of the RLP serialisation of this transaction.
 	h256 sha3(IncludeSignature _sig = WithSignature) const;
 
-	/// @returns the amount of ETH to be transferred by this (message-call) transaction, in Wei. Synonym for endowment().
+	/// @returns the amount of ETH to be transferred by this (message-call) transaction, in Sand. Synonym for endowment().
 	u256 value() const { return m_value; }
 
 	/// @returns the base fee and thus the implied exchange rate of ETH to GAS.

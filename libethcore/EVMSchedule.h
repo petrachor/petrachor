@@ -126,7 +126,7 @@ static const EVMSchedule ByzantiumSchedule = []
 	schedule.haveRevert = true;
 	schedule.haveReturnData = true;
 	schedule.haveStaticCall = true;
-	schedule.blockRewardOverwrite = {1 * wei};
+	schedule.blockRewardOverwrite = {1 * sand};
 	return schedule;
 }();
 
@@ -144,7 +144,7 @@ static const EVMSchedule ConstantinopleSchedule = []
     schedule.haveBitwiseShifting = true;
     schedule.haveExtcodehash = true;
     schedule.eip1283Mode = true;
-    schedule.blockRewardOverwrite = {2 * ether};
+    schedule.blockRewardOverwrite = {2 * petra};
 	return schedule;
 }();
 

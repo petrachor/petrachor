@@ -105,7 +105,7 @@ AccountMap dev::eth::jsonToAccountMap(std::string const& _json, u256 const& _def
 		Address a(fromHex(account.first));
 		auto o = account.second.get_obj();
 
-		bool haveBalance = (o.count("wei") || o.count("finney") || o.count("balance"));
+		bool haveBalance = (o.count("sand") || o.count("milliPet") || o.count("balance"));
 		bool haveNonce = o.count("nonce");
 		bool haveCode = o.count("code");
 		bool haveStorage = o.count("storage");
@@ -114,10 +114,10 @@ AccountMap dev::eth::jsonToAccountMap(std::string const& _json, u256 const& _def
 		if (haveStorage || haveCode || haveNonce || haveBalance)
 		{
 			u256 balance = 0;
-			if (o.count("wei"))
-				balance = u256Safe(o["wei"].get_str());
-			else if (o.count("finney"))
-				balance = u256Safe(o["finney"].get_str()) * finney;
+			if (o.count("sand"))
+				balance = u256Safe(o["sand"].get_str());
+			else if (o.count("milliPet"))
+				balance = u256Safe(o["milliPet"].get_str()) * milliPet;
 			else if (o.count("balance"))
 				balance = u256Safe(o["balance"].get_str());
 

@@ -265,7 +265,7 @@ public:
     Address myAddress;  ///< Address associated with executing code (a contract, or contract-to-be).
     Address caller;     ///< Address which sent the message (either equal to origin or a contract).
     Address origin;     ///< Original transactor.
-    u256 value;         ///< Value (in Wei) that was passed to this address.
+    u256 value;         ///< Value (in Sand) that was passed to this address.
     u256 gasPrice;      ///< Price of gas (that we already paid).
     bytesConstRef data;       ///< Current input data.
     bytes code;               ///< Current code that is executing.

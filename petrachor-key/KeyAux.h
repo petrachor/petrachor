@@ -345,10 +345,10 @@ public:
 				{
 					cout << "  from: <unsigned>" << endl;
 				}
-				cout << "  value: " << formatBalance(t.value()) << " (" << t.value() << " wei)" << endl;
+				cout << "  value: " << formatBalance(t.value()) << " (" << t.value() << " sand)" << endl;
 				cout << "  nonce: " << t.nonce() << endl;
 				cout << "  gas: " << t.gas() << endl;
-				cout << "  gas price: " << formatBalance(t.gasPrice()) << " (" << t.gasPrice() << " wei)" << endl;
+				cout << "  gas price: " << formatBalance(t.gasPrice()) << " (" << t.gasPrice() << " sand)" << endl;
 				cout << "  signing hash: " << t.sha3(WithoutSignature).hex() << endl;
                 if (t.sender())
 				{
@@ -697,8 +697,8 @@ public:
 			<< "    --tx-data <hex>  Specify the hex data for the transaction to be signed." << endl
 			<< "    --tx-nonce <n>  Specify the nonce for the transaction to be signed." << endl
 			<< "    --tx-gas <n>  Specify the gas for the transaction to be signed." << endl
-			<< "    --tx-gasprice <wei>  Specify the gas price for the transaction to be signed." << endl
-			<< "    --tx-value <wei>  Specify the value for the transaction to be signed." << endl
+			<< "    --tx-gasprice <sand>  Specify the gas price for the transaction to be signed." << endl
+			<< "    --tx-value <sand>  Specify the value for the transaction to be signed." << endl
 			<< "Transaction signing options:" << endl
 			<< "    --force-nonce <n>  Override the nonce for any transactions to be signed." << endl
 			<< endl

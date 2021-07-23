@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(TransactionEIP86)
 	Address to = Address("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
 	RLPStream streamRLP;
 	streamRLP.appendList(9);
-	streamRLP << 0 << 10 * szabo << 25000;
+	streamRLP << 0 << 10 * microPet << 25000;
 	streamRLP << to << 0 << bytes() << 0 << 0 << 0;
 	Transaction tx0(streamRLP.out(), CheckTransaction::Everything);
 	ImportResult result = txq.import(tx0);
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(tqMaxNonce)
 	dev::eth::TransactionQueue txq;
 
 	// from a94f5374fce5edbc8e2a8697c15331677e6ebf0b
-	const u256 gasCost =  10 * szabo;
+	const u256 gasCost =  10 * microPet;
 	const u256 gas = 25000;
 	Address dest = Address("0x095e7baea6a6c7c4c2dfeb977efac326af552d87");
 	Address to = Address("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
@@ -79,9 +79,9 @@ BOOST_AUTO_TEST_CASE(tqPriority)
 {
 	dev::eth::TransactionQueue txq;
 
-	const u256 gasCostCheap =  10 * szabo;
-	const u256 gasCostMed =  20 * szabo;
-	const u256 gasCostHigh =  30 * szabo;
+	const u256 gasCostCheap =  10 * microPet;
+	const u256 gasCostMed =  20 * microPet;
+	const u256 gasCostHigh =  30 * microPet;
 	const u256 gas = 25000;
 	Address dest = Address("0x095e7baea6a6c7c4c2dfeb977efac326af552d87");
 	Secret sender1 = Secret("0x3333333333333333333333333333333333333333333333333333333333333333");
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(tqFuture)
 	dev::eth::TransactionQueue txq;
 
 	// from a94f5374fce5edbc8e2a8697c15331677e6ebf0b
-	const u256 gasCostMed =  20 * szabo;
+	const u256 gasCostMed =  20 * microPet;
 	const u256 gas = 25000;
 	Address dest = Address("0x095e7baea6a6c7c4c2dfeb977efac326af552d87");
 	Secret sender = Secret("0x3333333333333333333333333333333333333333333333333333333333333333");
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(tqFuture)
 BOOST_AUTO_TEST_CASE(tqLimits)
 {
 	dev::eth::TransactionQueue txq(3, 3);
-	const u256 gasCostMed =  20 * szabo;
+	const u256 gasCostMed =  20 * microPet;
 	const u256 gas = 25000;
 	Address dest = Address("0x095e7baea6a6c7c4c2dfeb977efac326af552d87");
 	Secret sender = Secret("0x3333333333333333333333333333333333333333333333333333333333333333");

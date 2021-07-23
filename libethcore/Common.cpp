@@ -82,12 +82,12 @@ vector<pair<u256, string>> const& units()
 		{exp10<24>(), "Mpetra"},
 		{exp10<21>(), "grand"},
 		{exp10<18>(), "petra"},
-		{exp10<15>(), "finney"},
-		{exp10<12>(), "szabo"},
-		{exp10<9>(), "Gwei"},
-		{exp10<6>(), "Mwei"},
-		{exp10<3>(), "Kwei"},
-		{exp10<0>(), "wei"}
+		{exp10<15>(), "milliPet"},
+		{exp10<12>(), "microPet"},
+		{exp10<9>(), "nanoPet"},
+		{exp10<6>(), "picoPet"},
+		{exp10<3>(), "femtoPet"},
+		{exp10<0>(), "sand"}
 	};
 
 	return s_units;
@@ -117,7 +117,7 @@ std::string formatBalance(bigint const& _b)
 			ret << (double(b / (i.first / 1000)) / 1000.0) << " " << i.second;
 			return ret.str();
 		}
-	ret << b << " wei";
+	ret << b << " sand";
 	return ret.str();
 }
 
