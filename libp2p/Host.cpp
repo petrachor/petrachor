@@ -482,7 +482,7 @@ std::unordered_map<ECDSA::Public, std::string> Host::pocHosts()
 {
 	return {
 		   Mainnet:
-          { ECDSA::Public("6391a41256a7e3f2d3a27f3bfa550e7d16c95b6d5c9d529aed25d9103d6ef156faba228e88898f19857ad071f47040cac72ab47be3e5068b88e3cedeebfbf0b6"), "159.65.108.124:30303" },
+          { ECDSA::Public("9189fd375d893ab708a2be7ad578c37791efae62fc9093ed251bd2b252060101b467a4521a346e74a10679fe1b28824f109cc0f254b7b6b80189dce7371d7ed1"), "143.198.150.218:30303" },
           { ECDSA::Public("6b734383dfb16a4848eee3bf65627559f2c5229e234cf80cb811c34f410e662c64108254eea20819b60d1117fcefe9b79fb5c49facba571d6db81fd1cf6c5722"), "68.183.216.153:30303" },
           { ECDSA::Public("2577adb2d53abff308448f38d4add5e689000a7881e2dd3c49f64e7be9245ef89a0fa607be07195f7ba40a1040ef979a882fd2f73f1b89e1a747153426d5be4e"), "128.199.239.20:30303" },
 		// Testnet:
