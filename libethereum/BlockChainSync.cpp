@@ -31,6 +31,7 @@
 #include "BlockQueue.h"
 #include "EthereumPeer.h"
 #include "EthereumHost.h"
+#include "websocket-api/WebsocketEvents.h"
 
 using namespace std;
 using namespace dev;
@@ -169,6 +170,8 @@ BlockChainSync::BlockChainSync(EthereumHost& _host):
 		RecursiveGuard l(x_sync);
 		m_state = SyncState::Blocks;
 		continueSync();
+
+		WebsocketAPI::WebSocketEvents::getInstance()->triggerSyncChangeEvent();
 	});
 }
 
@@ -249,6 +252,10 @@ void BlockChainSync::syncPeer(std::shared_ptr<EthereumPeer> _peer, bool _force)
 			m_state = SyncState::Blocks;
 		_peer->requestBlockHeaders(_peer->m_latestHash, 1, 0, false);
 		_peer->m_requireTransactions = true;
+
+		// trigger all listeners
+		WebsocketAPI::WebSocketEvents::getInstance()->triggerSyncChangeEvent();
+
 		return;
 	}
 
@@ -780,6 +787,11 @@ void BlockChainSync::restartSync()
 
 void BlockChainSync::completeSync()
 {
+	if(m_state != SyncState::Idle){
+		// trigger listeners when sync stopped and not idle
+		WebsocketAPI::WebSocketEvents::getInstance()->triggerSyncChangeEvent();
+	}
+
 	resetSync();
 	m_state = SyncState::Idle;
 }

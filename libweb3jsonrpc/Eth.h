@@ -81,7 +81,7 @@ public:
 	virtual std::string eth_getStorageAt(std::string const& _address, std::string const& _position, std::string const& _blockNumber) override;
 	virtual std::string eth_getStorageRoot(std::string const& _address, std::string const& _blockNumber) override;
 	virtual std::string eth_getTransactionCount(std::string const& _address, std::string const& _blockNumber) override;
-	virtual std::string eth_pendingTransactions() override;
+	virtual Json::Value eth_pendingTransactions() override;
 	virtual Json::Value eth_getBlockTransactionCountByHash(std::string const& _blockHash) override;
 	virtual Json::Value eth_getBlockTransactionCountByNumber(std::string const& _blockNumber) override;
 	virtual Json::Value eth_getUncleCountByBlockHash(std::string const& _blockHash) override;
@@ -101,9 +101,13 @@ public:
 	virtual Json::Value eth_getUncleByBlockNumberAndIndex(std::string const& _blockNumber, std::string const& _uncleIndex) override;
 	virtual std::string eth_newFilter(Json::Value const& _json) override;
 	virtual std::string eth_newFilterEx(Json::Value const& _json) override;
+	virtual std::string eth_newFilterWS(Json::Value const& _json);
+
 	virtual std::string eth_newBlockFilter() override;
 	virtual std::string eth_newPendingTransactionFilter() override;
 	virtual bool eth_uninstallFilter(std::string const& _filterId) override;
+	virtual bool eth_uninstallFilterWS(std::string const& _filterId);
+
 	virtual Json::Value eth_getFilterChanges(std::string const& _filterId) override;
 	virtual Json::Value eth_getFilterChangesEx(std::string const& _filterId) override;
 	virtual Json::Value eth_getFilterLogs(std::string const& _filterId) override;
@@ -121,7 +125,8 @@ public:
 	virtual std::string eth_sendRawTransaction(std::string const& _rlp) override;
 	virtual bool eth_notePassword(std::string const&) override { return false; }
 	virtual Json::Value eth_syncing() override;
-	
+	virtual Json::Value txpool_content() override;
+
 	void setTransactionDefaults(eth::TransactionSkeleton& _t);
 protected:
 

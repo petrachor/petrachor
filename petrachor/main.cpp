@@ -64,6 +64,8 @@
 #include "BuildInfo.h"
 #include "AccountManager.h"
 
+#include "websocket-api/WebsocketServer.h"
+
 using namespace std;
 using namespace dev;
 using namespace dev::p2p;
@@ -93,6 +95,8 @@ void help()
 //		<< "    -o,--mode <full/peer>  Start a full node or a peer node (default: full).\n\n"
 		<< "    -j,--json-rpc  Enable JSON-RPC server (default: off).\n"
 		<< "    --ipc  Enable IPC server (default: on).\n"
+		<< "    --no-ws  Disable Websocket API (default: on).\n"
+		<< "    --wsport Set Websocket API port (default: 8546).\n"
 		<< "    --ipcpath Set .ipc socket path (default: data directory)\n"
 		<< "    --admin-via-http  Expose admin interface via http - UNSAFE! (default: off).\n"
 		<< "    --no-ipc  Disable IPC server.\n"
@@ -358,6 +362,9 @@ int main(int argc, char** argv)
 	string publicIP;
 	string remoteHost;
     unsigned short remotePort = dev::p2p::c_defaultIPPort;
+
+	unsigned short wsPort = 8546;
+	bool websocketAPI = true;
 
 	unsigned peers = 11;
 	unsigned peerStretch = 7;
@@ -685,6 +692,10 @@ int main(int argc, char** argv)
 			ipc = true;
 		else if (arg == "--no-ipc")
 			ipc = false;
+		else if (arg == "--no-ws")
+			websocketAPI = false;
+		else if (arg == "--wsport")
+			wsPort = (short)atoi(argv[++i]);
 
 		else if ((arg == "-v" || arg == "--verbosity") && i + 1 < argc)
 			g_logVerbosity = atoi(argv[++i]);
@@ -949,6 +960,11 @@ int main(int argc, char** argv)
 		testingMode
 	);
 
+	//...
+	if(websocketAPI) {
+		WebsocketAPI::connectAsync(wsPort);
+	}
+
 	if (!extraData.empty())
 		web3.ethereum()->setExtraData(extraData);
 
@@ -1177,6 +1193,8 @@ int main(int argc, char** argv)
 		rpc::TestFace* testEth = nullptr;
 		if (testingMode)
 			testEth = new rpc::Test(*web3.ethereum());
+
+		WebsocketAPI::setEthInterface(ethFace);
 
 		if (jsonRPCURL >= 0)
 		{

@@ -138,7 +138,7 @@ string Eth::eth_getStorageRoot(string const& _address, string const& _blockNumbe
 	}
 }
 
-string Eth::eth_pendingTransactions()
+Json::Value Eth::eth_pendingTransactions()
 {
 	//Return list of transaction that being sent by local accounts
 	Transactions ours;
@@ -154,7 +154,7 @@ string Eth::eth_pendingTransactions()
 		}
 	}
 
-	return toJS(ours);
+	return toJson(ours);
 }
 
 string Eth::eth_getTransactionCount(string const& _address, string const& _blockNumber)
@@ -529,6 +529,19 @@ string Eth::eth_newFilterEx(Json::Value const& _json)
 	}
 }
 
+
+string Eth::eth_newFilterWS(Json::Value const& _json)
+{
+	try
+	{
+		return toJS(client()->installWatchWS(toLogFilter(_json)));
+	}
+	catch (...)
+	{
+		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
+	}
+}
+
 string Eth::eth_newBlockFilter()
 {
 	h256 filter = dev::eth::ChainChangedFilter;
@@ -546,6 +559,18 @@ bool Eth::eth_uninstallFilter(string const& _filterId)
 	try
 	{
 		return client()->uninstallWatch(jsToInt(_filterId));
+	}
+	catch (...)
+	{
+		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
+	}
+}
+
+bool Eth::eth_uninstallFilterWS(std::string const& _filterId)
+{
+	try
+	{
+		return client()->uninstallWatchWS(jsToInt(_filterId));
 	}
 	catch (...)
 	{
@@ -724,4 +749,15 @@ Json::Value Eth::eth_fetchQueuedTransactions(string const& _accountId)
 	{
 		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
 	}
+}
+
+Json::Value Eth::txpool_content()
+{
+	//Return list of transactions from transactions pool
+	Transactions ours;
+	for (Transaction const& pending:client()->pending()) {
+		ours.push_back(pending);
+	}
+
+	return toJson(ours);
 }

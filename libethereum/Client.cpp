@@ -31,6 +31,8 @@
 #include "EthereumHost.h"
 #include "Block.h"
 #include "TransactionQueue.h"
+#include "websocket-api/WebsocketEvents.h"
+
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
@@ -396,6 +398,9 @@ void Client::syncBlockQueue()
 	if (ir.liveBlocks.empty())
 		return;
 	onChainChanged(ir);
+
+	// trigger websocket API
+	WebsocketAPI::WebSocketEvents::getInstance()->triggerBlocksMinedEvent();
 }
 
 void Client::syncTransactionQueue()
@@ -414,6 +419,8 @@ void Client::syncTransactionQueue()
 			ctrace << "Skipping txq sync for a sealed block.";
 			return;
 		}
+
+		m_working.triggerPendingEvents(true);
 
 		tie(newPendingReceipts, m_syncTransactionQueue) = m_working.sync(bc(), m_tq, *m_gp);
 	}

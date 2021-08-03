@@ -36,6 +36,8 @@
 #include "Executive.h"
 #include "TransactionQueue.h"
 #include "GenesisInfo.h"
+#include "websocket-api/WebsocketEvents.h"
+
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
@@ -99,6 +101,7 @@ Block::Block(Block const& _s):
 	m_sealEngine(_s.m_sealEngine)
 {
 	m_committedToSeal = false;
+	m_triggerPendingEvents = false;
 }
 
 Block& Block::operator=(Block const& _s)
@@ -118,6 +121,8 @@ Block& Block::operator=(Block const& _s)
 
 	m_precommit = m_state;
 	m_committedToSeal = false;
+	m_triggerPendingEvents = false;
+
 	return *this;
 }
 
@@ -137,6 +142,7 @@ void Block::resetCurrent(int64_t const& _timestamp)
 	m_state.setRoot(m_previousBlock.stateRoot());
 	m_precommit = m_state;
 	m_committedToSeal = false;
+	m_triggerPendingEvents = false;
 
 	performIrregularModifications();
 	updateBlockhashContract();
@@ -661,17 +667,22 @@ ExecutionResult Block::execute(LastBlockHashesFace const& _lh, Transaction const
 	// Uncommitting is a non-trivial operation - only do it once we've verified as much of the
 	// transaction as possible.
 	uncommitToSeal();
-	
+
 	EnvInfo const envInfo{info(), _lh, gasUsed(), m_sealEngine->chainParams().chainID};
 	std::pair<ExecutionResult, TransactionReceipt> resultReceipt =
 		m_state.execute(envInfo, *m_sealEngine, _t, _p, _onOp);
-	
+
 	if (_p == Permanence::Committed)
 	{
 		// Add to the user-originated transactions that we've executed.
 		m_transactions.push_back(_t);
 		m_receipts.push_back(resultReceipt.second);
 		m_transactionSet.insert(_t.sha3());
+
+		if (m_triggerPendingEvents) {
+			// trigger pending transaction event when block is not yet sealed
+			WebsocketAPI::WebSocketEvents::getInstance()->triggerNewPendingTransactionEvent(_t);
+		}
 	}
 
 	return resultReceipt.first;
