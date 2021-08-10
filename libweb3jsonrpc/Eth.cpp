@@ -108,8 +108,14 @@ string Eth::eth_getBalance(string const& _address, string const& _blockNumber)
 	{
 		return toJS(client()->balanceAt(jsToAddress(_address), jsToBlockNumber(_blockNumber)));
 	}
-	catch (...)
+	catch (Exception& ex)
 	{
+		if(string(ex.what()).find("InvalidStateRoot") != string::npos)
+		{
+			throw jsonrpc::JsonRpcException("State for the block was not found in the database "
+											"possibly had been pruned or corrupted");
+		}
+
 		BOOST_THROW_EXCEPTION(JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS));
 	}
 }

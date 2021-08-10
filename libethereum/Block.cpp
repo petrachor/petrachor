@@ -269,6 +269,7 @@ bool Block::sync(BlockChain const& _bc, h256 const& _block, BlockHeader const& _
 			cwarn << "Unable to sync to" << bi.hash() << "; state root" << bi.stateRoot() << "not found in database.";
 			cwarn << "Database corrupt: contains block without stateRoot:" << bi;
 			cwarn << "Try rescuing the database by running: eth --rescue";
+			cwarn << "Or possibly state of the block has been PRUNED";
 			BOOST_THROW_EXCEPTION(InvalidStateRoot() << errinfo_target(bi.stateRoot()));
 		}
 		m_previousBlock = bi;

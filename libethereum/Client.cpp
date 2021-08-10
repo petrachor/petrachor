@@ -750,6 +750,11 @@ Block Client::block(h256 const& _block) const
 	}
 	catch (Exception& ex)
 	{
+		if(string(ex.what()).find("InvalidStateRoot") != string::npos)
+		{
+			BOOST_THROW_EXCEPTION(InvalidStateRoot());
+		}
+
 		ex << errinfo_block(bc().block(_block));
 		onBadBlock(ex);
 		return Block(bc());
@@ -768,6 +773,11 @@ Block Client::block(h256 const& _blockHash, PopulationStatistics* o_stats) const
 	}
 	catch (Exception& ex)
 	{
+		if(string(ex.what()).find("InvalidStateRoot") != string::npos)
+		{
+			BOOST_THROW_EXCEPTION(InvalidStateRoot());
+		}
+		
 		ex << errinfo_block(bc().block(_blockHash));
 		onBadBlock(ex);
 		return Block(bc());
