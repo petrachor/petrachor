@@ -37,6 +37,7 @@
 #include "TransactionQueue.h"
 #include "GenesisInfo.h"
 #include "websocket-api/WebsocketEvents.h"
+#include "pruning/Pruner.h"
 
 using namespace std;
 using namespace dev;
@@ -908,6 +909,9 @@ void Block::cleanup()
 		clog(StateChat) << "Trie corrupt! :-(";
 		throw;
 	}
+
+	// run pruning when block is mine
+	pruning::prune(info().number(), &m_state.db());
 
 	m_state.db().commit();	// TODO: State API for this?
 

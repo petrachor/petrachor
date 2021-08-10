@@ -1,0 +1,2 @@
+add_executable(pruning-test main.cpp)
+target_link_libraries(pruning-test PRIVATE ethereum aleth-interpreter ethash::keccak ethashseal evm cryptopp-static devcrypto web3jsonrpc webthree devcore pruning)

@@ -65,6 +65,7 @@
 #include "AccountManager.h"
 
 #include "websocket-api/WebsocketServer.h"
+#include "pruning/Pruner.h"
 
 using namespace std;
 using namespace dev;
@@ -100,6 +101,8 @@ void help()
 		<< "    --ipcpath Set .ipc socket path (default: data directory)\n"
 		<< "    --admin-via-http  Expose admin interface via http - UNSAFE! (default: off).\n"
 		<< "    --no-ipc  Disable IPC server.\n"
+		<< "    --pruning Enable State pruning (default: off).\n"
+		<< "    --pruning-range Set the blocks range when the states are pruned (default: 1024 blocks).\n"
 		<< "    --json-rpc-port <n>  Specify JSON-RPC server port (implies '-j', default: " << SensibleHttpPort << ").\n"
 		<< "    --rpccorsdomain <domain>  Domain on which to send Access-Control-Allow-Origin header.\n"
 		<< "    --admin <password>  Specify admin session key for JSON-RPC (default: auto-generated and printed at start-up).\n"
@@ -365,6 +368,9 @@ int main(int argc, char** argv)
 
 	unsigned short wsPort = 8546;
 	bool websocketAPI = true;
+
+	bool pruning = false;
+	unsigned pruning_range = 1024;
 
 	unsigned peers = 11;
 	unsigned peerStretch = 7;
@@ -696,6 +702,10 @@ int main(int argc, char** argv)
 			websocketAPI = false;
 		else if (arg == "--wsport")
 			wsPort = (short)atoi(argv[++i]);
+		else if (arg == "--pruning")
+			pruning = true;
+		else if (arg == "--pruning-range")
+			pruning_range = (unsigned)atoi(argv[++i]);
 
 		else if ((arg == "-v" || arg == "--verbosity") && i + 1 < argc)
 			g_logVerbosity = atoi(argv[++i]);
@@ -963,6 +973,12 @@ int main(int argc, char** argv)
 	//...
 	if(websocketAPI) {
 		WebsocketAPI::connectAsync(wsPort);
+	}
+
+	// initialize pruner
+	if(pruning)
+	{
+		pruning::init(getDataDir(), web3.ethereum()->blockChain().genesisHash(), pruning_range);
 	}
 
 	if (!extraData.empty())

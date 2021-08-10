@@ -60,12 +60,21 @@ public:
 
 	h256Hash keys() const;
 
+	using CacheType = std::unordered_map<h256, std::pair<std::string, unsigned>>;
+	using CacheAuxType = std::unordered_map<h256, std::pair<bytes, bool>>;
+	using DeathCacheType = std::vector<h256>;
+
+	CacheType& cache() { return m_main; }
+	CacheAuxType& cacheAux() { return m_aux; }
+	DeathCacheType& deathCache() { return m_deathCache; }
+
 protected:
 #if DEV_GUARDED_DB
 	mutable SharedMutex x_this;
 #endif
-	std::unordered_map<h256, std::pair<std::string, unsigned>> m_main;
-	std::unordered_map<h256, std::pair<bytes, bool>> m_aux;
+	CacheType m_main;
+	CacheAuxType m_aux;
+	DeathCacheType m_deathCache;
 
 	mutable bool m_enforceRefs = false;
 };

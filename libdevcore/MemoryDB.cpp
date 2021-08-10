@@ -113,19 +113,20 @@ bool MemoryDB::kill(h256 const& _h)
 			m_main[_h].second--;
 			return true;
 		}
-#if ETH_PARANOIA
 		else
 		{
 			// If we get to this point, then there was probably a node in the level DB which we need to remove and which we have previously
 			// used as part of the memory-based MemoryDB. Nothing to be worried about *as long as the node exists in the DB*.
-			dbdebug << "NOKILL-WAS" << _h;
+			// Updated Aug 10, 2021: comment above no longer valid
+			dbdebug << "Usage is 0. Adding to Death Cache for deletion" << _h;
+			m_deathCache.push_back(_h);
 		}
 		dbdebug << "KILL" << _h << "=>" << m_main[_h].second;
 	}
 	else
 	{
-		dbdebug << "NOKILL" << _h;
-#endif
+		dbdebug << "Adding to Death Cache for deletion" << _h;
+		m_deathCache.push_back(_h);
 	}
 	return false;
 }

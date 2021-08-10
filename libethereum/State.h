@@ -333,7 +333,7 @@ public:
 	/// Get contract account's version.
 	/// @returns 0 if no account exists at that address.
 	u256 version(Address const& _a) const;
-	
+
 private:
 	/// Turns all "touched" empty accounts into non-alive accounts.
 	void removeEmptyAccounts();

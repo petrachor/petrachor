@@ -84,6 +84,7 @@ void OverlayDB::commit()
 		{
 			m_aux.clear();
 			m_main.clear();
+			m_deathCache.clear();
 		}
 	}
 }
