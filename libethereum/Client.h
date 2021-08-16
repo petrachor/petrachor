@@ -81,6 +81,7 @@ public:
 	Client(
 		ChainParams const& _params,
 		int _networkID,
+		SyncMode _syncMode,
 		p2p::Host* _host,
 		std::shared_ptr<GasPricer> _gpForAdoption,
 		boost::filesystem::path const& _dbPath = boost::filesystem::path(),
@@ -202,7 +203,7 @@ public:
 protected:
 	/// Perform critical setup functions.
 	/// Must be called in the constructor of the finally derived class.
-	void init(p2p::Host* _extNet, boost::filesystem::path const& _dbPath, WithExisting _forceAction, u256 _networkId);
+	void init(p2p::Host* _extNet, boost::filesystem::path const& _dbPath, WithExisting _forceAction, u256 _networkId, SyncMode _syncMode);
 
 	/// InterfaceStub methods
 	BlockChain& bc() override { return m_bc; }

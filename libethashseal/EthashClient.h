@@ -41,6 +41,7 @@ public:
 	EthashClient(
 		ChainParams const& _params,
 		int _networkID,
+		SyncMode _syncMode,
 		p2p::Host* _host,
 		std::shared_ptr<GasPricer> _gpForAdoption,
 		boost::filesystem::path const& _dbPath = boost::filesystem::path(),

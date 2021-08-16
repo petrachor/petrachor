@@ -110,6 +110,7 @@ void help()
 		<< "    -s,--import-secret <secret>  Import a secret key into the key store.\n"
 		<< "    --master <password>  Give the master password for the key store. Use --master \"\" to show a prompt.\n"
 		<< "    --password <password>  Give a password for a private key.\n\n"
+		<< "    --fast  Enable fast syncing through state downloads." << endl
 		<< "Client transacting:\n"
 		<< "    --ask <wei>  Set the minimum ask gas price under which no transaction will be mined (default " << toString(DefaultGasPrice) << " ).\n"
 		<< "    --bid <wei>  Set the bid gas price to pay for transactions (default " << toString(DefaultGasPrice) << " ).\n"
@@ -398,6 +399,7 @@ int main(int argc, char** argv)
     /// Whisper
 	bool useWhisper = false;
 	bool testingMode = false;
+	bool fastSync = false;
 
     strings passwordsToNote;
     std::vector<AccountKeys::Secret> toImport;
@@ -657,6 +659,10 @@ int main(int argc, char** argv)
 					cerr << "Unknown " << arg << " option: " << m << "\n";
 					return -1;
 				}
+		}
+		else if (arg == "--fast")
+		{
+			fastSync = true;
 		}
 		else if (arg == "-b" || arg == "--bootstrap")
 			bootstrap = true;
@@ -957,7 +963,8 @@ int main(int argc, char** argv)
 		nodeMode == NodeMode::Full ? caps : set<string>(),
 		netPrefs,
 		&nodesState,
-		testingMode
+		testingMode,
+		fastSync ? SyncMode::FastSync : SyncMode::FullSync
 	);
 
 	//...

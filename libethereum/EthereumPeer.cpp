@@ -220,8 +220,13 @@ void EthereumPeer::tick()
 	auto s = session();
 	time_t  now = std::chrono::system_clock::to_time_t(chrono::system_clock::now());
 	if (s && (now - m_lastAsk > 10 && m_asking != Asking::Nothing))
+	{
 		// timeout
 		s->disconnect(PingTimeout);
+
+		if (m_observer)
+			m_observer->onPeerRequestTimeout(dynamic_pointer_cast<EthereumPeer>(shared_from_this()), m_asking);
+	}
 }
 
 bool EthereumPeer::isConversing() const
@@ -427,6 +432,41 @@ bool EthereumPeer::interpret(unsigned _id, RLP const& _r)
 	catch (std::exception const& _e)
 	{
 		clog(NetWarn) << "Peer causing an exception:" << _e.what() << _r;
+	}
+
+	return true;
+}
+
+bool EthereumPeer::validateStatus(h256 const& _genesisHash, vector<unsigned> const& _protocolVersions, u256 const& _networkId)
+{
+	std::shared_ptr<SessionFace> s = session();
+	if (!s)
+		return false; // Expired
+
+	if (m_genesisHash != _genesisHash)
+	{
+		disable("Invalid genesis hash");
+		return false;
+	}
+	if (find(_protocolVersions.begin(), _protocolVersions.end(), m_protocolVersion) == _protocolVersions.end())
+	{
+		disable("Invalid protocol version.");
+		return false;
+	}
+	if (m_networkId != _networkId)
+	{
+		disable("Invalid network identifier.");
+		return false;
+	}
+	if (s->info().clientVersion.find("/v0.7.0/") != string::npos)
+	{
+		disable("Blacklisted client version.");
+		return false;
+	}
+	if (m_asking != Asking::State && m_asking != Asking::Nothing)
+	{
+		disable("Peer banned for unexpected status message.");
+		return false;
 	}
 
 	return true;

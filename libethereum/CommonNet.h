@@ -107,5 +107,11 @@ struct SyncStatus
 	bool majorSyncing = false;
 };
 
+enum class SyncMode
+{
+	FullSync,
+	FastSync
+};
+
 }
 }
