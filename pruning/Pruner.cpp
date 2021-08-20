@@ -110,7 +110,7 @@ namespace dev {
 				h256 keys = *iterDeath;
 
 				// do not delete if this is the current state root
-				if(f_stateRoot == keys)
+				if(f_stateRoot != keys)
 				{
 					// we found a candidate for deletion
 					std::string hash = keys.hex();
