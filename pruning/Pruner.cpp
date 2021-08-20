@@ -18,7 +18,7 @@ namespace dev {
 		static ldb::DB* f_db = nullptr;
 		static int64_t f_range = MAX_RANGE;
 		static bool f_enabled = false;
-		static h256 f_stateRoot;
+		static std::vector<h256> f_stateRoots;
 
 		using CacheType = dev::MemoryDB::CacheType;
 		using DeathCacheType = dev::MemoryDB::DeathCacheType;
@@ -63,9 +63,27 @@ namespace dev {
 			return true;
 		}
 
-		void setStateRoot(h256 const stateRoot)
+		bool isStateRoot(h256 const stateRoot)
 		{
-			f_stateRoot = stateRoot;
+			auto iter = f_stateRoots.begin();
+			while (iter != f_stateRoots.end())
+			{
+				if(*iter == stateRoot)
+					return true;
+
+				iter++;
+			}
+
+			return false;
+		}
+
+
+		void cacheStateRoot(h256 const stateRoot)
+		{
+			if(isStateRoot(stateRoot))
+				return;
+
+			f_stateRoots.push_back(stateRoot);
 		}
 
 		void exec(int64_t blockNum, CacheType mainCache, DeathCacheType deathCache, ldb::DB* stateDb)
@@ -110,7 +128,7 @@ namespace dev {
 				h256 keys = *iterDeath;
 
 				// do not delete if this is the current state root
-				if(f_stateRoot != keys)
+				if(!isStateRoot(keys))
 				{
 					// we found a candidate for deletion
 					std::string hash = keys.hex();

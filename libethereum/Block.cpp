@@ -912,6 +912,7 @@ void Block::cleanup()
 	}
 
 	// run pruning when block is mine
+	pruning::cacheStateRoot(m_currentBlock.stateRoot());
 	pruning::prune(info().number(), &m_state.db());
 
 	m_state.db().commit();	// TODO: State API for this?

@@ -197,7 +197,7 @@ h256 ChainParams::calculateStateRoot(bool _force) const
 		stateRoot = state.root();
 	}
 
-	pruning::setStateRoot(stateRoot);
+	pruning::cacheStateRoot(stateRoot);
 	return stateRoot;
 }
 
