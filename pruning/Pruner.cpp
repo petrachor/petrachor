@@ -18,6 +18,7 @@ namespace dev {
 		static ldb::DB* f_db = nullptr;
 		static int64_t f_range = MAX_RANGE;
 		static bool f_enabled = false;
+		static h256 f_stateRoot;
 
 		using CacheType = dev::MemoryDB::CacheType;
 		using DeathCacheType = dev::MemoryDB::DeathCacheType;
@@ -62,6 +63,11 @@ namespace dev {
 			return true;
 		}
 
+		void setStateRoot(h256 const stateRoot)
+		{
+			f_stateRoot = stateRoot;
+		}
+
 		void exec(int64_t blockNum, CacheType mainCache, DeathCacheType deathCache, ldb::DB* stateDb)
 		{
 			#ifdef MULTI_THREADED_PRUNING
@@ -89,6 +95,8 @@ namespace dev {
 
 					// append the hash to the death list
 					deathList.append(hash);
+
+					ctrace << "Pruning : Added hash with 0 reference " << keys;
 				}
 
 				iter++;
@@ -101,11 +109,17 @@ namespace dev {
 				// get the hash key
 				h256 keys = *iterDeath;
 
-				// we found a candidate for deletion
-				std::string hash = keys.hex();
+				// do not delete if this is the current state root
+				if(f_stateRoot == keys)
+				{
+					// we found a candidate for deletion
+					std::string hash = keys.hex();
 
-				// append the hash to the death list
-				deathList.append(hash);
+					// append the hash to the death list
+					deathList.append(hash);
+
+					ctrace << "Pruning : Adding hash for deletion " << keys;
+				}
 
 				iterDeath++;
 			}
@@ -113,7 +127,8 @@ namespace dev {
 			// 2. insert to db using current blocknumber as key when there is an entry
 			if(deathList.size())
 			{
-				ctrace << "Pruning : saving to database with " << deathList.size() << " entries";
+				ctrace << "Pruning : saving to database with " << deathList.size()
+					<< " entries to be deleted at height" << blockNum + f_range;
 
 				Json::FastWriter fastWriter;
 				std::string key = std::to_string(blockNum + f_range);
@@ -151,13 +166,13 @@ namespace dev {
 					auto sliceKey = ldb::Slice((char const*)entryKey.data(), entryKey.size);
 					status = stateDb->Get(readOptions, sliceKey, &ret);
 					if (status.ok()) {
+						ctrace << "Pruning : deleting hash " << entryKey;
+
 						batch.Delete(sliceKey);
 						++deleteCount;
 					}
 				}
 			}
-
-			ctrace << "Pruning : deleting " <<  deleteCount << " entries";
 
 			// delete from main DB
 			status = stateDb->Write(leveldb::WriteOptions(), &batch);
@@ -165,6 +180,7 @@ namespace dev {
 			// delete the key in prune database
 			status = f_db->Delete(leveldb::WriteOptions(), key);
 
+			ctrace << "Pruning : deleted " <<  deleteCount << " entries at height " << blockNum;
 		}
 
 		void prune(int64_t blockNum, dev::OverlayDB* overlayDb)

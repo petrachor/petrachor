@@ -26,6 +26,8 @@
 #include <libethcore/SealEngine.h>
 #include <libethcore/BlockHeader.h>
 #include <libethcore/Precompiled.h>
+#include <pruning/Pruner.h>
+
 #include "GenesisInfo.h"
 #include "State.h"
 #include "Account.h"
@@ -194,6 +196,8 @@ h256 ChainParams::calculateStateRoot(bool _force) const
 		dev::eth::commit(genesisState, state);
 		stateRoot = state.root();
 	}
+
+	pruning::setStateRoot(stateRoot);
 	return stateRoot;
 }
 
