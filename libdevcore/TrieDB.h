@@ -291,7 +291,12 @@ private:
 	// These are low-level node insertion functions that just go straight through into the DB.
 	h256 forceInsertNode(bytesConstRef _v) { auto h = sha3(_v); forceInsertNode(h, _v); return h; }
 	void forceInsertNode(h256 const& _h, bytesConstRef _v) { m_db->insert(_h, _v); }
-	void forceKillNode(h256 const& _h) { m_db->kill(_h); }
+	void forceKillNode(h256 const& _h) {
+		if(m_root == _h) {
+			return;
+		}
+		m_db->kill(_h);
+	}
 
 	// This are semantically-aware node insertion functions that only kills when the node's
 	// data is < 32 bytes. It can safely be used when pruning the trie but won't work correctly

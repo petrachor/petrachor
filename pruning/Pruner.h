@@ -8,8 +8,6 @@ namespace dev {
 
 		namespace fs = boost::filesystem;
 		bool init(fs::path const& _basePath, h256 const& _genesisHash, int64_t range = MAX_RANGE);
-
 		void prune(int64_t blockNum, dev::OverlayDB* overlayDb);
-		void cacheStateRoot(h256 const stateRoot);
 	}
 }
