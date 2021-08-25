@@ -221,6 +221,12 @@ Json::Value toJson(dev::eth::Transaction const& _t)
 	res["hash"] = toJS(_t.sha3(WithSignature));
 	res["sighash"] = toJS(_t.sha3(WithoutSignature));
     res["senderPublic"] = toJS(_t.signature().publicKey);
+
+	// for compatibility with geth
+	res["blockHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+	res["blockNumber"] = Json::Value(Json::nullValue);
+	res["transactionIndex"] = Json::Value(Json::nullValue);
+	res["input"] = toJS(_t.data());
 	return res;
 }
 
