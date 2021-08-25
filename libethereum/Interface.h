@@ -30,6 +30,7 @@
 #include "LogFilter.h"
 #include "Transaction.h"
 #include "BlockDetails.h"
+#include "TransactionQueue.h"
 
 namespace dev
 {
@@ -193,6 +194,7 @@ public:
 	/// Get a map containing each of the pending transactions.
 	/// @TODO: Remove in favour of transactions().
 	virtual Transactions pending() const = 0;
+	virtual TransactionQueue::FutureTransactions& queued() = 0;
 	virtual h256s pendingHashes() const = 0;
 
 	/// Get a list of all active addresses.

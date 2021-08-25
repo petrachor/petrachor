@@ -492,6 +492,11 @@ Transactions ClientBase::pending() const
 	return postSeal().pending();
 }
 
+TransactionQueue::FutureTransactions& ClientBase::queued()
+{
+	return m_tq.future();
+}
+
 h256s ClientBase::pendingHashes() const
 {
 	return h256s() + postSeal().pendingHashes();

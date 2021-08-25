@@ -50,6 +50,18 @@ class TransactionQueue
 public:
 	struct Limits { size_t current; size_t future; };
 
+	/// Verified and imported transaction
+	struct VerifiedTransaction
+	{
+		VerifiedTransaction(Transaction const& _t): transaction(_t) {}
+		VerifiedTransaction(VerifiedTransaction&& _t): transaction(std::move(_t.transaction)) {}
+
+		VerifiedTransaction(VerifiedTransaction const&) = delete;
+		VerifiedTransaction& operator=(VerifiedTransaction const&) = delete;
+
+		Transaction transaction; ///< Transaction data
+	};
+
 	/// @brief TransactionQueue
 	/// @param _limit Maximum number of pending transactions in the queue.
 	/// @param _futureLimit Maximum number of future nonce transactions.
@@ -128,19 +140,11 @@ public:
 	/// Register a handler that will be called once asynchronous verification is comeplte an transaction has been imported
 	template <class T> Handler<h256 const&> onReplaced(T const& _t) { return m_onReplaced.add(_t); }
 
+	/// Future/queued transactions
+	using FutureTransactions = std::unordered_map<Address, std::map<u256, VerifiedTransaction>>;
+	FutureTransactions& future() { return m_future; }
+
 private:
-
-	/// Verified and imported transaction
-	struct VerifiedTransaction
-	{
-		VerifiedTransaction(Transaction const& _t): transaction(_t) {}
-		VerifiedTransaction(VerifiedTransaction&& _t): transaction(std::move(_t.transaction)) {}
-
-		VerifiedTransaction(VerifiedTransaction const&) = delete;
-		VerifiedTransaction& operator=(VerifiedTransaction const&) = delete;
-
-		Transaction transaction; ///< Transaction data
-	};
 
 	/// Transaction pending verification
 	struct UnverifiedTransaction
@@ -199,7 +203,7 @@ private:
 	PriorityQueue m_current;
 	std::unordered_map<h256, PriorityQueue::iterator> m_currentByHash;			///< Transaction hash to set ref
 	std::unordered_map<Address, std::map<u256, PriorityQueue::iterator>> m_currentByAddressAndNonce; ///< Transactions grouped by account and nonce
-	std::unordered_map<Address, std::map<u256, VerifiedTransaction>> m_future;	/// Future transactions
+	FutureTransactions m_future;												/// Future transactions
 
     typedef ECDSA::Public NodeID;
 	Signal<> m_onReady;															///< Called when a subsequent call to import transactions will return a non-empty container. Be nice and exit fast.

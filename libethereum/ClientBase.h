@@ -142,6 +142,7 @@ public:
 	virtual unsigned uncleCount(h256 _blockHash) const override;
 	virtual unsigned number() const override;
 	virtual Transactions pending() const override;
+	virtual TransactionQueue::FutureTransactions& queued() override;
 	virtual h256s pendingHashes() const override;
 	virtual BlockHeader pendingInfo() const override;
 	virtual BlockDetails pendingDetails() const override;
