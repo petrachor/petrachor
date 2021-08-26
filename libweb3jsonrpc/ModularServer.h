@@ -31,6 +31,7 @@
 #include <jsonrpccpp/server/iprocedureinvokationhandler.h>
 #include <jsonrpccpp/server/abstractserverconnector.h>
 #include <jsonrpccpp/server/requesthandlerfactory.h>
+#include "libweb3jsonrpc/CustomRpcProtocolServerV2.h"
 
 template <class I> using AbstractMethodPointer = void(I::*)(Json::Value const& _parameter, Json::Value& _result);
 template <class I> using AbstractNotificationPointer = void(I::*)(Json::Value const& _parameter);
@@ -69,7 +70,7 @@ class ModularServer: public jsonrpc::IProcedureInvokationHandler
 {
 public:
 	ModularServer()
-			: m_handler(jsonrpc::RequestHandlerFactory::createProtocolHandler(jsonrpc::JSONRPC_SERVER_V2, *this))
+			: m_handler(new jsonrpc::CustomRpcProtocolServerV2(*this))
 	{
 		m_handler->AddProcedure(jsonrpc::Procedure("rpc_modules", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_OBJECT, NULL));
 		m_implementedModules = Json::objectValue;

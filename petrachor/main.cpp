@@ -59,6 +59,7 @@
 #include <libweb3jsonrpc/Personal.h>
 #include <libweb3jsonrpc/Debug.h>
 #include <libweb3jsonrpc/Test.h>
+#include <libweb3jsonrpc/TxPool.h>
 
 //#include "MinerAux.h"
 #include "BuildInfo.h"
@@ -1184,7 +1185,7 @@ int main(int argc, char** argv)
 			rpc::EthFace, rpc::DBFace, rpc::WhisperFace,
 			rpc::NetFace, rpc::Web3Face, rpc::PersonalFace,
 			rpc::AdminEthFace, rpc::AdminNetFace, rpc::AdminUtilsFace,
-			rpc::DebugFace, rpc::TestFace
+			rpc::DebugFace, rpc::TestFace, rpc::TxPoolFace
 		>;
 
 		sessionManager.reset(new rpc::SessionManager());
@@ -1215,7 +1216,7 @@ int main(int argc, char** argv)
 				new rpc::Net(web3), new rpc::Web3(web3.clientVersion()), personal,
 				adminEth, adminNet, adminUtils,
 				new rpc::Debug(*web3.ethereum()),
-				testEth
+				testEth, new rpc::TxPool(*web3.ethereum())
 			));
 			auto httpConnector = new SafeHttpServer(jsonRPCURL, "", "", SensibleHttpThreads);
 			httpConnector->setAllowedOrigin(rpcCorsDomain);
@@ -1231,7 +1232,8 @@ int main(int argc, char** argv)
 				new rpc::AdminNet(web3, *sessionManager.get()),
 				new rpc::AdminUtils(*sessionManager.get()),
 				new rpc::Debug(*web3.ethereum()),
-				testEth
+				testEth,
+				new rpc::TxPool(*web3.ethereum())
 			));
 			auto ipcConnector = new IpcServer("geth");
 			jsonrpcIpcServer->addConnector(ipcConnector);

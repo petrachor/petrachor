@@ -65,10 +65,7 @@ namespace dev {
                     this->bindAndAddMethod(jsonrpc::Procedure("eth_notePassword", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &dev::rpc::EthFace::eth_notePasswordI);
                     this->bindAndAddMethod(jsonrpc::Procedure("eth_syncing", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_OBJECT,  NULL), &dev::rpc::EthFace::eth_syncingI);
                     this->bindAndAddMethod(jsonrpc::Procedure("eth_estimateGas", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_STRING, "param1",jsonrpc::JSON_OBJECT, NULL), &dev::rpc::EthFace::eth_estimateGasI);
-
-                    // txpool Namespace
-                    this->bindAndAddMethod(jsonrpc::Procedure("txpool_content", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_STRING,  NULL), &dev::rpc::EthFace::txpool_contentI);
-                }
+               }
 
                 inline virtual void eth_protocolVersionI(const Json::Value &request, Json::Value &response)
                 {
@@ -288,12 +285,6 @@ namespace dev {
                     response = this->eth_estimateGas(request[0u]);
                 }
 
-                inline virtual void txpool_contentI(const Json::Value &request, Json::Value &response)
-                {
-                	(void)request;
-                	response = this->txpool_content();
-                }
-
                 virtual std::string eth_protocolVersion() = 0;
                 virtual std::string eth_hashrate() = 0;
                 virtual std::string eth_coinbase() = 0;
@@ -346,8 +337,6 @@ namespace dev {
                 virtual Json::Value eth_syncing() = 0;
                 virtual std::string eth_estimateGas(const Json::Value& param1) = 0;
 
-                // txtpool namespace
-                virtual std::string txpool_content() = 0;
         };
 
     }
