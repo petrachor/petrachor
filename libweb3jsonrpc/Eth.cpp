@@ -29,6 +29,7 @@
 #include <libwebthree/WebThree.h>
 #include <libethcore/CommonJS.h>
 #include <libweb3jsonrpc/JsonHelper.h>
+#include <libweb3jsonrpc/JsonCustomWriter.h>
 #include "Eth.h"
 #include "AccountHolder.h"
 
@@ -751,7 +752,7 @@ Json::Value Eth::eth_fetchQueuedTransactions(string const& _accountId)
 	}
 }
 
-Json::Value Eth::txpool_content()
+std::string Eth::txpool_content()
 {
 	//Return list of transactions from transactions pool
 	Transactions ours;
@@ -807,5 +808,10 @@ Json::Value Eth::txpool_content()
 	finalJson["pending"] = pendingAccounts;
 	finalJson["queued"] = queuedAccountsJson;
 
-	return finalJson;
+	Json::CustomStreamWriterBuilder builder;
+	builder["indentation"] = "";
+	const std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+
+	Json::Value resp;
+	return Json::writeString(builder,finalJson);
 }

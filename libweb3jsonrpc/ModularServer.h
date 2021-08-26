@@ -69,7 +69,7 @@ class ModularServer: public jsonrpc::IProcedureInvokationHandler
 {
 public:
 	ModularServer()
-	: m_handler(jsonrpc::RequestHandlerFactory::createProtocolHandler(jsonrpc::JSONRPC_SERVER_V2, *this))
+			: m_handler(jsonrpc::RequestHandlerFactory::createProtocolHandler(jsonrpc::JSONRPC_SERVER_V2, *this))
 	{
 		m_handler->AddProcedure(jsonrpc::Procedure("rpc_modules", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_OBJECT, NULL));
 		m_implementedModules = Json::objectValue;

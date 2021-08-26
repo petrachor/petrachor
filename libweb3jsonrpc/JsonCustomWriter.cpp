@@ -378,6 +378,14 @@ int BuiltStyledStreamWriterEx::write(Value const& root, OStream* sout) {
 	sout_ = nullptr;
 	return 0;
 }
+
+bool is_number(const std::string& s)
+{
+	std::string::const_iterator it = s.begin();
+	while (it != s.end() && std::isdigit(*it)) ++it;
+	return !s.empty() && it == s.end();
+}
+
 void BuiltStyledStreamWriterEx::writeValue(Value const& value, bool keys) {
 	switch (value.type()) {
 		case nullValue:
@@ -398,6 +406,7 @@ void BuiltStyledStreamWriterEx::writeValue(Value const& value, bool keys) {
 			char const* str;
 			char const* end;
 			bool ok = value.getString(&str, &end);
+
 			if (ok)
 				if(keys)
 					pushValue(value.asString());
@@ -424,6 +433,7 @@ void BuiltStyledStreamWriterEx::writeValue(Value const& value, bool keys) {
 				indent();
 				auto it = members.begin();
 				for (;;) {
+
 					String const& name = *it;
 					Value const& childValue = value[name];
 					writeCommentBeforeValue(childValue);

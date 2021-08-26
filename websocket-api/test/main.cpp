@@ -6,6 +6,7 @@
 #include "../WebsocketServer.h"
 #include "../WebsocketEvents.h"
 #include "../JsonRpcWebSocketsClient.h"
+#include <libweb3jsonrpc/JsonCustomWriter.h>
 
 int main()
 {
@@ -26,25 +27,13 @@ int main()
 	Json::Value innerTransaction;
 	innerTransaction["from"] = "0x0216d5032f356960cd3749c31ab34eeff21b3395";
 	innerTransaction["blockHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+	innerTransaction["100"] = Json::Value::null;
+	innerTransaction["noce"] = 1000000;
 
-	int key = 0x326;
-	std::string nonce = std::to_string(key);
-	Json::Value nonceJson;
-	nonceJson[nonce] = innerTransaction;
+	Json::CustomStreamWriterBuilder builder;
+	const std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
 
-	Json::Value account1;
-	std::string a1Str = "0x0216d5032f356960cd3749c31ab34eeff21b3395";
-	std::string a2Str = "0x24d407e5a0b506e1cb2fae163100b5de01f5193c";
-	account1[a1Str] = nonceJson;
-	account1[a2Str] = nonceJson;
-
-	Json::Value pending;
-	pending["pending"] = account1;
-
-	Json::FastWriter fastWriter;
-	std::string output = fastWriter.write(pending);
-
-	std::cout << output;
+	writer->write(innerTransaction, &std::cout);
 
     return 0;
 }

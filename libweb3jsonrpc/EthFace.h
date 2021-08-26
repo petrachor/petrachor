@@ -347,7 +347,7 @@ namespace dev {
                 virtual std::string eth_estimateGas(const Json::Value& param1) = 0;
 
                 // txtpool namespace
-                virtual Json::Value txpool_content() = 0;
+                virtual std::string txpool_content() = 0;
         };
 
     }
