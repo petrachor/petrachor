@@ -408,7 +408,7 @@ void BuiltStyledStreamWriterEx::writeValue(Value const& value, bool keys) {
 			bool ok = value.getString(&str, &end);
 
 			if (ok)
-				if(keys && is_number(value.asString()))
+				if(keys)
 					pushValue(value.asString());
 				else
 					pushValue(

@@ -17,6 +17,8 @@ using namespace std;
 #define KEY_REQUEST_VERSION     "jsonrpc"
 #define JSON_RPC_VERSION2        "2.0"
 
+static bool f_isStandardRPC = true;
+
 AbstractProtocolHandler::AbstractProtocolHandler(
 		IProcedureInvokationHandler &handler)
 		: handler(handler) {}
@@ -33,8 +35,11 @@ void AbstractProtocolHandler::HandleRequest(const std::string &request,
 	Json::Reader reader;
 	Json::Value req;
 	Json::Value resp;
-	Json::CustomStreamWriterBuilder wbuilder;
+	Json::StreamWriterBuilder wbuilder;
+	Json::CustomStreamWriterBuilder cwbuilder;
 	wbuilder["indentation"] = "";
+	cwbuilder["indentation"] = "";
+	f_isStandardRPC = false;
 
 	try {
 		if (reader.parse(request, req, false)) {
@@ -51,7 +56,8 @@ void AbstractProtocolHandler::HandleRequest(const std::string &request,
 	}
 
 	if (resp != Json::nullValue)
-		retValue = Json::writeString(wbuilder, resp);
+		retValue = Json::writeString(f_isStandardRPC? wbuilder : cwbuilder, resp);
+
 }
 
 void AbstractProtocolHandler::ProcessRequest(const Json::Value &request,
@@ -60,9 +66,16 @@ void AbstractProtocolHandler::ProcessRequest(const Json::Value &request,
 			this->procedures[request[KEY_REQUEST_METHODNAME].asString()];
 	Json::Value result;
 
+	std::size_t found= method.GetProcedureName().find("txpool_");
+	f_isStandardRPC = (found == std::string::npos);
+
 	if (method.GetProcedureType() == RPC_METHOD) {
 		handler.HandleMethodCall(method, request[KEY_REQUEST_PARAMETERS], result);
-		this->WrapResult(request, response, result);
+		if(f_isStandardRPC) {
+			this->WrapResult(request, response, result);
+		} else {
+			response = result;
+		}
 	} else {
 		handler.HandleNotificationCall(method, request[KEY_REQUEST_PARAMETERS]);
 		response = Json::nullValue;
