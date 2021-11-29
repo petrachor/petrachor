@@ -80,7 +80,7 @@ namespace dev {
             explicit G2(std::string const& _s, ConstructFromStringType _t = FromHex, ConstructFromHashType _ht = FailIfDifferent): H96(_s, _t, _ht) {}
 
             G2() : H96() {}
-            G2(const G2& g) : H96(g) {}
+        //    G2(const G2& g) : H96(g) {}
             G2(dev::FixedHash<96> h) : H96(h) { }
             G2(bytesConstRef d) : H96(d) { assert(d.size() == H96::size); }
             G2(bytes d) : H96(d) { }

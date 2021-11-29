@@ -82,7 +82,7 @@ bool UnixDomainSocketServer::StartListening()
 #ifdef __APPLE__
 		m_address.sun_len = m_path.size() + 1;
 #endif
-		strncpy(m_address.sun_path, m_path.c_str(), c_socketPathMaxLength);
+		strncpy(m_address.sun_path, m_path.c_str(), m_path.size());
 		::bind(m_socket, reinterpret_cast<sockaddr*>(&m_address), sizeof(sockaddr_un));
 		listen(m_socket, 128);
 	}

@@ -480,15 +480,13 @@ void Host::runAcceptor()
 
 std::unordered_map<ECDSA::Public, std::string> Host::pocHosts()
 {
-	return {
-		   Mainnet:
-          { ECDSA::Public("9189fd375d893ab708a2be7ad578c37791efae62fc9093ed251bd2b252060101b467a4521a346e74a10679fe1b28824f109cc0f254b7b6b80189dce7371d7ed1"), "143.198.150.218:30303" },
-          { ECDSA::Public("e0f863d6cdf977d1a81ccbbc302e6c080a38c4ac83699c0d6a402a58b18d6daca010461884a6e3de5c9c950b1a76eaa7ec2c83de7dd13c77d84f44c817abac59"), "165.22.70.187:30303" },
-          { ECDSA::Public("2577adb2d53abff308448f38d4add5e689000a7881e2dd3c49f64e7be9245ef89a0fa607be07195f7ba40a1040ef979a882fd2f73f1b89e1a747153426d5be4e"), "128.199.239.20:30303" },
-		// Testnet:
-//        { ECDSA::Public("6ce05930c72abc632c58e2e4324f7c7ea478cec0ed4fa2528982cf34483094e9cbc9216e7aa349691242576d552a2a56aaeae426c5303ded677ce455ba1acd9d"), "13.84.180.240:30303" },
-//        { ECDSA::Public("20c9ad97c081d63397d7b685a412227a40e23c8bdc6688c6f37e97cfbc22d2b4d1db1510d8f61e6a8866ad7f0e17c02b14182d37ea7c3c8b9c2683aeb6b733a1"), "52.169.14.227:30303" },
-	};
+    std::unordered_map<ECDSA::Public, std::string> host;
+    // Mainnet:
+    host.insert(std::make_pair<ECDSA::Public, std::string>(ECDSA::Public("9189fd375d893ab708a2be7ad578c37791efae62fc9093ed251bd2b252060101b467a4521a346e74a10679fe1b28824f109cc0f254b7b6b80189dce7371d7ed1"), "143.198.150.218:30303"));
+    host.insert(std::make_pair<ECDSA::Public, std::string>(ECDSA::Public("e0f863d6cdf977d1a81ccbbc302e6c080a38c4ac83699c0d6a402a58b18d6daca010461884a6e3de5c9c950b1a76eaa7ec2c83de7dd13c77d84f44c817abac59"), "165.22.70.187:30303"));
+    host.insert(std::make_pair<ECDSA::Public, std::string>(ECDSA::Public("2577adb2d53abff308448f38d4add5e689000a7881e2dd3c49f64e7be9245ef89a0fa607be07195f7ba40a1040ef979a882fd2f73f1b89e1a747153426d5be4e"), "128.199.239.20:30303"));
+
+    return host;
 }
 
 void Host::addPeer(NodeSpec const& _s, PeerType _t)
